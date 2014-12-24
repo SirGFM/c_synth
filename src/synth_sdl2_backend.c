@@ -9,14 +9,21 @@
 #include <synth/synth_assert.h>
 #include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
+#include <synth/synth_types.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 static int setuped = 0;
 static int samples = 1024;
+static Uint16 *synth_buffer = 0;
+static int sb_len = 0;
+static int sb_pos = 0;
 
 static SDL_AudioSpec spec;
 static SDL_AudioDeviceID dev = 0;
 
-static void synth_sdl2_bkend_callback(void *arg, void *stream, int len);
+static void synth_sdl2_bkend_callback(void *arg, Uint8 *stream, int len);
 
 /**
  * Setup the backend
@@ -29,10 +36,10 @@ synth_err synth_bkend_setup(int freq, int chan) {
     int irv;
     SDL_AudioSpec desired;
     
-    SYNTH_ASSERT_ERROR(setuped == 0, SYNTH_ALREADY_STARTED);
+    SYNTH_ASSERT_ERR(setuped == 0, SYNTH_ALREADY_STARTED);
     
     irv = SDL_InitSubSystem(SDL_INIT_AUDIO);
-    SYNTH_ASSERT_ERROR(irv == 0, SYNTH_INTERNAL_ERR);
+    SYNTH_ASSERT_ERR(irv == 0, SYNTH_INTERNAL_ERR);
     
     desired.freq = freq;
     desired.channels = chan;
@@ -65,6 +72,9 @@ void synth_bkend_clean() {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
         setuped = 0;
     }
+    if (synth_buffer != 0) {
+        free(synth_buffer);
+    }
 }
 
 /**
@@ -88,7 +98,13 @@ void synth_bkend_unpause() {
  * @param len How many bytes there are in data
  */
 void synth_bkend_fillBuffer(void *data, int len) {
-    
+    // TODO use a nice ciclic buffer
+    if (len > sb_len + sb_pos) {
+        synth_buffer = realloc(synth_buffer, len + sb_pos);
+        sb_len = sb_pos + len;
+    }
+    memcpy(synth_buffer + sb_pos, data, len);
+    synth_bkend_unpause();
 }
 
 /**
@@ -120,8 +136,8 @@ void synth_bkend_getParam(void *data, synth_param param) {
  * @param stream System buffer that will be played
  * @param len How many bytes there are in that buffer
  */
-static void synth_sdl2_bkend_callback(void *arg, void *stream, int len) {
-    int i, l;
+static void synth_sdl2_bkend_callback(void *arg, Uint8 *stream, int len) {
+    int i;
     Uint16 *samples;
     Uint32 *left;
     Uint32 *right;
@@ -132,14 +148,22 @@ static void synth_sdl2_bkend_callback(void *arg, void *stream, int len) {
     len >>= 1;
     // Hack that requires unaligned access?
     // Get access to each buffer separatelly
-    left = (Uint32*)(((Uint8*)stream)+2);
     right= (Uint32*)(stream);
+    left = (Uint32*)(stream+2);
     
     i = 0;
     // Clear the audio buffer
     while (i < len)
         samples[i++] = 0;
     
-    // TODO output data
+    i = 0;
+    while (i < len / 2 && sb_pos < sb_len) {
+        right[i] = synth_buffer[sb_pos++];
+        left[i] = synth_buffer[sb_pos++];
+        i++;
+    }
+    
+    if (sb_pos >= sb_len)
+        synth_bkend_pause();
 }
 

@@ -29,13 +29,14 @@ CC = gcc
 #===============================================================================
 # Define LFLAGS (linker flags)
 #===============================================================================
-  LFLAGS = -lm -lSDL2main -lSDL2
+  LFLAGS = 
+  SDLLFLAGS = -lm -lSDL2main -lSDL2
 #===============================================================================
 
 #===============================================================================
 # Define where source files can be found and where objects and binary are output
 #===============================================================================
-  VPATH = src
+  VPATH = src:tst
   OBJDIR = obj
   BINDIR = bin
 #===============================================================================
@@ -43,20 +44,26 @@ CC = gcc
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS = $(OBJDIR)/main.o
+  OBJS = $(OBJDIR)/synth_sdl2_backend.o
 #===============================================================================
 
 #===============================================================================
 # Define default compilation rule
 #===============================================================================
-all: MKDIRS $(BINDIR)/$(TARGET)
+all: MKDIRS $(BINDIR)/$(TARGET).a tests
 #===============================================================================
 
-$(BINDIR)/$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(BINDIR)/$(TARGET) $(OBJS) $(LFLAGS)
+$(BINDIR)/$(TARGET).a: $(OBJS)
+	rm -f $(BINDIR)/$(TARGET).a
+	ar -cvq $(BINDIR)/$(TARGET).a $(OBJS)
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+tests: $(BINDIR)/play_hardcoded_buffer
+
+$(BINDIR)/play_hardcoded_buffer: $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a
+	$(CC) $(CFLAGS) -o $(BINDIR)/play_hardcoded_buffer $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
 MKDIRS: | $(OBJDIR)
 
@@ -65,6 +72,6 @@ $(OBJDIR):
 	mkdir -p $(BINDIR)
 
 clean:
-	rm -f $(OBJS) $(BINDIR)/$(TARGET)
+	rm -f $(OBJS) $(BINDIR)/$(TARGET).a
 	rm -rf $(OBJDIR) $(BINDIR)
 

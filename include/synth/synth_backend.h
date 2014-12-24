@@ -6,6 +6,9 @@
 #ifndef __SYNTH_BACKEND_H_
 #define __SYNTH_BACKEND_H_
 
+#include <synth/synth_errors.h>
+#include <synth/synth_types.h>
+
 /**
  * Setup the backend
  * 
