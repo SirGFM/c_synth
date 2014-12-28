@@ -1,4 +1,5 @@
-c_sdl2_synth
+c_synth
 ============
 
-Simple chiptune-ish synthesizer written in C and using SDL2.
+Simple chiptune-ish synthesizer written in C.
+Currently, there's only a backend for SDL2.
