@@ -5,6 +5,11 @@
 #define __SYNTH_TYPES_H_
 
 typedef enum {
+    SYNTH_TRUE = 0,
+    SYNTH_FALSE
+} synth_bool;
+
+typedef enum {
     SYNTH_MAX_PARAM = 0
 } synth_param;
 
@@ -19,18 +24,20 @@ typedef enum {
 } synth_wave;
 
 typedef enum {
-    N_C = 0,
-    N_Cs,
+    N_REST = 0,
+    N_C,
+    N_CS,
     N_D,
-    N_Ds,
+    N_DS,
     N_E,
     N_F,
-    N_Fs
+    N_FS,
     N_G,
-    N_Gs,
+    N_GS,
     N_A,
-    N_As,
+    N_AS,
     N_B,
+    N_LOOP,
 } synth_note;
 
 #endif

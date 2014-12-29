@@ -10,6 +10,7 @@ typedef enum {
     SYNTH_OK = 0,
     SYNTH_ALREADY_STARTED,
     SYNTH_INTERNAL_ERR,
+    SYNTH_MEM_ERR,
     SYNTH_MAX_ERR
 } synth_err;
 

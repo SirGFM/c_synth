@@ -33,6 +33,13 @@ void synth_bkend_pause();
 void synth_bkend_unpause();
 
 /**
+ * Get the set frequency
+ * 
+ * @return Returns the frequency
+ */
+int synth_bkend_getFrequency();
+
+/**
  * Fill up the buffer that shall be outputed.
  *
  * @param data Data to be fed the buffer

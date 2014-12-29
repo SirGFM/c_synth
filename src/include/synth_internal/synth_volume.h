@@ -16,11 +16,30 @@ struct stSynthVolume {
      */
     char fin;
 };
-
 typedef struct stSynthVolume synthVolume;
 
+/**
+ * Initialize the volume with default values
+ * 
+ * @param vol The volume
+ */
 void synth_vol_init(synthVolume *vol);
+
+/**
+ * Clean up the volume (unnecessary, for now)
+ * 
+ * @param vol The volume
+ */
 void synth_vol_clean(synthVolume *vol);
+
+/**
+ * Set the volume as a simple linear function
+ * 
+ * @param vol The volume
+ * @param ini The initial volume
+ * @param fin The final volume
+ */
+void synth_vol_setLinear(synthVolume *vol, int ini, int fin);
 
 /**
  * Gets the volume at a given percentage of the note
