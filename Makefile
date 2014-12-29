@@ -12,8 +12,8 @@ CC = gcc
 # Define CFLAGS (compiler flags)
 #===============================================================================
 # Add all warnings and default include path
-  CFLAGS = -Wall -I"./include"
-# Add architecture flah
+  CFLAGS = -Wall -I"./include" -I"./src/include"
+# Add architecture flag
   ARCH=$(shell uname -m)
   ifeq ($(ARCH), x86_64)
     CFLAGS += -m64
