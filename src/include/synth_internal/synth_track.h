@@ -31,7 +31,7 @@ struct stSynthTrack {
     /**
      * Array of notes
      */
-    synthNote *notes;
+    synthNote **notes;
 };
 typedef struct stSynthTrack synthTrack;
 
@@ -48,7 +48,7 @@ synth_err synth_track_init(synthTrack *track);
  * 
  * @param track The track
  */
-synth_err synth_track_clean(synthTrack *track);
+void synth_track_clean(synthTrack *track);
 
 /**
  * Adds a single note to the track and expand it, if necessary
@@ -84,12 +84,15 @@ int synth_track_getLength(synthTrack *track);
 synth_bool synth_track_didFinish(synthTrack *track);
 
 /**
- * Synthesize part of this track to the current backend
+ * Synthesize part of this track to a buffer
  * 
  * @param track Track to be synthesized
- * @param time How many samples there still are in this "slice"
+ * @param samples How many samples there still are in this "slice"
+ * @param left Left output buffer
+ * @param right Right output buffer
  */
-void synth_track_synthesize(synthTrack *track, int time);
+void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
+    uint16_t *right);
 
 #endif
 

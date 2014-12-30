@@ -164,8 +164,7 @@ void synth_note_setJumpPosition(synthNote *note, int pos);
 int synth_note_jumpToPosition(synthNote *note);
 
 /**
- * Check if the note is a loop and if there are any jumps left. As soon as
- * this returns SYNTH_FALSE, the note will be reset
+ * Check if the note is a loop and if there are any jumps left.
  *
  * @param note The note
  * @return Either SYNTH_TRUE or SYNTH_FALSE
@@ -173,13 +172,31 @@ int synth_note_jumpToPosition(synthNote *note);
 synth_bool synth_note_doLoop(synthNote *note);
 
 /**
- * Synthesize part of this note to the current backend
+ * Check whether a note finished playing or not
+ *
+ * @param note The note
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_note_didFinish(synthNote *note);
+
+/**
+ * Reset the note so it can be played again at a later time
+ * 
+ * @param note The note
+ */
+void synth_note_reset(synthNote *note);
+
+/**
+ * Synthesize part of this note to a buffer
  * 
  * @param note Note to be synthesized
- * @param time How many samples there still are in this "slice"
+ * @param samples How many samples there still are in this "slice"
+ * @param left Left output buffer
+ * @param right Right output buffer
  * @return How many samples from the next note should be synthesized (leftover)
  */
-int synth_note_synthesize(synthNote *note, int time);
+int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
+    uint16_t *right);
 
 #endif
 

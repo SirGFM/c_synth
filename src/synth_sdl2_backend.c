@@ -52,7 +52,7 @@ synth_err synth_bkend_setup(int freq, int chan) {
     dev = SDL_OpenAudioDevice(NULL, 0, &desired, &spec, 0);
     SYNTH_ASSERT_ERR(dev > 0, SYNTH_INTERNAL_ERR);
     
-    SDL_PauseAudioDevice(dev, 0);
+    //SDL_PauseAudioDevice(dev, 0);
     setuped = 1;
     rv = SYNTH_OK;
 __err:
@@ -89,6 +89,15 @@ void synth_bkend_pause() {
  */
 void synth_bkend_unpause() {
     SDL_PauseAudioDevice(dev, 0);
+}
+
+/**
+ * Get the set frequency
+ * 
+ * @return Returns the frequency
+ */
+int synth_bkend_getFrequency() {
+    return spec.freq;
 }
 
 /**

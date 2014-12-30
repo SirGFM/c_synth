@@ -4,6 +4,8 @@
 #ifndef __SYNTH_TYPES_H_
 #define __SYNTH_TYPES_H_
 
+#include <stdint.h>
+
 typedef enum {
     SYNTH_TRUE = 0,
     SYNTH_FALSE
@@ -24,8 +26,7 @@ typedef enum {
 } synth_wave;
 
 typedef enum {
-    N_REST = 0,
-    N_C,
+    N_C = 0,
     N_CS,
     N_D,
     N_DS,
@@ -37,6 +38,7 @@ typedef enum {
     N_A,
     N_AS,
     N_B,
+    N_REST,
     N_LOOP,
 } synth_note;
 

@@ -9,6 +9,26 @@
 #include <synth_internal/synth_volume.h>
 
 /**
+ * Static array with note frequencies; to get lower octaves one, right-shift
+ * by the number of octaves going down
+ */
+static int note_frequency[] = 
+{
+ 4186, // C 8
+ 4435, // C#8
+ 4699, // D 8
+ 4978, // D#8
+ 5274, // E 8
+ 5588, // F 8
+ 5920, // F#8
+ 6272, // G 8
+ 6645, // G#8
+ 7040, // A 8
+ 7459, // A#8
+ 7902  // B 8
+};
+
+/**
  * Initialize everything to default values.
  * 
  * @param note The note
@@ -81,7 +101,7 @@ void synth_note_setDuration(synthNote *note, int bpm, int duration) {
     
     // Reset the note length
     note->len = 0;
-    SYNTH_ASSERT(bmp > 0);
+    SYNTH_ASSERT(bpm > 0);
     
     // Get the global frequency
     freq = synth_bkend_getFrequency();
@@ -102,7 +122,7 @@ void synth_note_setDuration(synthNote *note, int bpm, int duration) {
         nSamples >>= 1;
     }
     
-__ret:
+__err:
     return;
 }
 
@@ -133,7 +153,7 @@ void synth_note_setNote(synthNote *note, synth_note N) {
  * @return The current musical note
  */
 synth_note synth_note_getNote(synthNote *note) {
-    return note->note
+    return note->note;
 }
 
 /**
@@ -191,48 +211,110 @@ int synth_note_jumpToPosition(synthNote *note) {
 }
 
 /**
- * Check if the note is a loop and if there are any jumps left. As soon as
- * this returns SYNTH_FALSE, the note will be reset
+ * Check if the note is a loop and if there are any jumps left.
  *
  * @param note The note
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
 synth_bool synth_note_doLoop(synthNote *note) {
-    if (note->note != N_LOOP)
+    if (note->note != N_LOOP || note->numIterations >= note->len)
         return SYNTH_FALSE;
-    else if (note->numIterations >= note->len) {
-        note->numIterations = 0;
-        return SYNTH_FALSE;
-    }
     return SYNTH_TRUE;
 }
 
 /**
- * Synthesize part of this note to the current backend
+ * Check whether a note finished playing or not
+ *
+ * @param note The note
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_note_didFinish(synthNote *note) {
+    if (note->pos >= note->len || note->note == N_LOOP)
+        return SYNTH_TRUE;
+    return SYNTH_FALSE;
+}
+
+/**
+ * Reset the note so it can be played again at a later time
+ * 
+ * @param note The note
+ */
+void synth_note_reset(synthNote *note) {
+    if (note->note == N_LOOP)
+        note->numIterations = 0;
+    else
+        note->pos = 0;
+}
+
+/**
+ * Synthesize part of this note to a buffer
  * 
  * @param note Note to be synthesized
- * @param time How many samples there still are in this "slice"
+ * @param samples How many samples there still are in this "slice"
+ * @param left Left output buffer
+ * @param right Right output buffer
  * @return How many samples from the next note should be synthesized (leftover)
  */
-int synth_note_synthesize(synthNote *note, int time) {
+int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
+    uint16_t *right) {
     int rem;
     
     // Set the remainder for a case it returns before actually modifing it
-    rem = time;
+    rem = samples;
     // Simply pass through, if it's a "loop note"
     SYNTH_ASSERT(note->note != N_LOOP);
     
-    // If last time we completed the note, reset it and return
-    if (note->pos >= note->len) {
-        note->pos = 0;
-        goto _err;
+    // Actually buffer the note
+    if (note->note == N_REST) {
+        note->pos += rem;
+        if (note->pos > note->len) {
+            rem = note->pos - note->len;
+            note->pos = note->len;
+        }
+        else
+            rem = 0;
+    }
+    else {
+        int freq, spc, i;
+        
+        // See note bellow about samples per cycle
+        freq = synth_bkend_getFrequency();
+        spc = freq / (note_frequency[note->note] >> (8 - note->octave));
+        
+        i = 0;
+        while (i < rem && note->pos + i  < note->len) {
+            int perc;
+            char amp;
+            
+            // Get the position in the cycle as a 'percentage' in [0,1024)
+            perc = (note->pos + i) % spc;
+            perc = (perc << 10) / spc;
+            
+            // Get the amplitude in [0, 255] for the wave at that point
+            switch (note->wave) {
+                case W_SQUARE:
+                    amp = (perc < 512)?synth_vol_getVolume(note->vol, perc):0;
+                    break;
+                // TODO other waves
+                // TODO modularize
+                default:
+                    amp = 0;
+            }
+            
+            // Pan the sound and buffer it
+            if (note->pos + i < note->keyoff) {
+                left[i] += 0x7fff * (100 - note->pan) * amp / 25600;
+                right[i] += 0x7fff * note->pan * amp / 25600;
+            }
+            
+            i++;
+        }
+        
+        rem -= i;
+        note->pos += i;
     }
     
-    // Actually buffer the note
-    // TODO
 __err:
     return rem;
 }
-
-#endif
 

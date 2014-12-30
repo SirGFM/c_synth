@@ -36,10 +36,18 @@ void synth_vol_clean(synthVolume *vol);
  * Set the volume as a simple linear function
  * 
  * @param vol The volume
+ * @param amp The volume's amplitude
+ */
+void synth_vol_setConst(synthVolume *vol, char amp);
+
+/**
+ * Set the volume as a simple linear function
+ * 
+ * @param vol The volume
  * @param ini The initial volume
  * @param fin The final volume
  */
-void synth_vol_setLinear(synthVolume *vol, int ini, int fin);
+void synth_vol_setLinear(synthVolume *vol, char ini, char fin);
 
 /**
  * Gets the volume at a given percentage of the note
