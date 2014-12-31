@@ -26,7 +26,8 @@ typedef enum {
 } synth_wave;
 
 typedef enum {
-    N_C = 0,
+    N_CB = 0,   // Required for decreasing octave
+    N_C,
     N_CS,
     N_D,
     N_DS,
@@ -38,6 +39,7 @@ typedef enum {
     N_A,
     N_AS,
     N_B,
+    N_BS,   // Required for increasing octave
     N_REST,
     N_LOOP,
 } synth_note;
