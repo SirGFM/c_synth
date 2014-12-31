@@ -110,7 +110,7 @@ void synth_bkend_fillBuffer(void *data, int len) {
     // TODO use a nice ciclic buffer
     if (len > sb_len + sb_pos) {
         synth_buffer = realloc(synth_buffer, len + sb_pos);
-        sb_len = sb_pos + len;
+        sb_len = sb_pos + len / sizeof(Uint16);
     }
     memcpy(synth_buffer + sb_pos, data, len);
     synth_bkend_unpause();
@@ -168,7 +168,8 @@ static void synth_sdl2_bkend_callback(void *arg, Uint8 *stream, int len) {
         i++;
     }
     
-    if (sb_pos >= sb_len)
+    if (sb_pos >= sb_len) {
         synth_bkend_pause();
+    }
 }
 

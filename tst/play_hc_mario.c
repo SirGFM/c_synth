@@ -95,6 +95,9 @@ int main(int argc, char *argv[]) {
     synth_track_synthesize(&track, BUFFERLEN, left, right);
     
     data = (uint16_t*)malloc(sizeof(uint16_t)*BUFFERLEN*2);
+    SYNTH_ASSERT_ERR(data != NULL, SYNTH_MEM_ERR);
+    
+    memset(data, 0x0, BUFFERLEN*sizeof(uint16_t)*2);
     
     i = 0;
     while (i < BUFFERLEN) {
@@ -105,7 +108,7 @@ int main(int argc, char *argv[]) {
     
     synth_bkend_fillBuffer(data, sizeof(uint16_t)*BUFFERLEN*2);
     
-    SDL_Delay((TIME+1)*1000);
+    SDL_Delay((TIME)*1000);
     
     rv = 0;
 __err:
