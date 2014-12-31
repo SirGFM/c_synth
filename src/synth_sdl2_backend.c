@@ -148,17 +148,11 @@ void synth_bkend_getParam(void *data, synth_param param) {
 static void synth_sdl2_bkend_callback(void *arg, Uint8 *stream, int len) {
     int i;
     Uint16 *samples;
-    Uint32 *left;
-    Uint32 *right;
     
     // Access each sample as a 16-bits word
     samples = (Uint16*)stream;
     // fix the  len to this new access method
     len >>= 1;
-    // Hack that requires unaligned access?
-    // Get access to each buffer separatelly
-    right= (Uint32*)(stream);
-    left = (Uint32*)(stream+2);
     
     i = 0;
     // Clear the audio buffer
@@ -167,8 +161,10 @@ static void synth_sdl2_bkend_callback(void *arg, Uint8 *stream, int len) {
     
     i = 0;
     while (i < len / 2 && sb_pos < sb_len) {
-        right[i] = synth_buffer[sb_pos++];
-        left[i] = synth_buffer[sb_pos++];
+        // left
+        samples[i*2+0] = synth_buffer[sb_pos++];
+        // right
+        samples[i*2+1] = synth_buffer[sb_pos++];
         i++;
     }
     

@@ -83,7 +83,7 @@ void synth_note_setOctave(synthNote *note, char octave) {
         octave = 1;
     else if (octave > 8)
         octave = 8;
-    note->octave = octave;
+    note->octave = octave-1;
 }
 
 /**
@@ -295,7 +295,25 @@ int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
                 case W_SQUARE:
                     amp = (perc < 512)?synth_vol_getVolume(note->vol, perc):0;
                     break;
-                // TODO other waves
+                case W_PULSE_12_5:
+                    amp = (perc < 128)?synth_vol_getVolume(note->vol, perc):0;
+                    break;
+                case W_PULSE_25:
+                    amp = (perc < 256)?synth_vol_getVolume(note->vol, perc):0;
+                    break;
+                case W_PULSE_75:
+                    amp = (perc < 768)?synth_vol_getVolume(note->vol, perc):0;
+                    break;
+                case W_TRIANGLE: {
+                    int abs;
+                    
+                    abs = (perc << 1) - 1024;
+                    abs = (abs >= 0)?abs:-abs;
+                    abs = 1024 - abs;
+                    if (abs > 0)
+                        amp = (synth_vol_getVolume(note->vol, perc) << 10)
+                            / abs;
+                } break;
                 // TODO modularize
                 default:
                     amp = 0;
