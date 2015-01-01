@@ -27,9 +27,25 @@ struct stString {
 
 struct stSynthLexCtx {
     /**
+     * Last read character
+     */
+    char lastChar;
+    /**
      * Whether it's currently processing a file or a string
      */
     synth_bool isFile;
+    /**
+     * Current line on the stream
+     */
+    int line;
+    /**
+     * Position inside the current line
+     */
+    int linePos;
+    /**
+     * Integer value gotten when reading a token
+     */
+    int ivalue;
     /**
      * MML's source; either a file descriptor or a string
      */
@@ -37,10 +53,6 @@ struct stSynthLexCtx {
         FILE *file;
         struct stString str;
     };
-    /**
-     * Integer value gotten when reading a token
-     */
-    int ivalue;
 };
 
 /**
@@ -63,6 +75,10 @@ synth_err synth_lex_tokenizef(synthLexCtx **ctx, char *filename) {
     tmp->isFile = SYNTH_TRUE;
     tmp->file = fopen(filename, "rt");
     SYNTH_ASSERT_ERR(tmp->file, SYNTH_OPEN_FILE_ERR);
+    
+    tmp->lastChar = '\0';
+    tmp->line = 0;
+    tmp->linePos = 0;
     
     // Set return stuff
     *ctx = tmp;
@@ -147,7 +163,7 @@ synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx) {
     rv = SYNTH_OK;
     
     if (synth_lex_isSetBPM(ctx) == SYNTH_TRUE)
-        *tk = T_SET_BMP;
+        *tk = T_SET_BPM;
     else if (synth_lex_isSetDuration(ctx) == SYNTH_TRUE)
         *tk = T_SET_DURATION;
     else if (synth_lex_isSetOctave(ctx) == SYNTH_TRUE)
@@ -178,6 +194,8 @@ synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx) {
         *tk = T_DURATION;
     else if (synth_lex_isNumber(ctx) == SYNTH_TRUE)
         *tk = T_NUMBER;
+    else if (synth_lex_didFinish(ctx) == SYNTH_TRUE)
+        *tk = T_DONE;
     else
         rv = SYNTH_INVALID_TOKEN;
     
@@ -208,11 +226,11 @@ static synth_err synth_lex_getRawChar(char *c, synthLexCtx *ctx) {
     if (ctx->isFile == SYNTH_TRUE) {
         // Read a character from the file
         tmp = fgetc(ctx->file);
-        SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_EOF_ERR);
+        SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_EOF);
     }
     else {
         // Get the current character and increase the position
-        SYNTH_ASSERT_ERR(ctx->str.pos < ctx->str.len, SYNTH_EOS_ERR);
+        SYNTH_ASSERT_ERR(ctx->str.pos < ctx->str.len, SYNTH_EOS);
         tmp = ctx->str.str[ctx->str.pos];
         ctx->str.pos++;
     }
@@ -242,6 +260,15 @@ synth_err synth_lex_getChar(char *c, synthLexCtx *ctx) {
         // Read a character from the 'stream'
         rv = synth_lex_getRawChar(&tmp, ctx);
         SYNTH_ASSERT(rv == SYNTH_OK);
+        
+        // Store context info
+        ctx->lastChar = tmp;
+        if (tmp != '\n' && tmp != '\r')
+            ctx->linePos++;
+        else if (tmp == '\n') {
+            ctx->linePos = 0;
+            ctx->line++;
+        }
         
         if (isCommentary <= 1) {
             if (tmp == '/')
@@ -280,6 +307,7 @@ void synth_lex_ungetChar(synthLexCtx *ctx, char c) {
         SYNTH_ASSERT(ctx->str.pos > 0);
         ctx->str.pos--;
     }
+    ctx->linePos--;
 __err:
     return;
 }
@@ -624,7 +652,7 @@ synth_bool synth_lex_isSetWave(synthLexCtx *ctx) {
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
-    if (c != '%') {
+    if (c != '%' && c != '@') {
         synth_lex_ungetChar(ctx, c);
         rv = SYNTH_FALSE;
     }
@@ -658,6 +686,7 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
         case 'g': ctx->ivalue = N_G; break;
         case 'a': ctx->ivalue = N_A; break;
         case 'b': ctx->ivalue = N_B; break;
+        case 'r': ctx->ivalue = N_REST; break;
         default:
             // Something not a note was read
             SYNTH_ASSERT_ERR(0, SYNTH_FALSE);
@@ -697,7 +726,7 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
     synth_err srv;
     char c;
     
-    ctx->ivalue = 1;
+    ctx->ivalue = 0;
     
     // Get the current character
     srv = synth_lex_getChar(&c, ctx);
@@ -708,16 +737,27 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
         if (c != '.')
             break;
         
-        ctx->ivalue = (ctx->ivalue << 1) | ctx->ivalue;
+        ctx->ivalue = (ctx->ivalue << 1) | 1;
         
         srv = synth_lex_getChar(&c, ctx);
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     }
     
     rv = SYNTH_TRUE;
-    // Return that last non-digit char
+    // Return that last non-dot char
     synth_lex_ungetChar(ctx, c);
 __err:
+    if (rv != SYNTH_TRUE) {
+        // Return the last invalid char read
+        synth_lex_ungetChar(ctx, c);
+        // Now, return any digit that was read
+        while (ctx->ivalue > 0) {
+            c = '.';
+            ctx->ivalue >>= 1;
+            
+            synth_lex_ungetChar(ctx, c);
+        }
+    }
     return rv;
 }
 
@@ -752,6 +792,7 @@ synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     }
     
+    rv = SYNTH_TRUE;
     // Return that last non-digit char
     synth_lex_ungetChar(ctx, c);
 __err:
@@ -767,5 +808,90 @@ __err:
         }
     }
     return rv;
+}
+
+/**
+ * Check if there are any more characters in the 'stream' or not
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_lex_didFinish(synthLexCtx *ctx) {
+    if (ctx->isFile == SYNTH_TRUE) {
+        if (feof(ctx->file)  != 0)
+            return SYNTH_TRUE;
+        else {
+            char c;
+            
+            if (synth_lex_getChar(&c, ctx) == SYNTH_EOF)
+                return SYNTH_TRUE;
+            else {
+                synth_lex_ungetChar(ctx, c);
+                return SYNTH_FALSE;
+            }
+        }
+    }
+    else {
+        if (ctx->str.pos >= ctx->str.len
+            || (ctx->str.pos == ctx->str.len - 1
+            && ctx->str.str[ctx->str.pos] == '\0'))
+            return SYNTH_TRUE;
+        else
+            return SYNTH_FALSE;
+    }
+}
+
+/**
+ * Returns a printable string for a given token
+ * 
+ * @param tk The token
+ * @return A null-terminated string representing the token
+ */
+char *synth_lex_printToken(synth_token tk) {
+    switch (tk) {
+        case T_SET_BPM: return "set bpm"; break;
+        case T_SET_DURATION: return "set duration"; break;
+        case T_SET_OCTAVE: return "set octave"; break;
+        case T_SET_REL_OCTAVE: return "set relative octave"; break;
+        case T_SET_LOOPPOINT: return "set loop point"; break;
+        case T_END_OF_TRACK: return "set end of track"; break;
+        case T_SET_VOLUME: return "set volume"; break;
+        case T_SET_REL_VOLUME: return "set relative volume"; break;
+        case T_SET_KEYOFF: return "set keyoff"; break;
+        case T_SET_PAN: return "set pan"; break;
+        case T_SET_LOOP_START: return "set loop start"; break;
+        case T_SET_LOOP_END: return "set loop end"; break;
+        case T_SET_WAVE: return "set wave"; break;
+        case T_NOTE: return "note"; break;
+        case T_DURATION: return "duration"; break;
+        case T_NUMBER: return "number"; break;
+        case T_DONE: return "done"; break;
+        default: return "unkown token";
+    }
+}
+
+/**
+ * Get the current line number
+ * 
+ * @param ctx The contex
+ */
+int synth_lex_getCurrentLine(synthLexCtx *ctx) {
+    return ctx->line;
+}
+
+/**
+ * Get the current position inside the line
+ * 
+ * @param ctx The contex
+ */
+int synth_lex_getCurrentLinePosition(synthLexCtx *ctx) {
+    return ctx->linePos;
+}
+
+/**
+ * Get the last chracter read (that probably triggered an error)
+ */
+char synth_lex_getLastCharacter(synthLexCtx *ctx) {
+    return ctx->lastChar;
 }
 

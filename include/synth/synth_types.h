@@ -45,7 +45,7 @@ typedef enum {
 } synth_note;
 
 typedef enum {
-    T_SET_BMP = 0,
+    T_SET_BPM = 0,
     T_SET_DURATION,
     T_SET_OCTAVE,
     T_SET_REL_OCTAVE,
@@ -61,6 +61,7 @@ typedef enum {
     T_NOTE,
     T_DURATION,
     T_NUMBER,
+    T_DONE,
     TK_MAX
 } synth_token;
 

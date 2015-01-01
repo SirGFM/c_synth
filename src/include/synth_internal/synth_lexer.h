@@ -188,5 +188,38 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx);
  */
 synth_bool synth_lex_isNumber(synthLexCtx *ctx);
 
+/**
+ * Check if there are any more characters in the 'stream' or not
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_lex_didFinish(synthLexCtx *ctx);
+
+/**
+ * Returns a printable string for a given token
+ * 
+ * @param tk The token
+ * @return A null-terminated string representing the token
+ */
+char *synth_lex_printToken(synth_token tk);
+
+/**
+ * Get the current line number
+ * 
+ * @param ctx The contex
+ */
+int synth_lex_getCurrentLine(synthLexCtx *ctx);
+/**
+ * Get the current position inside the line
+ * 
+ * @param ctx The contex
+ */
+int synth_lex_getCurrentLinePosition(synthLexCtx *ctx);
+/**
+ * Get the last chracter read (that probably triggered an error)
+ */
+char synth_lex_getLastCharacter(synthLexCtx *ctx);
+
 #endif
 
