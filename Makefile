@@ -1,19 +1,19 @@
 
-CC = gcc
+CC := gcc
 .SUFFIXES=.c .o
 
 #===============================================================================
 # Define compilation target
 #===============================================================================
-  TARGET = synth
+  TARGET := synth
 #===============================================================================
 
 #===============================================================================
 # Set OS flag
 #===============================================================================
-  OS=$(shell uname)
+  OS := $(shell uname)
   ifeq ($(OS), MINGW32_NT-6.1)
-    OS=Win
+    OS := Win
   endif
 #===============================================================================
 
@@ -21,25 +21,25 @@ CC = gcc
 # Define CFLAGS (compiler flags)
 #===============================================================================
 # Add all warnings and default include path
-  CFLAGS = -Wall -I"./include" -I"./src/include"
+  CFLAGS := -Wall -I"./include" -I"./src/include"
 # Add architecture flag
-  ARCH=$(shell uname -m)
+  ARCH := $(shell uname -m)
   ifeq ($(ARCH), x86_64)
-    CFLAGS += -m64
+    CFLAGS := $(CFLAGS) -m64
   else
-    CFLAGS += -m32
+    CFLAGS := $(CFLAGS) -m32
   endif
 # Add debug flags
   ifneq ($(RELEASE), yes)
-    CFLAGS += -O0 -g
+    CFLAGS := $(CFLAGS) -O0 -g
   endif
 #===============================================================================
 
 #===============================================================================
 # Define LFLAGS (linker flags)
 #===============================================================================
-  LFLAGS = 
-  SDLLFLAGS = -lm -lSDL2main -lSDL2
+  LFLAGS := 
+  SDLLFLAGS := -lm -lSDL2main -lSDL2
   ifeq ($(OS), Win)
     SDLLFLAGS := -lmingw32 $(SDLLFLAGS)
   endif
@@ -48,19 +48,19 @@ CC = gcc
 #===============================================================================
 # Define where source files can be found and where objects and binary are output
 #===============================================================================
-  VPATH = src:tst
-  OBJDIR = obj
-  BINDIR = bin
+  VPATH := src:tst
+  OBJDIR := obj
+  BINDIR := bin
 #===============================================================================
 
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS = $(OBJDIR)/synth_lexer.o \
-         $(OBJDIR)/synth_note.o \
-         $(OBJDIR)/synth_sdl2_backend.o \
-         $(OBJDIR)/synth_track.o \
-         $(OBJDIR)/synth_volume.o
+  OBJS := $(OBJDIR)/synth_lexer.o \
+          $(OBJDIR)/synth_note.o \
+          $(OBJDIR)/synth_sdl2_backend.o \
+          $(OBJDIR)/synth_track.o \
+          $(OBJDIR)/synth_volume.o
 #===============================================================================
 
 #===============================================================================
