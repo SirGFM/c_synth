@@ -141,19 +141,57 @@ __err:
  * @param ctx The context
  * @return Error code
  */
-synth_err synth_lex_getToken(synthToken *tk, synthLexCtx *ctx) {
+synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx) {
     synth_err rv;
     
-    // TODO implement
-    SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+    rv = SYNTH_OK;
     
-    if (0)
-        {}
+    if (synth_lex_isSetBPM(ctx) == SYNTH_TRUE)
+        *tk = T_SET_BMP;
+    else if (synth_lex_isSetDuration(ctx) == SYNTH_TRUE)
+        *tk = T_SET_DURATION;
+    else if (synth_lex_isSetOctave(ctx) == SYNTH_TRUE)
+        *tk = T_SET_OCTAVE;
+    else if (synth_lex_isSetRelOctave(ctx) == SYNTH_TRUE)
+        *tk = T_SET_REL_OCTAVE;
+    else if (synth_lex_isSetLoopPoint(ctx) == SYNTH_TRUE)
+        *tk = T_SET_LOOPPOINT;
+    else if (synth_lex_isEndOfTrack(ctx) == SYNTH_TRUE)
+        *tk = T_END_OF_TRACK;
+    else if (synth_lex_isSetVolume(ctx) == SYNTH_TRUE)
+        *tk = T_SET_VOLUME;
+    else if (synth_lex_isSetRelVolume(ctx) == SYNTH_TRUE)
+        *tk = T_SET_REL_VOLUME;
+    else if (synth_lex_isSetKeyoff(ctx) == SYNTH_TRUE)
+        *tk = T_SET_KEYOFF;
+    else if (synth_lex_isSetPan(ctx) == SYNTH_TRUE)
+        *tk = T_SET_PAN;
+    else if (synth_lex_isSetLoopStart(ctx) == SYNTH_TRUE)
+        *tk = T_SET_LOOP_START;
+    else if (synth_lex_isSetLoopEnd(ctx) == SYNTH_TRUE)
+        *tk = T_SET_LOOP_END;
+    else if (synth_lex_isSetWave(ctx) == SYNTH_TRUE)
+        *tk = T_SET_WAVE;
+    else if (synth_lex_isNote(ctx) == SYNTH_TRUE)
+        *tk = T_NOTE;
+    else if (synth_lex_isDotDuration(ctx) == SYNTH_TRUE)
+        *tk = T_DURATION;
+    else if (synth_lex_isNumber(ctx) == SYNTH_TRUE)
+        *tk = T_NUMBER;
     else
         rv = SYNTH_INVALID_TOKEN;
     
-__err:
     return rv;
+}
+
+/**
+ * Get the last read integer value
+ * 
+ * @param ctx The context
+ * @return The value
+ */
+int synth_lex_getCurValuei(synthLexCtx *ctx) {
+    return ctx->ivalue;
 }
 
 /**
@@ -182,7 +220,7 @@ static synth_err synth_lex_getRawChar(char *c, synthLexCtx *ctx) {
     // Return the read character
     *c = (char)tmp;
     rv = SYNTH_OK;
-_err:
+__err:
     return rv;
 }
 
@@ -209,20 +247,20 @@ synth_err synth_lex_getChar(char *c, synthLexCtx *ctx) {
             if (tmp == '/')
                 isCommentary++;
             else {
-                isComentary = 0;
+                isCommentary = 0;
                 // Stop if it's a valid printable non-whitespace character
                 if (tmp >= '!' && tmp <= '}')
                     break;
             }
         }
         // If it's a commentary, ignore until a newline
-        else if (isComentary == 2 && tmp == '\n')
+        else if (isCommentary == 2 && tmp == '\n')
             isCommentary = 0;
     }
     
     *c = tmp;
     rv = SYNTH_OK;
-_err:
+__err:
     return rv;
 }
 
@@ -246,14 +284,20 @@ __err:
     return;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetBPM(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 't') {
@@ -266,14 +310,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetDuration(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 'l') {
@@ -286,14 +336,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetOctave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 'o') {
@@ -306,14 +362,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetRelOctave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c == '<') {
@@ -332,14 +394,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopPoint(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != '$') {
@@ -352,14 +420,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isEndOfTrack(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != ';') {
@@ -372,14 +446,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetVolume(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 'v') {
@@ -392,14 +472,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetRelVolume(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c == '(') {
@@ -418,14 +504,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetKeyoff(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 'q') {
@@ -438,14 +530,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetPan(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != 'p') {
@@ -458,14 +556,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopStart(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != '[') {
@@ -478,14 +582,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopEnd(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != ']') {
@@ -498,14 +608,20 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetWave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != '%') {
@@ -518,6 +634,12 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
@@ -525,8 +647,8 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     char mod = 0;
     
     // Get the current character
-    rv = synth_lex_getChar(&note, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&note, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     switch (note) {
         case 'c': ctx->ivalue = N_C; break;
@@ -537,12 +659,13 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
         case 'a': ctx->ivalue = N_A; break;
         case 'b': ctx->ivalue = N_B; break;
         default:
-            // Something not a note was read SYNTH_ASSERT_ERR(0, SYNTH_FALSE);
+            // Something not a note was read
+            SYNTH_ASSERT_ERR(0, SYNTH_FALSE);
     }
     
     // Try to read a modifier ('+' or '-')
-    rv = synth_lex_getChar(&mod, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&mod, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     if (mod == '+')
         ctx->ivalue++;
@@ -563,6 +686,12 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
@@ -571,8 +700,8 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
     ctx->ivalue = 1;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c == '.', SYNTH_FALSE);
     
     while (1) {
@@ -581,8 +710,8 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
         
         ctx->ivalue = (ctx->ivalue << 1) | ctx->ivalue;
         
-        rv = synth_lex_getChar(&c, ctx);
-        SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+        srv = synth_lex_getChar(&c, ctx);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     }
     
     rv = SYNTH_TRUE;
@@ -592,6 +721,12 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
@@ -600,8 +735,8 @@ synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
     ctx->ivalue = 0;
     
     // Get the current character
-    rv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c >= '0' && c <= '9', SYNTH_FALSE);
     
     // Get the integer part
@@ -613,8 +748,8 @@ synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
         ctx->ivalue = ctx->ivalue * 10 + (int)(c - '0');
         
         // Read the next one
-        rv = synth_lex_getChar(&c, ctx);
-        SYNTH_ASSERT_ERR(rv == SYNTH_OK, SYNTH_FALSE);
+        srv = synth_lex_getChar(&c, ctx);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     }
     
     // Return that last non-digit char

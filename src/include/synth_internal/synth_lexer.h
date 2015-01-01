@@ -48,7 +48,15 @@ void synth_lex_freeCtx(synthLexCtx **ctx);
  * @param ctx The context
  * @return Error code
  */
-synth_err synth_lex_getToken(synthToken *tk, synthLexCtx *ctx);
+synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx);
+
+/**
+ * Get the last read integer value
+ * 
+ * @param ctx The context
+ * @return The value
+ */
+int synth_lex_getCurValuei(synthLexCtx *ctx);
 
 /**
  * Read the character on the current position
@@ -67,21 +75,117 @@ synth_err synth_lex_getChar(char *c, synthLexCtx *ctx);
  */
 void synth_lex_ungetChar(synthLexCtx *ctx, char c);
 
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetBPM(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetDuration(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetOctave(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetRelOctave(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopPoint(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isEndOfTrack(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetVolume(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetRelVolume(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetKeyoff(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetPan(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopStart(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetLoopEnd(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isSetWave(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isNote(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isDotDuration(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
 synth_bool synth_lex_isNumber(synthLexCtx *ctx);
 
 #endif
