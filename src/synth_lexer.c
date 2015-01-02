@@ -709,10 +709,14 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     srv = synth_lex_getChar(&mod, ctx);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
-    if (mod == '+')
+    if (mod == '+') {
+        SYNTH_ASSERT_ERR(ctx->ivalue != N_REST, SYNTH_FALSE);
         ctx->ivalue++;
-    else if (mod == '-')
+    }
+    else if (mod == '-') {
+        SYNTH_ASSERT_ERR(ctx->ivalue != N_REST, SYNTH_FALSE);
         ctx->ivalue--;
+    }
     else
         // A note is valid even without the modifier, so simply return the char
         synth_lex_ungetChar(ctx, mod);

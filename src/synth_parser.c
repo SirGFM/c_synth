@@ -63,10 +63,6 @@ synth_err synth_parser_initParses(synthParserCtx **ctx, char *mml, int len) {
     rv = synth_lex_tokenizes(&(tmp->lexCtx), mml, len);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
-    // Check if the first token is the BPM
-    rv = synth_parser_getBPM(tmp);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    
     *ctx = tmp;
     rv = SYNTH_OK;
 __err:
@@ -94,10 +90,6 @@ synth_err synth_parser_initParsef(synthParserCtx **ctx, char *filename) {
     rv = synth_lex_tokenizef(&(tmp->lexCtx), filename);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
-    // Check if the first token is the BPM
-    rv = synth_parser_getBPM(tmp);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    
     *ctx = tmp;
     rv = SYNTH_OK;
 __err:
@@ -122,46 +114,6 @@ __err:
     return;
 }
 
-/**
- * Parse a new track from the context
- * 
- * @param track Track parsed
- * @param ctx The context
- * @return The error code
- */
-synth_err synth_parser_getTrack(synthTrack **track, synthParserCtx *ctx) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
-}
-
-/**
- * Parse the bpm. Not required, but must be at the start of the stream
- * 
- * @param ctx The context
- * @return The error code
- */
-synth_err synth_parser_getBPM(synthParserCtx *ctx) {
-    synth_err rv;
-    
-    rv = synth_lex_getToken(ctx->lexCtx);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    
-    if (synth_lex_lookupToken(ctx->lexCtx) == T_SET_BPM) {
-        // Try to read the BPM
-        rv = synth_lex_getToken(ctx->lexCtx);
-        SYNTH_ASSERT(rv == SYNTH_OK);
-        SYNTH_ASSERT_TOKEN(T_NUMBER);
-        
-        ctx->bpm = synth_lex_getValuei(ctx->lexCtx);
-        
-        // Get the next token
-        rv = synth_lex_getToken(ctx->lexCtx);
-    }
-    
-    rv = SYNTH_OK;
-__err:
-    return rv;
-}
-
 static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     synth_err rv;
             synthParserCtx *tmp = 0;
@@ -180,6 +132,41 @@ static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     tmp->wave = W_SQUARE;
     
     *ctx = tmp;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+synth_err synth_parser_audio(synthParserCtx *ctx);
+synth_err synth_parser_tracks(synthParserCtx *ctx);
+synth_err synth_parser_track(synthParserCtx *ctx);
+synth_err synth_parser_sequence(synthParserCtx *ctx);
+synth_err synth_parser_loop(synthParserCtx *ctx);
+synth_err synth_parser_mod(synthParserCtx *ctx);
+synth_err synth_parser_note(synthParserCtx *ctx);
+
+/**
+ * @param ctx The context
+ * @return The error code
+ */
+synth_err synth_parser_bpm(synthParserCtx *ctx) {
+    synth_err rv;
+    
+    rv = synth_lex_getToken(ctx->lexCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    if (synth_lex_lookupToken(ctx->lexCtx) == T_SET_BPM) {
+        // Try to read the BPM
+        rv = synth_lex_getToken(ctx->lexCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        SYNTH_ASSERT_TOKEN(T_NUMBER);
+        
+        ctx->bpm = synth_lex_getValuei(ctx->lexCtx);
+        
+        // Get the next token
+        rv = synth_lex_getToken(ctx->lexCtx);
+    }
+    
     rv = SYNTH_OK;
 __err:
     return rv;
