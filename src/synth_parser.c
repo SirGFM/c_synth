@@ -18,6 +18,27 @@ struct stSynthParserCtx {
      * Song BPM
      */
     int bpm;
+    /**
+     * Current octave
+     */
+    int octave;
+    /**
+     * Default duration (when not specified)
+     */
+    int duration;
+    // TODO volume!!
+    /**
+     * Current keyoff
+     */
+    int keyoff;
+    /**
+     * Current pan
+     */
+    int pan;
+    /**
+     * Current wave
+     */
+    synth_wave wave;
 };
 
 static synth_err synth_parser_initStruct(synthParserCtx **ctx);
@@ -150,6 +171,13 @@ static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     SYNTH_ASSERT_ERR(tmp, SYNTH_MEM_ERR);
     
     tmp->lexCtx = 0;
+    tmp->bpm = 60;
+    tmp->octave = 4;
+    tmp->duration = 4;
+    // TODO volume!!
+    tmp->keyoff = 75;
+    tmp->pan = 50;
+    tmp->wave = W_SQUARE;
     
     *ctx = tmp;
     rv = SYNTH_OK;
