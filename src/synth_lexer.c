@@ -43,6 +43,10 @@ struct stSynthLexCtx {
      */
     int linePos;
     /**
+     * Token read on the privous getToken call
+     */
+    synth_token lastToken;
+    /**
      * Integer value gotten when reading a token
      */
     int ivalue;
@@ -151,51 +155,60 @@ __err:
 }
 
 /**
+ * Get the token read on the previous getToken call
+ * 
+ * @param ctx The context
+ * @return The token that was read
+ */
+synth_token synth_lex_lookupToken(synthLexCtx *ctx) {
+    return ctx->lastToken;
+}
+
+/**
  * Get the next token on the context and its value (if any)
  * 
- * @param tk The token that was read
  * @param ctx The context
  * @return Error code
  */
-synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx) {
+synth_err synth_lex_getToken(synthLexCtx *ctx) {
     synth_err rv;
     
     rv = SYNTH_OK;
     
     if (synth_lex_isSetBPM(ctx) == SYNTH_TRUE)
-        *tk = T_SET_BPM;
+        ctx->lastToken = T_SET_BPM;
     else if (synth_lex_isSetDuration(ctx) == SYNTH_TRUE)
-        *tk = T_SET_DURATION;
+        ctx->lastToken = T_SET_DURATION;
     else if (synth_lex_isSetOctave(ctx) == SYNTH_TRUE)
-        *tk = T_SET_OCTAVE;
+        ctx->lastToken = T_SET_OCTAVE;
     else if (synth_lex_isSetRelOctave(ctx) == SYNTH_TRUE)
-        *tk = T_SET_REL_OCTAVE;
+        ctx->lastToken = T_SET_REL_OCTAVE;
     else if (synth_lex_isSetLoopPoint(ctx) == SYNTH_TRUE)
-        *tk = T_SET_LOOPPOINT;
+        ctx->lastToken = T_SET_LOOPPOINT;
     else if (synth_lex_isEndOfTrack(ctx) == SYNTH_TRUE)
-        *tk = T_END_OF_TRACK;
+        ctx->lastToken = T_END_OF_TRACK;
     else if (synth_lex_isSetVolume(ctx) == SYNTH_TRUE)
-        *tk = T_SET_VOLUME;
+        ctx->lastToken = T_SET_VOLUME;
     else if (synth_lex_isSetRelVolume(ctx) == SYNTH_TRUE)
-        *tk = T_SET_REL_VOLUME;
+        ctx->lastToken = T_SET_REL_VOLUME;
     else if (synth_lex_isSetKeyoff(ctx) == SYNTH_TRUE)
-        *tk = T_SET_KEYOFF;
+        ctx->lastToken = T_SET_KEYOFF;
     else if (synth_lex_isSetPan(ctx) == SYNTH_TRUE)
-        *tk = T_SET_PAN;
+        ctx->lastToken = T_SET_PAN;
     else if (synth_lex_isSetLoopStart(ctx) == SYNTH_TRUE)
-        *tk = T_SET_LOOP_START;
+        ctx->lastToken = T_SET_LOOP_START;
     else if (synth_lex_isSetLoopEnd(ctx) == SYNTH_TRUE)
-        *tk = T_SET_LOOP_END;
+        ctx->lastToken = T_SET_LOOP_END;
     else if (synth_lex_isSetWave(ctx) == SYNTH_TRUE)
-        *tk = T_SET_WAVE;
+        ctx->lastToken = T_SET_WAVE;
     else if (synth_lex_isNote(ctx) == SYNTH_TRUE)
-        *tk = T_NOTE;
+        ctx->lastToken = T_NOTE;
     else if (synth_lex_isDotDuration(ctx) == SYNTH_TRUE)
-        *tk = T_DURATION;
+        ctx->lastToken = T_DURATION;
     else if (synth_lex_isNumber(ctx) == SYNTH_TRUE)
-        *tk = T_NUMBER;
+        ctx->lastToken = T_NUMBER;
     else if (synth_lex_didFinish(ctx) == SYNTH_TRUE)
-        *tk = T_DONE;
+        ctx->lastToken = T_DONE;
     else
         rv = SYNTH_INVALID_TOKEN;
     
@@ -208,7 +221,7 @@ synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx) {
  * @param ctx The context
  * @return The value
  */
-int synth_lex_getCurValuei(synthLexCtx *ctx) {
+int synth_lex_getValuei(synthLexCtx *ctx) {
     return ctx->ivalue;
 }
 

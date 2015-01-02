@@ -42,13 +42,20 @@ synth_err synth_lex_tokenizes(synthLexCtx **ctx, char *mml, int len);
 void synth_lex_freeCtx(synthLexCtx **ctx);
 
 /**
+ * Get the token read on the previous getToken call
+ * 
+ * @param ctx The context
+ * @return The token that was read
+ */
+synth_token synth_lex_lookupToken(synthLexCtx *ctx);
+
+/**
  * Get the next token on the context and its value (if any)
  * 
- * @param tk The token that was read
  * @param ctx The context
  * @return Error code
  */
-synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx);
+synth_err synth_lex_getToken(synthLexCtx *ctx);
 
 /**
  * Get the last read integer value
@@ -56,7 +63,7 @@ synth_err synth_lex_getToken(synth_token *tk, synthLexCtx *ctx);
  * @param ctx The context
  * @return The value
  */
-int synth_lex_getCurValuei(synthLexCtx *ctx);
+int synth_lex_getValuei(synthLexCtx *ctx);
 
 /**
  * Read the character on the current position
