@@ -22,9 +22,20 @@ struct stSynthAudio {
 typedef stSynthAudio synthAudio;
 
 /**
+ * Alloc a new audio structure and initialize it
  * 
+ * @param audio Reference to the audio pointer
+ * @return Error code
  */
 synth_err synth_audio_allocAudio(synthAudio **audio);
+/**
+ * Adds a new track to the audio
+ * Though the track will be released automatically, its notes and volume won't
+ * 
+ * @param audio The audio
+ * @param track The track
+ * @return Error code
+ */
 synth_err synth_audio_addTrack(synthAudio *audio, synthTrack *track);
 
 #endif
