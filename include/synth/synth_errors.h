@@ -17,6 +17,8 @@ typedef enum {
     SYNTH_EOF,
     SYNTH_EOS,
     SYNTH_UNEXPECTED_TOKEN,
+    SYNTH_EMPTY_SEQUENCE,
+    SYNTH_INVALID_WAVE,
     SYNTH_MAX_ERR
 } synth_err;
 

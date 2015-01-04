@@ -58,6 +58,8 @@ typedef enum {
     T_SET_LOOP_START,
     T_SET_LOOP_END,
     T_SET_WAVE,
+    T_OPEN_BRACKETS,
+    T_CLOSE_BRACKETS,
     T_NOTE,
     T_DURATION,
     T_NUMBER,
