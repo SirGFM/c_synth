@@ -7,6 +7,7 @@
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_parser.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 
 /**
@@ -14,11 +15,39 @@
  */
 #define COMPILER /**/
 
+#define TOKEN_MAX_STR 30
+#define EXTRA_CHARS 5+6+2
+static char parser_def_msg[] = "ERROR: Expected %s but got %s.\n"
+                               "       Line: %i\n"
+                               "       Position: %i\n"
+                               "       Last character: %c\n";
+static char parser_rv_msg[] = "ERROR: %s\n"
+                               "       Line: %i\n"
+                               "       Position: %i\n"
+                               "       Last character: %c\n";
+static char parser_error[TOKEN_MAX_STR*2+sizeof(parser_def_msg)+EXTRA_CHARS];
+
 struct stSynthParserCtx {
     /**
      * Lexer context
      */
     synthLexCtx *lexCtx;
+    /**
+     * Expected token (only valid on error)
+     */
+    synth_token expected;
+    /**
+     * Gotten token (only valid on error)
+     */
+    synth_token gotten;
+    /**
+     * Whether an error occured or note
+     */
+    synth_bool errorFlag;
+    /**
+     * Which error code was raised
+     */
+    synth_err errorCode;
     /**
      * Song BPM
      */
@@ -127,6 +156,7 @@ static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     tmp = (synthParserCtx*)malloc(sizeof(synthParserCtx));
     SYNTH_ASSERT_ERR(tmp, SYNTH_MEM_ERR);
     
+    tmp->errorFlag = SYNTH_FALSE;
     tmp->lexCtx = 0;
     tmp->bpm = 60;
     tmp->octave = 4;
@@ -169,6 +199,10 @@ synth_err synth_parser_audio(synthParserCtx *ctx) {
     
     rv = SYNTH_OK;
 __err:
+    if (rv != SYNTH_OK) {
+        ctx->errorFlag = SYNTH_TRUE;
+        ctx->errorCode = rv;
+    }
     return rv;
 }
 
@@ -553,5 +587,48 @@ synth_err synth_parser_bpm(synthParserCtx *ctx) {
     rv = SYNTH_OK;
 __err:
     return rv;
+}
+
+static char *synth_parser_getErrorMessage(synthParserCtx *ctx) {
+    switch (ctx->errorCode) {
+        case SYNTH_EOF: return "File ended before parsing ended"; break;
+        case SYNTH_EOS: return "Stream ended before parsing ended"; break;
+        case SYNTH_UNEXPECTED_TOKEN: return "Unexpected token"; break;
+        case SYNTH_EMPTY_SEQUENCE: return "Got a track without notes"; break;
+        case SYNTH_INVALID_WAVE: return "Invalid wave type"; break;
+        default: return "Unkown error";
+    }
+}
+
+char* synth_parser_getErrorString(synthParserCtx *ctx) {
+    // If no error has occured, return nothing
+    if (ctx->errorFlag == SYNTH_FALSE)
+        return 0;
+    
+    if (ctx->errorCode == SYNTH_UNEXPECTED_TOKEN) {
+        sprintf
+            (
+            parser_error,
+            parser_def_msg,
+            synth_lex_printToken(ctx->expected),
+            synth_lex_printToken(ctx->gotten),
+            synth_lex_getCurrentLine(ctx->lexCtx),
+            synth_lex_getCurrentLinePosition(ctx->lexCtx),
+            synth_lex_getLastCharacter(ctx->lexCtx)
+            );
+    }
+    else {
+        sprintf
+            (
+            parser_error,
+            parser_rv_msg,
+            synth_parser_getErrorMessage(ctx),
+            synth_lex_getCurrentLine(ctx->lexCtx),
+            synth_lex_getCurrentLinePosition(ctx->lexCtx),
+            synth_lex_getLastCharacter(ctx->lexCtx)
+            );
+    }
+    // Return the error string
+    return parser_error;
 }
 

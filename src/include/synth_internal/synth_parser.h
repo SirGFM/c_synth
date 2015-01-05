@@ -127,5 +127,7 @@ synth_err synth_parser_note(synthParserCtx *ctx);
  */
 synth_err synth_parser_bpm(synthParserCtx *ctx);
 
+char* synth_parser_getErrorString(synthParserCtx *ctx);
+
 #endif
 

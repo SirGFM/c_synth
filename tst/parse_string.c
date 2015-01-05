@@ -30,8 +30,18 @@ int main(int argc, char *argv[]) {
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     }
     
+    srv = synth_parser_audio(ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
+    
     rv = 0;
 __err:
+    if (rv != 0) {
+        char *error;
+        
+        error = synth_parser_getErrorString(ctx);
+        if (error)
+            printf("%s\n", error);
+    }
     synth_parser_clean(&ctx);
     
     return rv;
