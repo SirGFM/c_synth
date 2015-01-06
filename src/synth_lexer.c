@@ -658,7 +658,8 @@ synth_bool synth_lex_isSetLoopEnd(synthLexCtx *ctx) {
     
     // Get the current character
     srv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+        , SYNTH_FALSE);
     
     // Check if it's what was expected
     if (c != ']') {
@@ -711,7 +712,8 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     
     // Get the current character
     srv = synth_lex_getChar(&note, ctx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+        , SYNTH_FALSE);
     
     switch (note) {
         case 'c': ctx->ivalue = N_C; break;
@@ -729,7 +731,8 @@ synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     
     // Try to read a modifier ('+' or '-')
     srv = synth_lex_getChar(&mod, ctx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+        , SYNTH_FALSE);
     
     if (mod == '+') {
         SYNTH_ASSERT_ERR(ctx->ivalue != N_REST, SYNTH_FALSE);
@@ -769,7 +772,8 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
     
     // Get the current character
     srv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+        , SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c == '.', SYNTH_FALSE);
     
     while (1) {
@@ -779,7 +783,8 @@ synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
         ctx->ivalue = (ctx->ivalue << 1) | 1;
         
         srv = synth_lex_getChar(&c, ctx);
-        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+            , SYNTH_FALSE);
     }
     
     rv = SYNTH_TRUE;
@@ -815,7 +820,8 @@ synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
     
     // Get the current character
     srv = synth_lex_getChar(&c, ctx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+        , SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c >= '0' && c <= '9', SYNTH_FALSE);
     
     // Get the integer part
@@ -828,7 +834,8 @@ synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
         
         // Read the next one
         srv = synth_lex_getChar(&c, ctx);
-        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
+            , SYNTH_FALSE);
     }
     
     rv = SYNTH_TRUE;
