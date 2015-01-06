@@ -137,7 +137,14 @@ synth_bool synth_lex_isSetVolume(synthLexCtx *ctx);
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetRelVolume(synthLexCtx *ctx);
+synth_bool synth_lex_isOpenBracket(synthLexCtx *ctx);
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_lex_isCloseBracket(synthLexCtx *ctx);
 /**
  * Check if the context is at this token
  * 

@@ -189,8 +189,10 @@ synth_err synth_lex_getToken(synthLexCtx *ctx) {
         ctx->lastToken = T_END_OF_TRACK;
     else if (synth_lex_isSetVolume(ctx) == SYNTH_TRUE)
         ctx->lastToken = T_SET_VOLUME;
-    else if (synth_lex_isSetRelVolume(ctx) == SYNTH_TRUE)
-        ctx->lastToken = T_SET_REL_VOLUME;
+    else if (synth_lex_isOpenBracket(ctx) == SYNTH_TRUE)
+        ctx->lastToken = T_OPEN_BRACKET;
+    else if (synth_lex_isCloseBracket(ctx) == SYNTH_TRUE)
+        ctx->lastToken = T_CLOSE_BRACKET;
     else if (synth_lex_isSetKeyoff(ctx) == SYNTH_TRUE)
         ctx->lastToken = T_SET_KEYOFF;
     else if (synth_lex_isSetPan(ctx) == SYNTH_TRUE)
@@ -519,7 +521,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetRelVolume(synthLexCtx *ctx) {
+synth_bool synth_lex_isOpenBracket(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -529,14 +531,34 @@ synth_bool synth_lex_isSetRelVolume(synthLexCtx *ctx) {
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
     
     // Check if it's what was expected
-    if (c == '(') {
-        ctx->ivalue = 1;
+    if (c == '(')
         rv = SYNTH_TRUE;
+    else {
+        synth_lex_ungetChar(ctx, c);
+        rv = SYNTH_FALSE;
     }
-    else if (c == ')') {
-        ctx->ivalue = -1;
+__err:
+    return rv;
+}
+
+/**
+ * Check if the context is at this token
+ * 
+ * @param ctx The contex
+ * @return Either SYNTH_TRUE or SYNTH_FALSE
+ */
+synth_bool synth_lex_isCloseBracket(synthLexCtx *ctx) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+    
+    // Get the current character
+    srv = synth_lex_getChar(&c, ctx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    
+    // Check if it's what was expected
+    if (c == ')')
         rv = SYNTH_TRUE;
-    }
     else {
         synth_lex_ungetChar(ctx, c);
         rv = SYNTH_FALSE;
@@ -873,7 +895,6 @@ char *synth_lex_printToken(synth_token tk) {
         case T_SET_LOOPPOINT: return "set loop point"; break;
         case T_END_OF_TRACK: return "set end of track"; break;
         case T_SET_VOLUME: return "set volume"; break;
-        case T_SET_REL_VOLUME: return "set relative volume"; break;
         case T_SET_KEYOFF: return "set keyoff"; break;
         case T_SET_PAN: return "set pan"; break;
         case T_SET_LOOP_START: return "set loop start"; break;

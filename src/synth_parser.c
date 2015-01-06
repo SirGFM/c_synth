@@ -246,7 +246,8 @@ static synth_bool synth_parser_isSequence(synthParserCtx *ctx) {
         case T_SET_OCTAVE:
         case T_SET_REL_OCTAVE:
         case T_SET_VOLUME:
-        case T_SET_REL_VOLUME:
+        case T_OPEN_BRACKET:
+        case T_CLOSE_BRACKET:
         case T_SET_KEYOFF:
         case T_SET_PAN:
         case T_SET_WAVE:
@@ -269,7 +270,9 @@ static synth_bool synth_parser_isSequence(synthParserCtx *ctx) {
 synth_err synth_parser_track(synthParserCtx *ctx) {
     synth_err rv;
     int loopRequired;
+    int notes;
     
+    notes = 0;
     // Loop is required unless there was a sequence
     loopRequired = 1;
     
@@ -277,11 +280,12 @@ COMPILER // TODO spawn a new track
     
     // Parse a sequence, if it's the next token
     if (synth_parser_isSequence(ctx) == SYNTH_TRUE) {
-        rv = synth_parser_sequence(ctx);
+        rv = synth_parser_sequence(ctx, &notes);
         SYNTH_ASSERT(rv == SYNTH_OK);
         
         // Set loop as not required
-        loopRequired = 0;
+        if (notes > 0)
+            loopRequired = 0;
     }
     
     // If no sequence has been read, a LOOPPOINT token is required
@@ -297,9 +301,11 @@ COMPILER // TODO spawn a new track
 COMPILER // TODO set up the track loop point
         
         // Parse the looping sequence
-        rv = synth_parser_sequence(ctx);
+        rv = synth_parser_sequence(ctx, &notes);
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
+    
+    SYNTH_ASSERT_ERR(notes > 0, SYNTH_EMPTY_SEQUENCE);
     
     rv = SYNTH_OK;
 __err:
@@ -311,13 +317,11 @@ __err:
  * Parsing rule: ( mod | note | loop )+
  * 
  * @param ctx The context
+ * @param notes How many notes were added this sequence
  * @return Error code
  */
-synth_err synth_parser_sequence(synthParserCtx *ctx) {
+synth_err synth_parser_sequence(synthParserCtx *ctx, int *notes) {
     synth_err rv;
-    int gotNoteOrLoop;
-    
-    gotNoteOrLoop = 0;
     
     // Next token must be one of sequence
     SYNTH_ASSERT_ERR(synth_parser_isSequence(ctx) == SYNTH_TRUE,
@@ -329,20 +333,16 @@ synth_err synth_parser_sequence(synthParserCtx *ctx) {
         switch (synth_lex_lookupToken(ctx->lexCtx)) {
             case T_NOTE:
                 rv = synth_parser_note(ctx);
-                gotNoteOrLoop = 1;
+                (*notes)++;
             break;
             case T_SET_LOOP_START:
-                rv = synth_parser_loop(ctx);
-                gotNoteOrLoop = 1;
+                rv = synth_parser_loop(ctx, notes);
             break;
             default:
                 rv = synth_parser_mod(ctx);
         }
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
-    
-    // At least one note or loop must be on the sequence, otherwise it's invalid
-    SYNTH_ASSERT_ERR(gotNoteOrLoop == 1, SYNTH_EMPTY_SEQUENCE);
     
     rv = SYNTH_OK;
 __err:
@@ -354,9 +354,10 @@ __err:
  * Parsing rule: T_SET_LOOP_START sequence T_SET_LOOP_END T_NUMBER?
  * 
  * @param ctx The context
+ * @param notes How many notes there are in this loop
  * @return Error code
  */
-synth_err synth_parser_loop(synthParserCtx *ctx) {
+synth_err synth_parser_loop(synthParserCtx *ctx, int *notes) {
     synth_err rv;
     int loopPosition;
     int count;
@@ -379,7 +380,7 @@ COMPILER loopPosition = 0;// TODO read value from track
         SYNTH_INVALID_TOKEN);
     
     // Parse the sequence
-    rv = synth_parser_sequence(ctx);
+    rv = synth_parser_sequence(ctx, notes);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
     // Afterwards, a loop end must come
@@ -452,10 +453,52 @@ COMPILER    ctx->octave = synth_lex_getValuei(ctx->lexCtx);
             // Increase or decrease the octave
 COMPILER    ctx->octave += synth_lex_getValuei(ctx->lexCtx);
         break;
-        case T_SET_VOLUME:
+        case T_SET_VOLUME: {
+            int vol1, vol2 = -1;
+            
+            // Read the following number
+            rv = synth_lex_getToken(ctx->lexCtx);
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            
+            if (synth_lex_lookupToken(ctx->lexCtx) == T_OPEN_BRACKET) {
+                // Read the following number
+                rv = synth_lex_getToken(ctx->lexCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+                vol1 = synth_lex_getValuei(ctx->lexCtx);
+                
+                // Read the following number
+                rv = synth_lex_getToken(ctx->lexCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                
+                // TODO parse a comma
+                
+                // Read the following number
+                rv = synth_lex_getToken(ctx->lexCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+                vol2 = synth_lex_getValuei(ctx->lexCtx);
+                
+                // Read the following number
+                rv = synth_lex_getToken(ctx->lexCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
+            }
+            else {
+                // If a '(' wasn't found, then there must be a number
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+                
+                vol1 = synth_lex_getValuei(ctx->lexCtx);
+            }
+            
 COMPILER // TODO set volume
+        } break;
+        case T_OPEN_BRACKET:
+COMPILER // TODO >__<
         break;
-        case T_SET_REL_VOLUME:
+        case T_CLOSE_BRACKET:
 COMPILER // TODO >__<
         break;
         case T_SET_KEYOFF:
@@ -541,7 +584,7 @@ synth_err synth_parser_note(synthParserCtx *ctx) {
     }
     
     // If there are any '.', add half the duration every time
-    if (synth_lex_lookupToken(ctx->lexCtx) == T_NUMBER) {
+    if (synth_lex_lookupToken(ctx->lexCtx) == T_DURATION) {
         int dots;
         
         dots = synth_lex_getValuei(ctx->lexCtx);

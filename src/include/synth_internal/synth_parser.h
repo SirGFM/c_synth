@@ -77,18 +77,20 @@ synth_err synth_parser_track(synthParserCtx *ctx);
  * NOTE needs reworking!! It annoys me that there can be a track without notes
  * 
  * @param ctx The context
+ * @param notes How many notes were added this sequence
  * @return Error code
  */
-synth_err synth_parser_sequence(synthParserCtx *ctx);
+synth_err synth_parser_sequence(synthParserCtx *ctx, int *notes);
 
 /**
  * Parse a loop into the context
  * Parsing rule: T_LOOP_START sequence T_LOOP_END T_NUMBER?
  * 
  * @param ctx The context
+ * @param notes How many notes there are in this loop
  * @return Error code
  */
-synth_err synth_parser_loop(synthParserCtx *ctx);
+synth_err synth_parser_loop(synthParserCtx *ctx, int *notes);
 
 /**
  * Parse a 'context modification' into the context
