@@ -1,8 +1,8 @@
 /**
  * @file src/include/synth_internal/synth_audio.h
  */
-#ifndef __SYNTH_AUDIO_H_
-#define __SYNTH_AUDIO_H_
+#ifndef __SYNTH_INTERNAL_AUDIO_H_
+#define __SYNTH_INTERNAL_AUDIO_H_
 
 #include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
@@ -19,7 +19,7 @@ struct stSynthAudio {
      */
     int tracksLen;
 };
-typedef stSynthAudio synthAudio;
+typedef struct stSynthAudio synthAudio;
 
 /**
  * Alloc a new audio structure and initialize it

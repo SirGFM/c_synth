@@ -20,6 +20,10 @@ static int vlen;
 static int vbuflen;
 static synthVolume **volumes;
 
+static int llen;
+static int lbuflen;
+static synthNote **loops;
+
 /**
  * Initialize every global cache
  * 
@@ -33,6 +37,7 @@ synth_err synth_cache_init(int freq) {
     
     // In case notes allocation fails, this must be initialized
     volumes = 0;
+    loops = 0;
     
     // Alloc the notes array and its size
     notes = (synthNote**)malloc(sizeof(synthNote*));
@@ -47,6 +52,13 @@ synth_err synth_cache_init(int freq) {
     
     vlen = 0;
     vbuflen = 1;
+    
+    // Alloc the loops array and its size
+    loops = (synthNote**)malloc(sizeof(synthNote*));
+    SYNTH_ASSERT_ERR(notes, SYNTH_MEM_ERR);
+    
+    llen = 0;
+    lbuflen = 1;
     
     rv = SYNTH_OK;
 __err:
@@ -89,6 +101,21 @@ void synth_cache_clean() {
         vbuflen = 0;
         volumes = 0;
     }
+    
+    // Clean up the notes array, and any of its objects
+    if (loops) {
+        i = 0;
+        while (i < llen) {
+            synth_note_clean(loops[i]);
+            i++;
+        }
+        free(loops);
+        
+        llen = 0;
+        lbuflen = 0;
+        loops = 0;
+    }
+   
 }
 
 /**
@@ -275,3 +302,55 @@ __err:
     return rv;
 }
 
+/**
+ * Add a new loop to the cache
+ * 
+ * @param pLoop Reference where the note will be returned
+ * @param loopPos Where should loop to
+ * @param count How many times it should loop
+ * @return The error code
+ */
+synth_err synth_cache_getLoop(synthNote **pLoop, int loopPos, int count) {
+    synthNote *loop;
+    synth_err rv;
+    
+    loop = (synthNote*)malloc(sizeof(synthNote));
+    SYNTH_ASSERT_ERR(loop, SYNTH_MEM_ERR);
+    
+    synth_note_init(loop);
+    synth_note_setJumpPosition(loop, loopPos);
+    synth_note_setRepeatTimes(loop, count);
+    
+    rv = synth_cache_addLoop(loop);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Add a new loop note to the buffer, expanding it if necessary
+ * 
+ * @param loop The loop note
+ * @return Error code
+ */
+synth_err synth_cache_addLoop(synthNote *loop) {
+    synth_err rv;
+    
+    // Extend the buffer, if necessary
+    if (llen >= lbuflen) {
+        loops = (synthNote**)realloc(loops, sizeof(synthNote*)*lbuflen*2);
+        SYNTH_ASSERT_ERR(loops, SYNTH_MEM_ERR);
+        
+        lbuflen *= 2;
+    }
+    
+    // Append the note
+    loops[llen] = loop;
+    llen++;
+    
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}

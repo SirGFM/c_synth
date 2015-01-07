@@ -5,7 +5,7 @@
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth_internal/synth_audio.h>
-#include <synth_internal/synth_parser.c>
+#include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_track.h>
 
 #include <stdlib.h>

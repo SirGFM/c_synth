@@ -2,8 +2,11 @@
  * @file @src/synth_parser.c
  */
 #include <synth/synth_assert.h>
+#include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
+#include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_cache.h>
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_parser.h>
 
@@ -28,6 +31,14 @@ static char parser_rv_msg[] = "ERROR: %s\n"
 static char parser_error[TOKEN_MAX_STR*2+sizeof(parser_def_msg)+EXTRA_CHARS];
 
 struct stSynthParserCtx {
+    /**
+     * Audio being parsed
+     */
+    synthAudio *audio;
+    /**
+     * Current track being parsed
+     */
+    synthTrack *track;
     /**
      * Lexer context
      */
@@ -60,7 +71,10 @@ struct stSynthParserCtx {
      * Default duration (when not specified)
      */
     int duration;
-    // TODO volume!!
+    /**
+     * Default volume
+     */
+    synthVolume *vol;
     /**
      * Current keyoff
      */
@@ -161,10 +175,12 @@ static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     tmp->bpm = 60;
     tmp->octave = 4;
     tmp->duration = 4;
-    // TODO volume!!
     tmp->keyoff = 75;
     tmp->pan = 50;
     tmp->wave = W_SQUARE;
+    
+    rv = synth_cache_getVolume(&(tmp->vol), 0x7f, 0x7f);
+    SYNTH_ASSERT(rv == SYNTH_OK);
     
     *ctx = tmp;
     rv = SYNTH_OK;
@@ -181,6 +197,10 @@ __err:
  */
 synth_err synth_parser_audio(synthParserCtx *ctx) {
     synth_err rv;
+    
+    // Create the audio structure
+COMPILER rv = synth_audio_allocAudio(&(ctx->audio));
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
     
     // Get the first token
     rv = synth_lex_getToken(ctx->lexCtx);
@@ -200,6 +220,7 @@ synth_err synth_parser_audio(synthParserCtx *ctx) {
     rv = SYNTH_OK;
 __err:
     if (rv != SYNTH_OK) {
+        synth_audio_free(&(ctx->audio));
         ctx->errorFlag = SYNTH_TRUE;
         ctx->errorCode = rv;
     }
@@ -220,6 +241,10 @@ synth_err synth_parser_tracks(synthParserCtx *ctx) {
     rv = synth_parser_track(ctx);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
+COMPILER rv = synth_audio_addTrack(ctx->audio, ctx->track);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
+COMPILER ctx->track = 0;
+    
     // Parse every other track
     while (synth_lex_lookupToken(ctx->lexCtx) == T_END_OF_TRACK) {
         rv = synth_lex_getToken(ctx->lexCtx);
@@ -227,6 +252,10 @@ synth_err synth_parser_tracks(synthParserCtx *ctx) {
         
         rv = synth_parser_track(ctx);
         SYNTH_ASSERT(rv == SYNTH_OK);
+        
+COMPILER rv = synth_audio_addTrack(ctx->audio, ctx->track);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
+COMPILER ctx->track = 0;
     }
     
     rv = SYNTH_OK;
@@ -276,7 +305,9 @@ synth_err synth_parser_track(synthParserCtx *ctx) {
     // Loop is required unless there was a sequence
     loopRequired = 1;
     
-COMPILER // TODO spawn a new track
+COMPILER ctx->track = (synthTrack*)malloc(sizeof(synthTrack));
+COMPILER rv = synth_track_init(ctx->track);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
     
     // Parse a sequence, if it's the next token
     if (synth_parser_isSequence(ctx) == SYNTH_TRUE) {
@@ -294,11 +325,14 @@ COMPILER // TODO spawn a new track
     
     // Parse another sequence, if there's a looppoint token
     if (synth_lex_lookupToken(ctx->lexCtx) == T_SET_LOOPPOINT) {
+COMPILER int loopPoint;
+        
         // Get the next token
         rv = synth_lex_getToken(ctx->lexCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
         
-COMPILER // TODO set up the track loop point
+COMPILER loopPoint = synth_track_getLength(ctx->track);
+COMPILER synth_track_setLoopPoint(ctx->track, loopPoint);
         
         // Parse the looping sequence
         rv = synth_parser_sequence(ctx, &notes);
@@ -358,18 +392,19 @@ __err:
  * @return Error code
  */
 synth_err synth_parser_loop(synthParserCtx *ctx, int *notes) {
+COMPILER int loopPosition;
+COMPILER synthNote *loop;
+COMPILER int count;
     synth_err rv;
-    int loopPosition;
-    int count;
     
     // We're sure to have this token, but...
     SYNTH_ASSERT_TOKEN(T_SET_LOOP_START);
     
     // Set basic loop count to 2 (default)
-    count = 2;
+COMPILER count = 2;
     
     // Store the current position in track to set it on the loop 'note'
-COMPILER loopPosition = 0;// TODO read value from track
+COMPILER loopPosition = synth_track_getLength(ctx->track);
     
     // Read the next token
     rv = synth_lex_getToken(ctx->lexCtx);
@@ -401,7 +436,10 @@ COMPILER    count = synth_lex_getValuei(ctx->lexCtx);
     }
     
     // Add a 'loop note' to the track
-COMPILER // TODO actually set the loop
+COMPILER rv = synth_cache_getLoop(&loop, loopPosition, count);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
+COMPILER rv = synth_track_addNote(ctx->track, loop);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
     
     rv = SYNTH_OK;
 __err:
@@ -493,7 +531,12 @@ COMPILER    ctx->octave += synth_lex_getValuei(ctx->lexCtx);
                 vol1 = synth_lex_getValuei(ctx->lexCtx);
             }
             
-COMPILER // TODO set volume
+COMPILER if (vol2 != -1) {
+COMPILER    rv = synth_cache_getVolume(&(ctx->vol), vol1, vol2);
+COMPILER }
+COMPILER else
+COMPILER    rv = synth_cache_getVolume(&(ctx->vol), vol1, vol1);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_OPEN_BRACKET:
 COMPILER // TODO >__<
@@ -557,6 +600,7 @@ __err:
  * @return Error code
  */
 synth_err synth_parser_note(synthParserCtx *ctx) {
+COMPILER synthNote *pNote;
     synth_err rv;
     synth_note note;
     int duration;
@@ -596,7 +640,21 @@ synth_err synth_parser_note(synthParserCtx *ctx) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
     
-COMPILER // TODO create and add the note to the track
+COMPILER rv = synth_cache_getNote
+COMPILER        (
+COMPILER        &pNote,
+COMPILER        note,
+COMPILER        duration,
+COMPILER        ctx->bpm,
+COMPILER        ctx->octave,
+COMPILER        ctx->pan,
+COMPILER        ctx->keyoff,
+COMPILER        ctx->vol,
+COMPILER        ctx->wave
+COMPILER        );
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
+COMPILER rv = synth_track_addNote(ctx->track, pNote);
+COMPILER SYNTH_ASSERT(rv == SYNTH_OK);
     
     rv = SYNTH_OK;
 __err:

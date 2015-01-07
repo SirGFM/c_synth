@@ -11,7 +11,7 @@
 /**
  * Forward declaration of the audio type
  */
-typedef stSynthAudio synthAudio;
+typedef struct stSynthAudio synthAudio;
 
 synth_err synth_audio_loadf(synthAudio **audio, char *filename);
 synth_err synth_audio_loads(synthAudio **audio, char *mml, int len);

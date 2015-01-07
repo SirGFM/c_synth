@@ -69,5 +69,23 @@ synth_err synth_cache_getVolume(synthVolume **pVol, char ini, char fin);
  */
 synth_err synth_cache_addVolume(synthVolume *vol);
 
+/**
+ * Add a new loop to the cache
+ * 
+ * @param pLoop Reference where the note will be returned
+ * @param loopPos Where should loop to
+ * @param count How many times it should loop
+ * @return The error code
+ */
+synth_err synth_cache_getLoop(synthNote **pLoop, int loopPos, int count);
+
+/**
+ * Add a new loop note to the buffer, expanding it if necessary
+ * 
+ * @param loop The loop note
+ * @return Error code
+ */
+synth_err synth_cache_addLoop(synthNote *loop);
+
 #endif
 
