@@ -5,6 +5,7 @@
 #include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
+#include <synth_internal/synth_cache.h>
 #include <synth_internal/synth_note.h>
 #include <synth_internal/synth_volume.h>
 
@@ -72,6 +73,15 @@ void synth_note_setPan(synthNote *note, char pan) {
 }
 
 /**
+ * Get the note panning.
+ * 
+ * @param note The note
+ */
+char synth_note_getPan(synthNote *note) {
+    return note->pan;
+}
+
+/**
  * Set the note octave
  * 
  * @param note The note
@@ -87,6 +97,15 @@ void synth_note_setOctave(synthNote *note, char octave) {
 }
 
 /**
+ * Get the note octave
+ * 
+ * @param note The note
+ */
+char synth_note_getOctave(synthNote *note) {
+    return note->octave+1;
+}
+
+/**
  * Set the note duration. Since it uses the current backend frequency, should
  * only be called after it was setuped
  * 
@@ -97,33 +116,27 @@ void synth_note_setOctave(synthNote *note, char octave) {
  * as it seems
  */
 void synth_note_setDuration(synthNote *note, int bpm, int duration) {
-    int freq, time, nSamples;
-    
-    // Reset the note length
-    note->len = 0;
-    SYNTH_ASSERT(bpm > 0);
-    
-    // Get the global frequency
-    freq = synth_bkend_getFrequency();
-    // Calculate how long (in miliseconds) a semibreve note should last
-    time = 1000 * 4 * 60 / bpm;
-    // Calculate how many samples a semibreve should last
-    nSamples = freq * time;
-    
-    // Accumulate the duration of the note, in samples
-    while (duration > 0) {
-        // If the note has this note value
-        if ((duration & 1) == 1)
-            // Accumulate the number of samples for thie note value
-            note->len += nSamples / 1000;
-        
-        // Get the next note value (semibreve->minim->etc)
-        duration >>= 1;
-        nSamples >>= 1;
-    }
-    
-__err:
-    return;
+    // Set duration, so caching is easier
+    note->duration = duration;
+    note->len = synth_note_getSampleSize(bpm, duration);
+}
+
+/**
+ * Get the note duration.
+ * 
+ * @param note The note
+ */
+int synth_note_getDuration(synthNote *note) {
+    return note->duration;
+}
+
+/**
+ * Get the note length in samples
+ * 
+ * @param note The note
+ */
+int synth_note_getLen(synthNote *note) {
+    return note->len;
 }
 
 /**
@@ -134,6 +147,15 @@ __err:
  */
 void synth_note_setWave(synthNote *note, synth_wave wave) {
     note->wave = wave;
+}
+
+/**
+ * Get the kind of wave this note should play
+ * 
+ * @param note The note
+ */
+synth_wave synth_note_getWave(synthNote *note) {
+    return note->wave;
 }
 
 /**
@@ -167,6 +189,15 @@ void synth_note_setVolume(synthNote *note, synthVolume *vol) {
 }
 
 /**
+ * Get how the volume behaves
+ * 
+ * @param note The note
+ */
+synthVolume* synth_note_getVolume(synthNote *note) {
+    return note->vol;
+}
+
+/**
  * Set the keyoff for the note; must be set after the duration!
  * 
  * @param note The note
@@ -176,6 +207,15 @@ void synth_note_setVolume(synthNote *note, synthVolume *vol) {
  */
 void synth_note_setKeyoff(synthNote *note, int keyoff) {
     note->keyoff = note->len * keyoff / 100;
+}
+
+/**
+ * Set the keyoff for the note; must be set after the duration!
+ * 
+ * @param note The note
+ */
+int synth_note_getKeyoff(synthNote *note) {
+    return note->keyoff * 100 / note->len;
 }
 
 /**
@@ -278,7 +318,7 @@ int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
         int freq, spc, i;
         
         // See note bellow about samples per cycle
-        freq = synth_bkend_getFrequency();
+        freq = synth_cache_getFrequency();
         spc = freq / (note_frequency[note->note] >> (8 - note->octave));
         
         i = 0;
@@ -334,5 +374,40 @@ int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
     
 __err:
     return rem;
+}
+
+/**
+ * Get how many samples a note would have
+ * 
+ * @param bpm Beats per minute
+ * @param duration Bitfield for the duration. Each bit represents its 1/2^n
+ * duration; i.e., 1/8 = (1000)b; 1/16. = (110000)b. It's as straight forward
+ * @return The length
+ */
+int synth_note_getSampleSize(int bpm, int duration) {
+    int freq, time, nSamples, len;
+    
+    len = 0;
+    
+    // Get the global frequency
+    freq = synth_cache_getFrequency();
+    // Calculate how long (in miliseconds) a semibreve note should last
+    time = 1000 * 4 * 60 / bpm;
+    // Calculate how many samples a semibreve should last
+    nSamples = freq * time;
+    
+    // Accumulate the duration of the note, in samples
+    while (duration > 0) {
+        // If the note has this note value
+        if ((duration & 1) == 1)
+            // Accumulate the number of samples for thie note value
+            len += nSamples / 1000;
+        
+        // Get the next note value (semibreve->minim->etc)
+        duration >>= 1;
+        nSamples >>= 1;
+    }
+    
+    return len;
 }
 

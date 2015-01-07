@@ -56,7 +56,9 @@ CC := gcc
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS := $(OBJDIR)/synth_lexer.o \
+  OBJS := $(OBJDIR)/synth.o \
+          $(OBJDIR)/synth_cache.o \
+          $(OBJDIR)/synth_lexer.o \
           $(OBJDIR)/synth_note.o \
           $(OBJDIR)/synth_parser.o \
           $(OBJDIR)/synth_sdl2_backend.o \

@@ -55,3 +55,23 @@ char synth_vol_getVolume(synthVolume *vol, int perc) {
     return val & 0xff;
 }
 
+/**
+ * Get the volume's initial amplitude
+ * 
+ * @param vol A synthVolume pointer
+ * @return Volume's initial amplitude
+ */
+char synth_vol_getVolumeIni(synthVolume *vol) {
+    return vol->ini;
+}
+
+/**
+ * Get the volume's final amplitude
+ * 
+ * @param vol A synthVolume pointer
+ * @return Volume's final amplitude
+ */
+char synth_vol_getVolumeFin(synthVolume *vol) {
+    return vol->fin;
+}
+

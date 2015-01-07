@@ -59,5 +59,21 @@ void synth_vol_setLinear(synthVolume *vol, char ini, char fin);
  */
 char synth_vol_getVolume(synthVolume *vol, int perc);
 
+/**
+ * Get the volume's initial amplitude
+ * 
+ * @param vol A synthVolume pointer
+ * @return Volume's initial amplitude
+ */
+char synth_vol_getVolumeIni(synthVolume *vol);
+
+/**
+ * Get the volume's final amplitude
+ * 
+ * @param vol A synthVolume pointer
+ * @return Volume's final amplitude
+ */
+char synth_vol_getVolumeFin(synthVolume *vol);
+
 #endif
 

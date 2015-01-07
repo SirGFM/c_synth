@@ -38,6 +38,10 @@ struct stSynthNote {
      */
     int numIterations;
     /**
+     * Exact 'note duration', so as to search the cached value
+     */
+    int duration;
+    /**
      * Wave type to be synthesized
      */
     synth_wave wave;
@@ -77,6 +81,13 @@ void synth_note_clean(synthNote *note);
 void synth_note_setPan(synthNote *note, char pan);
 
 /**
+ * Get the note panning.
+ * 
+ * @param note The note
+ */
+char synth_note_getPan(synthNote *note);
+
+/**
  * Set the note octave
  * 
  * @param note The note
@@ -84,6 +95,13 @@ void synth_note_setPan(synthNote *note, char pan);
  * highest pitch
  */
 void synth_note_setOctave(synthNote *note, char octave);
+
+/**
+ * Get the note octave
+ * 
+ * @param note The note
+ */
+char synth_note_getOctave(synthNote *note);
 
 /**
  * Set the note duration. Since it uses the current backend frequency, should
@@ -98,12 +116,33 @@ void synth_note_setOctave(synthNote *note, char octave);
 void synth_note_setDuration(synthNote *note, int bpm, int duration);
 
 /**
+ * Get the note duration.
+ * 
+ * @param note The note
+ */
+int synth_note_getDuration(synthNote *note);
+
+/**
+ * Get the note length in samples
+ * 
+ * @param note The note
+ */
+int synth_note_getLen(synthNote *note);
+
+/**
  * Set the kind of wave this note should play
  * 
  * @param note The note
  * @param wave The wave
  */
 void synth_note_setWave(synthNote *note, synth_wave wave);
+
+/**
+ * Get the kind of wave this note should play
+ * 
+ * @param note The note
+ */
+synth_wave synth_note_getWave(synthNote *note);
 
 /**
  * Set the musical note that should be played
@@ -114,7 +153,7 @@ void synth_note_setWave(synthNote *note, synth_wave wave);
 void synth_note_setNote(synthNote *note, synth_note N);
 
 /**
- * Set the musical note that should be played
+ * Get the musical note that should be played
  * 
  * @param note The note
  * @return The current musical note
@@ -130,6 +169,13 @@ synth_note synth_note_getNote(synthNote *note);
 void synth_note_setVolume(synthNote *note, synthVolume *vol);
 
 /**
+ * Get how the volume behaves
+ * 
+ * @param note The note
+ */
+synthVolume* synth_note_getVolume(synthNote *note);
+
+/**
  * Set the keyoff for the note; must be set after the duration!
  * 
  * @param note The note
@@ -138,6 +184,13 @@ void synth_note_setVolume(synthNote *note, synthVolume *vol);
  * associate with how a keyboard note is pressed/released)
  */
 void synth_note_setKeyoff(synthNote *note, int keyoff);
+
+/**
+ * Set the keyoff for the note; must be set after the duration!
+ * 
+ * @param note The note
+ */
+int synth_note_getKeyoff(synthNote *note);
 
 /**
  * Set how many times the 'looper' should count until continuing
@@ -197,6 +250,16 @@ void synth_note_reset(synthNote *note);
  */
 int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
     uint16_t *right);
+
+/**
+ * Get how many samples a note would have
+ * 
+ * @param bpm Beats per minute
+ * @param duration Bitfield for the duration. Each bit represents its 1/2^n
+ * duration; i.e., 1/8 = (1000)b; 1/16. = (110000)b. It's as straight forward
+ * @return The length
+ */
+int synth_note_getSampleSize(int bpm, int duration);
 
 #endif
 
