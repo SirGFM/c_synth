@@ -1,6 +1,7 @@
 /**
  * @file tst/parse_string.c
  */
+#include <synth/synth.h>
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth_internal/synth_parser.h>
@@ -14,6 +15,9 @@ int main(int argc, char *argv[]) {
     int rv;
     synth_err srv;
     synthParserCtx *ctx = 0;
+    
+    srv = synth_init(1024, 44100);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     
     if (argc > 1) {
         printf("Reading mml from file: %s\n", argv[1]);
@@ -43,6 +47,8 @@ __err:
             printf("%s\n", error);
     }
     synth_parser_clean(&ctx);
+    
+    synth_clean();
     
     return rv;
 }

@@ -155,6 +155,12 @@ void synth_parser_clean(synthParserCtx **ctx) {
     SYNTH_ASSERT(ctx);
     SYNTH_ASSERT(*ctx);
     
+    if ((*ctx)->audio)
+        synth_audio_free(&((*ctx)->audio));
+    
+    if ((*ctx)->track)
+        synth_track_clean((*ctx)->track);
+    
     synth_lex_freeCtx(&((*ctx)->lexCtx));
     free(*ctx);
     *ctx = 0;
@@ -178,6 +184,9 @@ static synth_err synth_parser_initStruct(synthParserCtx **ctx) {
     tmp->keyoff = 75;
     tmp->pan = 50;
     tmp->wave = W_SQUARE;
+    
+    tmp->audio = 0;
+    tmp->track = 0;
     
     rv = synth_cache_getVolume(&(tmp->vol), 0x7f, 0x7f);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -630,10 +639,19 @@ COMPILER synthNote *pNote;
     // If there are any '.', add half the duration every time
     if (synth_lex_lookupToken(ctx->lexCtx) == T_DURATION) {
         int dots;
+        int d;
         
         dots = synth_lex_getValuei(ctx->lexCtx);
+        d = duration;
         
-        // TODO do something with that value
+        // For each '1' in the duration, add half the current duration
+        // TODO account for bizare durations?
+        while (dots > 0) {
+            d <<= 1;
+            dots >>=1;
+            
+            duration = duration | d;
+        }
         
         // Read whatever the next token is
         rv = synth_lex_getToken(ctx->lexCtx);
