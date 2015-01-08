@@ -82,7 +82,7 @@ $(OBJDIR)/%.o: %.c
 
 tests:  $(BINDIR)/play_hardcoded_buffer \
         $(BINDIR)/play_hc_track $(BINDIR)/play_hc_mario $(BINDIR)/parse_string \
-        $(BINDIR)/tokenize_mml
+        $(BINDIR)/tokenize_mml $(BINDIR)/test_loop
 
 $(BINDIR)/play_hardcoded_buffer: $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a
 	$(CC) $(CFLAGS) -o $(BINDIR)/play_hardcoded_buffer $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
@@ -99,6 +99,8 @@ $(BINDIR)/tokenize_mml: $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a
 $(BINDIR)/parse_string: $(OBJDIR)/parse_string.o $(BINDIR)/$(TARGET).a
 	$(CC) $(CFLAGS) -o $(BINDIR)/parse_string $(OBJDIR)/parse_string.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
+$(BINDIR)/test_loop: $(OBJDIR)/test_loop.o $(BINDIR)/$(TARGET).a
+	$(CC) $(CFLAGS) -o $(BINDIR)/test_loop $(OBJDIR)/test_loop.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
 MKDIRS: | $(OBJDIR)
 

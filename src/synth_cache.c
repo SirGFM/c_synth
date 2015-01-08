@@ -318,12 +318,14 @@ synth_err synth_cache_getLoop(synthNote **pLoop, int loopPos, int count) {
     SYNTH_ASSERT_ERR(loop, SYNTH_MEM_ERR);
     
     synth_note_init(loop);
+    synth_note_setNote(loop, N_LOOP);
     synth_note_setJumpPosition(loop, loopPos);
     synth_note_setRepeatTimes(loop, count);
     
     rv = synth_cache_addLoop(loop);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
+    *pLoop = loop;
     rv = SYNTH_OK;
 __err:
     return rv;

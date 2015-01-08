@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 
-static char mml[] = "t90 l16 o5 e e8 e r c e r g4 > g4 <";
+static char mml[] = "t140 l8 o4 [a]3 r [b]3 r [g]3 a4 [a]";
 int len = sizeof(mml);
 
 #define TIME 3
@@ -26,8 +26,6 @@ int main(int argc, char *argv[]) {
     synthParserCtx *ctx = 0;
     synthAudio *aud;
     uint16_t *left, *right, *data;
-    int bufferlen;
-    int time;
     
     rv = SDL_Init(0);
     SYNTH_ASSERT(rv >= 0);
@@ -50,25 +48,6 @@ int main(int argc, char *argv[]) {
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     }
     
-    if (argc > 2) {
-        char *t;
-        int n;
-        
-        t = argv[2];
-        n = 0;
-        while (*t) {
-            n = n * 10 + *t - '0';
-            t++;
-        }
-        
-        bufferlen = FREQ*n;
-        time = n;
-    }
-    else {
-        bufferlen = BUFFERLEN;
-        time = TIME;
-    }
-    
     srv = synth_parser_audio(ctx);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     
@@ -80,32 +59,32 @@ int main(int argc, char *argv[]) {
     
     synth_bkend_pause();
     
-    left = (uint16_t*)malloc(sizeof(uint16_t)*bufferlen);
+    left = (uint16_t*)malloc(sizeof(uint16_t)*BUFFERLEN);
     SYNTH_ASSERT_ERR(left != NULL, SYNTH_MEM_ERR);
     
-    right = (uint16_t*)malloc(sizeof(uint16_t)*bufferlen);
+    right = (uint16_t*)malloc(sizeof(uint16_t)*BUFFERLEN);
     SYNTH_ASSERT_ERR(left != NULL, SYNTH_MEM_ERR);
     
-    memset(left, 0x0, bufferlen*sizeof(uint16_t));
-    memset(right, 0x0, bufferlen*sizeof(uint16_t));
+    memset(left, 0x0, BUFFERLEN*sizeof(uint16_t));
+    memset(right, 0x0, BUFFERLEN*sizeof(uint16_t));
     
-    synth_audio_synthesize(aud, bufferlen, left, right);
+    synth_audio_synthesize(aud, BUFFERLEN, left, right);
     
-    data = (uint16_t*)malloc(sizeof(uint16_t)*bufferlen*2);
+    data = (uint16_t*)malloc(sizeof(uint16_t)*BUFFERLEN*2);
     SYNTH_ASSERT_ERR(data != NULL, SYNTH_MEM_ERR);
     
-    memset(data, 0x0, bufferlen*sizeof(uint16_t)*2);
+    memset(data, 0x0, BUFFERLEN*sizeof(uint16_t)*2);
     
     i = 0;
-    while (i < bufferlen) {
+    while (i < BUFFERLEN) {
         data[i*2+0] = left[i];
         data[i*2+1] = right[i];
         i++;
     }
     
-    synth_bkend_fillBuffer(data, sizeof(uint16_t)*bufferlen*2);
+    synth_bkend_fillBuffer(data, sizeof(uint16_t)*BUFFERLEN*2);
     
-    SDL_Delay((time)*1000);
+    SDL_Delay((TIME)*1000);
     
     rv = 0;
 __err:
@@ -135,4 +114,5 @@ __err:
     
     return rv;
 }
+
 

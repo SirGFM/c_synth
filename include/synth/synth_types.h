@@ -41,7 +41,7 @@ typedef enum {
     N_B,
     N_BS,   // Required for increasing octave
     N_REST,
-    N_LOOP,
+    N_LOOP
 } synth_note;
 
 typedef enum {

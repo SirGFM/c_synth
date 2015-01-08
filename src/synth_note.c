@@ -227,7 +227,7 @@ int synth_note_getKeyoff(synthNote *note) {
  * @param num How many times it should loop
  */
 void synth_note_setRepeatTimes(synthNote *note, int num) {
-    note->len = num;
+    note->len = num-1;
 }
 
 /**
