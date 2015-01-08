@@ -62,6 +62,7 @@ CC := gcc
           $(OBJDIR)/synth_lexer.o \
           $(OBJDIR)/synth_note.o \
           $(OBJDIR)/synth_parser.o \
+          $(OBJDIR)/synth_prng.o \
           $(OBJDIR)/synth_sdl2_backend.o \
           $(OBJDIR)/synth_track.o \
           $(OBJDIR)/synth_volume.o

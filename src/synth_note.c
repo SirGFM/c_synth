@@ -7,6 +7,7 @@
 #include <synth/synth_types.h>
 #include <synth_internal/synth_cache.h>
 #include <synth_internal/synth_note.h>
+#include <synth_internal/synth_prng.h>
 #include <synth_internal/synth_volume.h>
 
 /**
@@ -410,7 +411,13 @@ int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
                     amp = (synth_vol_getVolume(note->vol, perc) * abs * 2) >> 10;
                 } break;
                 case W_NOISE: {
-                    // TODO
+                    perc >>= 2;
+                    if (perc < 512) {
+                        char v = 2*(char)synth_prng_getRand();
+                        amp = synth_vol_getVolume(note->vol, perc) * v / 0xff;
+                    }
+                    else
+                        amp = 0;
                 } break;
                 // TODO modularize
                 default:

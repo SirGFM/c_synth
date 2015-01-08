@@ -13,10 +13,10 @@
 
 #include <stdio.h>
 
-static char mml[] = "t140 %4 l8 o4 [a]3 r [b]3 r [g]3 a4 [a]";
+static char mml[] = "t140 %5 l8 o4 $ [a]3 r [b]3 r [g]3 a4 [a]";
 int len = sizeof(mml);
 
-#define TIME 3
+#define TIME 10
 #define FREQ 44100
 #define BUFFERLEN FREQ*TIME
 
