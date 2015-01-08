@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 
-static char mml[] = "t140 l8 o4 [a]3 r [b]3 r [g]3 a4 [a]";
+static char mml[] = "t140 %4 l8 o4 [a]3 r [b]3 r [g]3 a4 [a]";
 int len = sizeof(mml);
 
 #define TIME 3

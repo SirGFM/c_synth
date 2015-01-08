@@ -305,93 +305,8 @@ void synth_note_reset(synthNote *note) {
  */
 int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
     uint16_t *right) {
-    int rem, pos;
-    
-    // Set the remainder for a case it returns before actually modifing it
-    rem = samples;
-    // Simply pass through, if it's a "loop note"
-    SYNTH_ASSERT(note->note != N_LOOP);
-    
-    pos = note->pos;
-    
-    // Actually buffer the note
-    if (note->note == N_REST) {
-        pos += rem;
-        if (pos > note->len) {
-            rem = pos - note->len;
-            pos = note->len;
-        }
-        else
-            rem = 0;
-    }
-    else {
-        int freq, spc, i, div;
-        
-        // See note bellow about samples per cycle
-        freq = synth_cache_getFrequency();
-        div = note_frequency[note->note] >> (8 - note->octave);
-        
-        if (div != 0)
-            spc = freq / div;
-        else
-            spc = 1023;
-        
-        i = 0;
-        while (i < rem && pos + i  < note->len) {
-            int perc;
-            char amp;
-            
-            // Get the position in the cycle as a 'percentage' in [0,1024)
-            perc = (pos + i) % spc;
-            perc = (perc << 10) / spc;
-            
-            // Get the amplitude in [0, 255] for the wave at that point
-            switch (note->wave) {
-                case W_SQUARE:
-                    amp = (perc < 512)?synth_vol_getVolume(note->vol, perc):0;
-                    break;
-                case W_PULSE_12_5:
-                    amp = (perc < 128)?synth_vol_getVolume(note->vol, perc):0;
-                    break;
-                case W_PULSE_25:
-                    amp = (perc < 256)?synth_vol_getVolume(note->vol, perc):0;
-                    break;
-                case W_PULSE_75:
-                    amp = (perc < 768)?synth_vol_getVolume(note->vol, perc):0;
-                    break;
-                case W_TRIANGLE: {
-                    int abs;
-                    
-                    abs = (perc << 1) - 1024;
-                    abs = (abs >= 0)?abs:-abs;
-                    abs = 1024 - abs;
-                    
-                    amp = (synth_vol_getVolume(note->vol, perc) * abs) >> 10;
-                } break;
-                case W_NOISE: {
-                    // TODO
-                } break;
-                // TODO modularize
-                default:
-                    amp = 0;
-            }
-            
-            // Pan the sound and buffer it
-            if (pos + i < note->keyoff) {
-                left[i] += 0x7fff * (100 - note->pan) * amp / 25600;
-                right[i] += 0x7fff * note->pan * amp / 25600;
-            }
-            
-            i++;
-        }
-        
-        rem -= i;
-        pos += i;
-    }
-    
-    note->pos = pos;
-__err:
-    return rem;
+    // Synthesize from a single function!
+    return synth_note_synthesizeHacky(note, samples, left, right, &(note->pos));
 }
 
 /**
@@ -492,7 +407,7 @@ int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
                     abs = (abs >= 0)?abs:-abs;
                     abs = 1024 - abs;
                     
-                    amp = (synth_vol_getVolume(note->vol, perc) * abs) >> 10;
+                    amp = (synth_vol_getVolume(note->vol, perc) * abs * 2) >> 10;
                 } break;
                 case W_NOISE: {
                     // TODO
