@@ -232,6 +232,8 @@ synth_bool synth_note_doLoop(synthNote *note);
  */
 synth_bool synth_note_didFinish(synthNote *note);
 
+synth_bool synth_note_didFinishHacky(synthNote *note, int _pos);
+
 /**
  * Reset the note so it can be played again at a later time
  * 
@@ -250,6 +252,9 @@ void synth_note_reset(synthNote *note);
  */
 int synth_note_synthesize(synthNote *note, int samples, uint16_t *left,
     uint16_t *right);
+
+int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
+    uint16_t *right, int *_pos);
 
 /**
  * Get how many samples a note would have

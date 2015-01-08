@@ -22,6 +22,7 @@ synth_err synth_track_init(synthTrack *track) {
     synth_track_setLoopPoint(track, -1);
     track->len = 0;
     track->pos = 0;
+    track->notepos = 0;
     
     // Initialize the notes array with a single note
     track->notes = (synthNote**)malloc(sizeof(synthNote*));
@@ -128,10 +129,11 @@ void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
         
         prev = rem;
         // Synthesize samples for the current note
-        rem = synth_note_synthesize(track->notes[track->pos], rem, left,
-            right);
+        rem = synth_note_synthesizeHacky(track->notes[track->pos], rem, left,
+            right, &(track->notepos));
         
-        if (synth_note_didFinish(track->notes[track->pos]) == SYNTH_TRUE) {
+        if (synth_note_didFinishHacky(track->notes[track->pos], track->notepos) == SYNTH_TRUE) {
+            track->notepos = 0;
             // Check if the current note is a loop point and if there's any jump
             if (synth_note_doLoop(track->notes[track->pos]) == SYNTH_TRUE)
                 // Go to the loop point and increase the counter

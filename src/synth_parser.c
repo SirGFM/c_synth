@@ -612,16 +612,27 @@ synth_err synth_parser_note(synthParserCtx *ctx) {
 COMPILER synthNote *pNote;
     synth_err rv;
     synth_note note;
-    int duration;
+    int duration, octave;
     
     // Callee function already assures this, but...
     SYNTH_ASSERT_TOKEN(T_NOTE);
     
     // Set initial duration to whatever the default is
     duration = ctx->duration;
+    octave = ctx->octave;
     
     // Store the note to be played
     note = (synth_note)synth_lex_getValuei(ctx->lexCtx);
+    
+    // Adjuste the note
+    if (note == N_CB) {
+        note = N_B;
+        octave--;
+    }
+    else if (note == N_BS) {
+        note = N_C;
+        octave++;
+    }
     
     // Get next token
     rv = synth_lex_getToken(ctx->lexCtx);
@@ -638,8 +649,7 @@ COMPILER synthNote *pNote;
     
     // If there are any '.', add half the duration every time
     if (synth_lex_lookupToken(ctx->lexCtx) == T_DURATION) {
-        int dots;
-        int d;
+        int dots, d;
         
         dots = synth_lex_getValuei(ctx->lexCtx);
         d = duration;
@@ -664,7 +674,7 @@ COMPILER        &pNote,
 COMPILER        note,
 COMPILER        duration,
 COMPILER        ctx->bpm,
-COMPILER        ctx->octave,
+COMPILER        octave,
 COMPILER        ctx->pan,
 COMPILER        ctx->keyoff,
 COMPILER        ctx->vol,

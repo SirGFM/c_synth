@@ -49,5 +49,8 @@ synth_err synth_audio_addTrack(synthAudio *audio, synthTrack *track);
 void synth_audio_synthesize(synthAudio *aud, int samples, uint16_t *left,
     uint16_t *right);
 
+int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
+    uint16_t *right, int *_pos);
+
 #endif
 

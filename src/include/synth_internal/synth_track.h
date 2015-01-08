@@ -29,6 +29,10 @@ struct stSynthTrack {
      */
     int pos;
     /**
+     * Position inside a note
+     */
+    int notepos;
+    /**
      * Array of notes
      */
     synthNote **notes;
