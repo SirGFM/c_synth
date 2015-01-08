@@ -4,6 +4,7 @@
 #ifndef __SYNTH_PARSER_H_
 #define __SYNTH_PARSER_H_
 
+#include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_track.h>
@@ -128,6 +129,14 @@ synth_err synth_parser_note(synthParserCtx *ctx);
  * @return The error code
  */
 synth_err synth_parser_bpm(synthParserCtx *ctx);
+
+/**
+ * Get the last parsed audio
+ * 
+ * @param ctx The context
+ * @return The parsed audio
+ */
+synthAudio *synth_parser_getAudio(synthParserCtx *ctx);
 
 char* synth_parser_getErrorString(synthParserCtx *ctx);
 

@@ -719,6 +719,21 @@ static char *synth_parser_getErrorMessage(synthParserCtx *ctx) {
     }
 }
 
+/**
+ * Get the last parsed audio
+ * 
+ * @param ctx The context
+ * @return The parsed audio
+ */
+synthAudio *synth_parser_getAudio(synthParserCtx *ctx) {
+    synthAudio *aud;
+    
+    aud = ctx->audio;
+    ctx->audio = 0;
+    
+    return aud;
+}
+
 char* synth_parser_getErrorString(synthParserCtx *ctx) {
     // If no error has occured, return nothing
     if (ctx->errorFlag == SYNTH_FALSE)

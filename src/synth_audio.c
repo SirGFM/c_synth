@@ -122,3 +122,26 @@ __err:
     return rv;
 }
 
+/**
+ * Synthesize part of this audio to a buffer
+ * 
+ * @param audio Audio to be synthesized
+ * @param samples How many samples there still are in this "slice"
+ * @param left Left output buffer
+ * @param right Right output buffer
+ */
+void synth_audio_synthesize(synthAudio *aud, int samples, uint16_t *left,
+    uint16_t *right) {
+    int i;
+    
+    i = 0;
+    while (i < aud->len) {
+        synthTrack *track;
+        
+        track = aud->tracks[i];
+        synth_track_synthesize(track, samples, left, right);
+        
+        i++;
+    }
+}
+
