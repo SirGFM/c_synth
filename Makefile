@@ -38,7 +38,7 @@ CC := gcc
 #===============================================================================
 # Define LFLAGS (linker flags)
 #===============================================================================
-  LFLAGS := 
+  LFLAGS := -lpthread
   SDLLFLAGS := -lm -lSDL2main -lSDL2
   ifeq ($(OS), Win)
     SDLLFLAGS := -lmingw32 $(SDLLFLAGS)
@@ -58,12 +58,15 @@ CC := gcc
 #===============================================================================
   OBJS := $(OBJDIR)/synth.o \
           $(OBJDIR)/synth_audio.o \
+          $(OBJDIR)/synth_audiolist.o \
+          $(OBJDIR)/synth_buffer.o \
           $(OBJDIR)/synth_cache.o \
           $(OBJDIR)/synth_lexer.o \
           $(OBJDIR)/synth_note.o \
           $(OBJDIR)/synth_parser.o \
           $(OBJDIR)/synth_prng.o \
           $(OBJDIR)/synth_sdl2_backend.o \
+          $(OBJDIR)/synth_thread.o \
           $(OBJDIR)/synth_track.o \
           $(OBJDIR)/synth_volume.o
 #===============================================================================

@@ -6,6 +6,7 @@
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_cache.h>
+#include <synth_internal/synth_thread.h>
 
 static synth_bool synth_inited = SYNTH_FALSE;
 
@@ -23,6 +24,9 @@ synth_err synth_init(int size, int freq) {
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_FALSE, SYNTH_ALREADY_INITIALIZED);
     
     rv = synth_cache_init(freq);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    rv = synth_thread_init();
     SYNTH_ASSERT(rv == SYNTH_OK);
     
     synth_inited = SYNTH_TRUE;

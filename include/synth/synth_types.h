@@ -66,5 +66,11 @@ typedef enum {
     TK_MAX
 } synth_token;
 
+typedef enum {
+    A_AUDIO,
+    A_SFX,
+    A_MAX
+} synth_audio_type;
+
 #endif
 

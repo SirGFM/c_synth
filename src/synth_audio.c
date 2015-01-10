@@ -11,12 +11,76 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO feature: per-track volume
+
+/**
+ * Parse a mml file into an audio
+ * 
+ * @param ctx Variable that will store the audio
+ * @param filename MML's filename
+ * @return The error code
+ */
 synth_err synth_audio_loadf(synthAudio **audio, char *filename) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+    synth_err rv;
+    synthParserCtx *ctx = 0;
+    
+    // Sanitize input
+    SYNTH_ASSERT_ERR(audio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(filename, SYNTH_BAD_PARAM_ERR);
+    
+    // Init parsing
+    rv = synth_parser_initParsef(&ctx, filename);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    // Parse the stream
+    rv = synth_parser_audio(ctx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    // Get the generated audio
+    *audio = synth_parser_getAudio(ctx);
+    
+    rv = SYNTH_OK;
+__err:
+    // Clean up memory
+    synth_parser_clean(&ctx);
+    
+    return rv;
 }
 
+/**
+ * Parse a mml string into an audio
+ * 
+ * @param ctx Variable that will store the audio
+ * @param mml String with the mml audio (it needn't be null-terminated)
+ * @param len String's length
+ * @return The error code
+ */
 synth_err synth_audio_loads(synthAudio **audio, char *mml, int len) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+    synth_err rv;
+    synthParserCtx *ctx = 0;
+    
+    // Sanitize input
+    SYNTH_ASSERT_ERR(audio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(mml, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(len > 0, SYNTH_BAD_PARAM_ERR);
+    
+    // Init parsing
+    rv = synth_parser_initParses(&ctx, mml, len);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    // Parse the stream
+    rv = synth_parser_audio(ctx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    // Get the generated audio
+    *audio = synth_parser_getAudio(ctx);
+    
+    rv = SYNTH_OK;
+__err:
+    // Clean up memory
+    synth_parser_clean(&ctx);
+    
+    return rv;
 }
 
 /**
@@ -38,8 +102,10 @@ void synth_audio_free(synthAudio **audio) {
         i = 0;
         // Release every track
         while (i < tmp->len) {
-            synth_track_clean(tmp->tracks[i]);
-            free(tmp->tracks[i]);
+            if (tmp->tracks[i]) {
+                synth_track_clean(tmp->tracks[i]);
+                free(tmp->tracks[i]);
+            }
             i++;
         }
         
@@ -55,7 +121,25 @@ __err:
     return;
 }
 
-void synth_audio_play(synthAudio *audio) {
+/**
+ * Reset and play an audio
+ */
+void synth_audio_playAudio(synthAudio *audio) {
+    
+}
+
+/**
+ * Play a single track audio
+ * If called consecutive times on the same source, they'll stack
+ */
+synth_err synth_audio_playSFX(synthAudio *audio) {
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+}
+
+/**
+ * Stop (and reset) the previous bgm and play the new one
+ */
+void synth_audio_playBGM(synthAudio *audio) {
     
 }
 
@@ -143,5 +227,44 @@ void synth_audio_synthesize(synthAudio *aud, int samples, uint16_t *left,
         
         i++;
     }
+}
+
+/**
+ * Reset an audio
+ * 
+ * @param The audio
+ */
+void synth_audio_reset(synthAudio *aud) {
+    int i;
+    
+    i = 0;
+    while (i < aud->len) {
+        synth_track_reset(aud->tracks[i]);
+        i++;
+    }
+}
+
+/**
+ * Whether the audio finished playing
+ * 
+ * @param audio The audio
+ * @return Error code
+ */
+synth_bool synth_audio_didFinish(synthAudio *audio) {
+    synth_bool rv;
+    int i;
+    
+    rv = SYNTH_FALSE;
+    
+    // Check that every track finished playing
+    i = 0;
+    while (i < audio->len) {
+        SYNTH_ASSERT(synth_track_didFinish(audio->tracks[i]) == SYNTH_TRUE);
+        i++;
+    }
+    
+    rv = SYNTH_TRUE;
+__err:
+    return rv;
 }
 

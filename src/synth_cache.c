@@ -10,16 +10,28 @@
 
 #include <stdlib.h>
 
+/**
+ * Frequency of the synthesizer (in samples per minute)
+ */
 static int gl_freq;
 
+/**
+ * Buffer for storing notes (but not loop notes!)
+ */
 static int nlen;
 static int nbuflen;
 static synthNote **notes;
 
+/**
+ * Buffer for storing volumes
+ */
 static int vlen;
 static int vbuflen;
 static synthVolume **volumes;
 
+/**
+ * Ugly buffer for storing loops (totally un-optmized memory wise)
+ */
 static int llen;
 static int lbuflen;
 static synthNote **loops;

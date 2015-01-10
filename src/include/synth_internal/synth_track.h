@@ -98,5 +98,12 @@ synth_bool synth_track_didFinish(synthTrack *track);
 void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
     uint16_t *right);
 
+/**
+ * Reset a track
+ * 
+ * @param track The track
+ */
+void synth_track_reset(synthTrack *track);
+
 #endif
 

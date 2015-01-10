@@ -123,6 +123,8 @@ void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
     // remainder
     int rem;
     
+    SYNTH_ASSERT(synth_track_didFinish(track) == SYNTH_FALSE);
+    
     rem = samples;
     while (1) {
         int prev;
@@ -161,5 +163,25 @@ void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
         left += prev - rem;
         right += prev - rem;
     }
+    
+__err:
+    return;
+}
+
+/**
+ * Reset a track
+ * 
+ * @param track The track
+ */
+void synth_track_reset(synthTrack *track) {
+    int i;
+    
+    // Reset every note on this track
+    i = 0;
+    while (i < track->len) {
+        synth_note_reset(track->notes[i]);
+        i++;
+    }
+    track->notepos = 0;
 }
 
