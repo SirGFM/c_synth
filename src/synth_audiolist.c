@@ -3,6 +3,7 @@
  */
 #include <synth/synth_assert.h>
 #include <synth/synth_audio.h>
+#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_audio.h>
@@ -105,6 +106,8 @@ void synth_list_setBgm(synthAudio *aud) {
     synth_thread_lockAudio();
     newBgm = aud;
     synth_thread_unlockAudio();
+    // Unpause (or continue) the backend
+    synth_bkend_unpause();
 }
 
 /**
@@ -142,6 +145,8 @@ synth_err synth_list_addAudio(synthAudio *aud) {
     backlist = node;
     synth_thread_unlockAudio();
     
+    // Unpause (or continue) the backend
+    synth_bkend_unpause();
     rv = SYNTH_OK;
 __err:
     return rv;
@@ -224,6 +229,11 @@ void synth_list_merge() {
         
         synth_audio_reset(bgm);
     }
+    
+    // If there are no audios, pause the backend
+    if (!bgm && !audios)
+        synth_bkend_pause();
+    
     synth_thread_unlockAudio();
 }
 
