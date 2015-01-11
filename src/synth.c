@@ -31,7 +31,6 @@ synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
     rv = synth_cache_init(freq);
     SYNTH_ASSERT(rv == SYNTH_OK);
     
-    
     if (doBuf == SYNTH_TRUE) {
         rv = synth_buf_init(size);
         SYNTH_ASSERT(rv == SYNTH_OK);

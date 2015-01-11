@@ -247,6 +247,7 @@ void synth_list_merge() {
 void synth_list_synthesize(int samples, uint16_t *left, uint16_t *right) {
     synthList *tmp;
     synthList *prev;
+    int i;
     
     // Lock the buffer, so we can 'feed' it
     synth_thread_lockBuffer();

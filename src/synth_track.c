@@ -183,5 +183,6 @@ void synth_track_reset(synthTrack *track) {
         i++;
     }
     track->notepos = 0;
+    track->pos = 0;
 }
 

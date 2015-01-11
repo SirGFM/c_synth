@@ -10,9 +10,9 @@
 #include <synth/synth_types.h>
 
 static char mml[] = "t90 l16 o5 e e8 e r c e r g4 > g4 <";
-#define TIME 6
+#define TIME 3
 #define FREQ 44100
-#define SAMPLES 102400
+#define SAMPLES 2048
 
 int main(int argc, char *argv[]) {
     int rv, time;

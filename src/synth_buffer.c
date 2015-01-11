@@ -12,7 +12,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include <stdio.h>
 
 /**
@@ -109,7 +108,7 @@ synth_bool synth_buf_doBuffer() {
  * Update the buffer (synthesize stuff)
  */
 void synth_buf_update() {
-    int size;
+    int size, i;
     
     // If already read all the buffer
     if (pos == len) {
@@ -117,7 +116,7 @@ void synth_buf_update() {
         pos = 0;
     }
     else {
-        int i, l;
+        int l;
         
         // Otherwise push remaining bytes to the start and set the size
         // accordingly
@@ -129,8 +128,15 @@ void synth_buf_update() {
             i++;
         }
         
-        pos = len - pos;
+        pos = i;
         size = buflen - pos;
+    }
+    
+    i = pos;
+    while (i < size) {
+        synth_buf_left[i] = 0;
+        synth_buf_right[i] = 0;
+        i++;
     }
     
     // Then, synthesize the audio
