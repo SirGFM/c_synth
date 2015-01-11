@@ -12,7 +12,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 /**
  * Whether this module has been initialized
@@ -99,7 +98,7 @@ int synth_buf_getSize() {
  * Whether should buffer more or not
  */
 synth_bool synth_buf_doBuffer() {
-    if (len - pos > synth_bkend_getSamplesPerChannel())
+    if (len - pos >= synth_bkend_getSamplesPerChannel())
         return SYNTH_FALSE;
     return SYNTH_TRUE;
 }
@@ -142,8 +141,8 @@ void synth_buf_update() {
     // Then, synthesize the audio
     synth_list_synthesize(size, synth_buf_left+pos, synth_buf_right+pos);
     
+    len = pos+size;
     pos = 0;
-    len = buflen;
 }
 
 /**
