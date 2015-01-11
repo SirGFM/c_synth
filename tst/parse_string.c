@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     rv = SDL_Init(0);
     SYNTH_ASSERT(rv >= 0);
     
-    srv = synth_init(1024, FREQ);
+    srv = synth_init(FREQ, SYNTH_FALSE, 0);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     
     if (argc > 1) {

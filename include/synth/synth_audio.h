@@ -7,6 +7,7 @@
 #define __SYNTH_AUDIO_H_
 
 #include <synth/synth_errors.h>
+#include <synth/synth_types.h>
 
 /**
  * Forward declaration of the audio type
