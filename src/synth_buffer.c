@@ -3,6 +3,7 @@
  */
 #include <synth/synth_audio.h>
 #include <synth/synth_assert.h>
+#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_audio.h>
@@ -11,6 +12,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#include <stdio.h>
 
 /**
  * Whether this module has been initialized
@@ -97,7 +100,7 @@ int synth_buf_getSize() {
  * Whether should buffer more or not
  */
 synth_bool synth_buf_doBuffer() {
-    if (pos >= len)
+    if (len - pos > synth_bkend_getSamplesPerChannel())
         return SYNTH_FALSE;
     return SYNTH_TRUE;
 }
@@ -111,24 +114,23 @@ void synth_buf_update() {
     // If already read all the buffer
     if (pos == len) {
         size = buflen;
+        pos = 0;
     }
     else {
+        int i, l;
+        
         // Otherwise push remaining bytes to the start and set the size
         // accordingly
-        memmove
-            (
-            synth_buf_left,
-            synth_buf_left + pos,
-            sizeof(uint16_t)*(len - pos)
-            );
-        memmove
-            (
-            synth_buf_right,
-            synth_buf_right + pos,
-            sizeof(uint16_t)*(len - pos)
-            );
-        size = buflen - pos;
+        i = 0;
+        l = len-pos;
+        while (i < l) {
+            synth_buf_left[i] = synth_buf_left[i+pos];
+            synth_buf_right[i] = synth_buf_right[i+pos];
+            i++;
+        }
+        
         pos = len - pos;
+        size = buflen - pos;
     }
     
     // Then, synthesize the audio
@@ -152,7 +154,7 @@ synth_err synth_buf_getBuffer(uint16_t **left, uint16_t **right, int samples) {
     synth_err rv;
     
     // Make sure that there are (at least) as many samples as requested
-    SYNTH_ASSERT_ERR(len - pos <= samples, SYNTH_BUFFER_NOT_ENOUGH_SAMPLES);
+    SYNTH_ASSERT_ERR(len - pos >= samples, SYNTH_BUFFER_NOT_ENOUGH_SAMPLES);
     
     // Set each returned buffer
     *left = synth_buf_left + pos;

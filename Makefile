@@ -88,25 +88,17 @@ $(OBJDIR)/%.o: %.c
 
 tests:  \
         $(BINDIR)/parse_string \
+        $(BINDIR)/play_audio \
         $(BINDIR)/play_hc_mario \
         $(BINDIR)/play_hc_track \
         $(BINDIR)/test_loop \
         $(BINDIR)/tokenize_mml
 
-$(BINDIR)/play_hc_track: $(OBJDIR)/play_hc_track.o $(BINDIR)/$(TARGET).a
-	$(CC) $(CFLAGS) -o $(BINDIR)/play_hc_track $(OBJDIR)/play_hc_track.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
+$(BINDIR)/play_audio: MKDIRS $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a
+	$(CC) $(CFLAGS) -o $(BINDIR)/play_audio $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
-$(BINDIR)/play_hc_mario: $(OBJDIR)/play_hc_mario.o $(BINDIR)/$(TARGET).a
-	$(CC) $(CFLAGS) -o $(BINDIR)/play_hc_mario $(OBJDIR)/play_hc_mario.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
-
-$(BINDIR)/tokenize_mml: $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a
+$(BINDIR)/tokenize_mml: MKDIRS $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a
 	$(CC) $(CFLAGS) -o $(BINDIR)/tokenize_mml $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
-
-$(BINDIR)/parse_string: $(OBJDIR)/parse_string.o $(BINDIR)/$(TARGET).a
-	$(CC) $(CFLAGS) -o $(BINDIR)/parse_string $(OBJDIR)/parse_string.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
-
-$(BINDIR)/test_loop: $(OBJDIR)/test_loop.o $(BINDIR)/$(TARGET).a
-	$(CC) $(CFLAGS) -o $(BINDIR)/test_loop $(OBJDIR)/test_loop.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
 MKDIRS: | $(OBJDIR)
 

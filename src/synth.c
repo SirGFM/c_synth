@@ -28,6 +28,10 @@ synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
     
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_FALSE, SYNTH_ALREADY_INITIALIZED);
     
+    rv = synth_cache_init(freq);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    
+    
     if (doBuf == SYNTH_TRUE) {
         rv = synth_buf_init(size);
         SYNTH_ASSERT(rv == SYNTH_OK);
@@ -44,9 +48,6 @@ synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
     
-    rv = synth_cache_init(freq);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    
     synth_inited = SYNTH_TRUE;
     rv = SYNTH_OK;
 __err:
@@ -61,6 +62,7 @@ synth_err synth_clean() {
     
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_TRUE, SYNTH_NOT_INITIALIZED);
     
+    synth_bkend_pause();
     synth_bkend_clean();
     synth_thread_clean();
     synth_buf_clean();

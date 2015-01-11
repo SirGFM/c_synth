@@ -36,7 +36,7 @@ synth_err synth_bkend_setup() {
     // Setup the desired specs
     desired.freq = synth_getFrequency();
     desired.channels = 2;
-    desired.samples = synth_getSamples();
+    desired.samples = 1024; //synth_getSamples() * 2;
     
     desired.callback = synth_sdl2_bkend_callback;
     desired.userdata = 0;
@@ -45,7 +45,6 @@ synth_err synth_bkend_setup() {
     dev = SDL_OpenAudioDevice(NULL, 0, &desired, &spec, 0);
     SYNTH_ASSERT_ERR(dev > 0, SYNTH_INTERNAL_ERR);
     
-    //SDL_PauseAudioDevice(dev, 0);
     setuped = 1;
     rv = SYNTH_OK;
 __err:
@@ -79,6 +78,15 @@ void synth_bkend_pause() {
  */
 void synth_bkend_unpause() {
     SDL_PauseAudioDevice(dev, 0);
+}
+
+/**
+ * Get how many samples should be buffered before playing
+ * 
+ * @return 
+ */
+int synth_bkend_getSamplesPerChannel() {
+    return 512;
 }
 
 /**

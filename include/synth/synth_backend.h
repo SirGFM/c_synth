@@ -30,6 +30,13 @@ void synth_bkend_pause();
 void synth_bkend_unpause();
 
 /**
+ * Get how many samples should be buffered before playing
+ * 
+ * @return 
+ */
+int synth_bkend_getSamplesPerChannel();
+
+/**
  * Set the requested parameter. Since setup only accepts two parameters, this
  * can be used to set additional data before hand.
  * 
