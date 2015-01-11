@@ -30,6 +30,13 @@ synth_err synth_buf_init(int size);
 void synth_buf_clean();
 
 /**
+ * Get how many samples the buffer should have
+ * 
+ * @return The buffer size in samples
+ */
+int synth_buf_getSize();
+
+/**
  * Whether should buffer more or not
  */
 synth_bool synth_buf_doBuffer();

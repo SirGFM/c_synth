@@ -77,6 +77,8 @@ CC := gcc
 all: MKDIRS $(BINDIR)/$(TARGET).a tests
 #===============================================================================
 
+lib: MKDIRS $(BINDIR)/$(TARGET).a
+
 $(BINDIR)/$(TARGET).a: $(OBJS)
 	rm -f $(BINDIR)/$(TARGET).a
 	ar -cvq $(BINDIR)/$(TARGET).a $(OBJS)

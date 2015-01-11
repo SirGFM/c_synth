@@ -11,11 +11,8 @@
 
 /**
  * Setup the backend
- * 
- * @param freq Frequency in Hz (usual: 44100)
- * @param chan Number of channels (usual: 2)
  */
-synth_err synth_bkend_setup(int freq, int chan);
+synth_err synth_bkend_setup();
 
 /**
  * Cleanup the backend
@@ -31,21 +28,6 @@ void synth_bkend_pause();
  * Unpauses the backend (if it runs on its own thread)
  */
 void synth_bkend_unpause();
-
-/**
- * Get the set frequency
- * 
- * @return Returns the frequency
- */
-int synth_bkend_getFrequency();
-
-/**
- * Fill up the buffer that shall be outputed.
- *
- * @param data Data to be fed the buffer
- * @param len How many bytes there are in data
- */
-void synth_bkend_fillBuffer(void *data, int len);
 
 /**
  * Set the requested parameter. Since setup only accepts two parameters, this

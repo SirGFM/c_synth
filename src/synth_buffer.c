@@ -85,6 +85,15 @@ __err:
 }
 
 /**
+ * Get how many samples the buffer should have
+ * 
+ * @return The buffer size in samples
+ */
+int synth_buf_getSize() {
+    return buflen;
+}
+
+/**
  * Whether should buffer more or not
  */
 synth_bool synth_buf_doBuffer() {

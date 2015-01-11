@@ -65,6 +65,49 @@ __err:
 }
 
 /**
+ * Get the frequency being used
+ * 
+ * @return The frequency
+ */
+int synth_getFrequency() {
+    return synth_cache_getFrequency();
+}
+
+/**
+ * Get how many samples should be buffered
+ * 
+ * @return The number of samples
+ */
+int synth_getSamples() {
+    return synth_buf_getSize();
+}
+
+/**
+ * Signal the buffering thread to buffer more samples
+ */
+void synth_requestBuffering() {
+    synth_thread_wakeupThread();
+}
+
+/**
+ * Try to lock buffer, allowing it to be read. SYNTH_COULDNT_LOCK means that the
+ * buffer is already in use.
+ * 
+ * @return Error code
+ */
+synth_err synth_lockBuffer() {
+    return synth_thread_tryLockBuffer();
+}
+
+/**
+ * Unlock the buffer
+ */
+void synth_unlockBuffer() {
+    return synth_thread_unlockBuffer();
+}
+
+/**
+ * NOT thread-safe.
  * Read some samples from the buffer. If it returns
  * SYNTH_BUFFER_NOT_ENOUGH_SAMPLES then more samples were requested than there
  * are currently buffered.

@@ -23,6 +23,37 @@ synth_err synth_init(int freq, synth_bool doBuffer, int size);
  */
 synth_err synth_clean();
 
+/**
+ * Get the frequency being used
+ * 
+ * @return The frequency
+ */
+int synth_getFrequency();
+
+/**
+ * Get how many samples should be buffered
+ * 
+ * @return The number of samples
+ */
+int synth_getSamples();
+
+/**
+ * Signal the buffering thread to buffer more samples
+ */
+void synth_requestBuffering();
+
+/**
+ * Try to lock buffer, allowing it to be read. SYNTH_COULDNT_LOCK means that the
+ * buffer is already in use.
+ * 
+ * @return Error code
+ */
+synth_err synth_lockBuffer();
+
+/**
+ * Unlock the buffer
+ */
+void synth_unlockBuffer();
 
 /**
  * Read some samples from the buffer. If it returns

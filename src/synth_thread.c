@@ -148,6 +148,21 @@ void synth_thread_unlockAudio() {
 }
 
 /**
+ * Try to lock the buffer mutex
+ * 
+ * @return the Error code
+ */
+synth_err synth_thread_tryLockBuffer() {
+    int irv;
+    
+    irv = pthread_mutex_trylock(&bufmux);
+    
+    if (irv != 0)
+        return SYNTH_COULDNT_LOCK;
+    return SYNTH_OK;
+}
+
+/**
  * Lock buffer mutex
  */
 void synth_thread_lockBuffer() {
@@ -159,5 +174,12 @@ void synth_thread_lockBuffer() {
  */
 void synth_thread_unlockBuffer() {
     pthread_mutex_unlock(&bufmux);
+}
+
+/**
+ * Signal the buffering thread to wakeup
+ */
+void synth_thread_wakeupThread() {
+    pthread_cond_signal(&signal);
 }
 
