@@ -40,7 +40,35 @@ synth_err synth_audio_loads(synthAudio **audio, char *mml, int len);
  */
 void synth_audio_free(synthAudio **audio);
 
-void synth_audio_play(synthAudio *audio);
+/**
+ * Reset and play an audio. The audio shouldn't be played, otherwise the
+ * synthesizer will have unexpected behaviour
+ * 
+ * @param audio The audio
+ * @return The error code
+ */
+synth_err synth_audio_playAudio(synthAudio *audio);
+
+/**
+ * Play a single track audio. Different from playAudio, this can be called with
+ * an already playing audio
+ * 
+ * @param audio The audio
+ * @return The error code
+ */
+synth_err synth_audio_playSFX(synthAudio *audio);
+
+/**
+ * Reset and play an audio as a bgm
+ * 
+ * @param audio The audio
+ */
+void synth_audio_playBGM(synthAudio *audio);
+
+/**
+ * Stop the currently playing bgm
+ */
+void synth_audio_stopBgm();
 
 /**
  * Whether the audio finished playing

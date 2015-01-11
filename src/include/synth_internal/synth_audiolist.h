@@ -28,6 +28,10 @@ void synth_list_clean();
  */
 void synth_list_setBgm(synthAudio *aud);
 /**
+ * Thread-safe. Stop the currently playing bgm
+ */
+void synth_list_stopBgm();
+/**
  * Thread-safe. Set up an audio addition.
  * The audio will be reset, so be sure it's not playing already
  * 

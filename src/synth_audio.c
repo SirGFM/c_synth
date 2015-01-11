@@ -5,6 +5,7 @@
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_audiolist.h>
 #include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_track.h>
 
@@ -122,25 +123,41 @@ __err:
 }
 
 /**
- * Reset and play an audio
+ * Reset and play an audio. The audio shouldn't be played, otherwise the
+ * synthesizer will have unexpected behaviour
+ * 
+ * @param audio The audio
+ * @return The error code
  */
-void synth_audio_playAudio(synthAudio *audio) {
-    
+synth_err synth_audio_playAudio(synthAudio *audio) {
+    return synth_list_addAudio(audio);
 }
 
 /**
- * Play a single track audio
- * If called consecutive times on the same source, they'll stack
+ * Play a single track audio. Different from playAudio, this can be called with
+ * an already playing audio
+ * 
+ * @param audio The audio
+ * @return The error code
  */
 synth_err synth_audio_playSFX(synthAudio *audio) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+    return synth_list_addSfx(audio);
 }
 
 /**
- * Stop (and reset) the previous bgm and play the new one
+ * Reset and play an audio as a bgm
+ * 
+ * @param audio The audio
  */
 void synth_audio_playBGM(synthAudio *audio) {
-    
+    synth_list_setBgm(audio);
+}
+
+/**
+ * Stop the currently playing bgm
+ */
+void synth_audio_stopBgm() {
+    synth_list_stopBgm();
 }
 
 /**

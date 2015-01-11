@@ -101,9 +101,19 @@ void synth_list_clean() {
  * @return Error code
  */
 void synth_list_setBgm(synthAudio *aud) {
-    // Lock and add the node to the back list
+    // Lock and set the to be played bgm
     synth_thread_lockAudio();
     newBgm = aud;
+    synth_thread_unlockAudio();
+}
+
+/**
+ * Thread-safe. Stop the currently playing bgm
+ */
+void synth_list_stopBgm() {
+    // Lock and remove the playing bgm
+    synth_thread_lockAudio();
+    bgm = 0;
     synth_thread_unlockAudio();
 }
 
@@ -211,6 +221,8 @@ void synth_list_merge() {
     if (newBgm) {
         bgm = newBgm;
         newBgm = 0;
+        
+        synth_audio_reset(bgm);
     }
     synth_thread_unlockAudio();
 }
