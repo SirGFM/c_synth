@@ -12,11 +12,12 @@
  * buffers
  * 
  * @param freq At which frequency (samples per minute) should synthesizer work
- * @param doBuffer Whether the buffering thread should run or not
+ * @param doBuf Whether the buffering thread should run or not
  * @param size How many samples should be buffered
+ * @param doBkend Whether should start the compiled backend
  * @return Error code
  */
-synth_err synth_init(int freq, synth_bool doBuffer, int size);
+synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend);
 
 /**
  * Clean up any allocated memory and the buffering thread

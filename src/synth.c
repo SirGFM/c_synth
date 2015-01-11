@@ -3,6 +3,7 @@
  */
 #include <synth/synth.h>
 #include <synth/synth_assert.h>
+#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_audiolist.h>
@@ -17,16 +18,17 @@ static synth_bool synth_inited = SYNTH_FALSE;
  * buffers
  * 
  * @param freq At which frequency (samples per minute) should synthesizer work
- * @param doBuffer Whether the buffering thread should run or not
+ * @param doBuf Whether the buffering thread should run or not
  * @param size How many samples should be buffered
+ * @param doBkend Whether should start the compiled backend
  * @return Error code
  */
-synth_err synth_init(int freq, synth_bool doBuffer, int size) {
+synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
     synth_err rv;
     
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_FALSE, SYNTH_ALREADY_INITIALIZED);
     
-    if (doBuffer) {
+    if (doBuf == SYNTH_TRUE) {
         rv = synth_buf_init(size);
         SYNTH_ASSERT(rv == SYNTH_OK);
         
@@ -34,6 +36,11 @@ synth_err synth_init(int freq, synth_bool doBuffer, int size) {
         SYNTH_ASSERT(rv == SYNTH_OK);
         
         rv = synth_thread_init();
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+    
+    if (doBkend == SYNTH_TRUE) {
+        rv = synth_bkend_setup();
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
     
@@ -54,6 +61,7 @@ synth_err synth_clean() {
     
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_TRUE, SYNTH_NOT_INITIALIZED);
     
+    synth_bkend_clean();
     synth_thread_clean();
     synth_buf_clean();
     synth_list_clean();
