@@ -86,12 +86,12 @@ $(BINDIR)/$(TARGET).a: $(OBJS)
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-tests:  $(BINDIR)/play_hardcoded_buffer \
-        $(BINDIR)/play_hc_track $(BINDIR)/play_hc_mario $(BINDIR)/parse_string \
-        $(BINDIR)/tokenize_mml $(BINDIR)/test_loop
-
-$(BINDIR)/play_hardcoded_buffer: $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a
-	$(CC) $(CFLAGS) -o $(BINDIR)/play_hardcoded_buffer $(OBJDIR)/play_hardcoded_buffer.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
+tests:  \
+        $(BINDIR)/parse_string \
+        $(BINDIR)/play_hc_mario \
+        $(BINDIR)/play_hc_track \
+        $(BINDIR)/test_loop \
+        $(BINDIR)/tokenize_mml
 
 $(BINDIR)/play_hc_track: $(OBJDIR)/play_hc_track.o $(BINDIR)/$(TARGET).a
 	$(CC) $(CFLAGS) -o $(BINDIR)/play_hc_track $(OBJDIR)/play_hc_track.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
