@@ -9,6 +9,8 @@
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 
+#include <stdio.h>
+
 static char mml[] = "t90 l16 o5 e e8 e r c e r g4 > g4 <";
 #define TIME 3
 #define FREQ 44100
