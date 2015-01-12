@@ -39,9 +39,9 @@ CC := gcc
 # Define LFLAGS (linker flags)
 #===============================================================================
   LFLAGS := -lpthread
-  SDLLFLAGS := -lm -lSDL2main -lSDL2
+  SDLLFLAGS := -lm -lSDL2
   ifeq ($(OS), Win)
-    SDLLFLAGS := -lmingw32 $(SDLLFLAGS)
+    SDLLFLAGS := -lmingw32:-lSDL2main $(SDLLFLAGS)
   endif
 #===============================================================================
 
@@ -87,12 +87,12 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 tests:  \
-        $(BINDIR)/parse_string \
+        $(BINDIR)/cmd_parse \
         $(BINDIR)/play_audio \
-        $(BINDIR)/play_hc_mario \
-        $(BINDIR)/play_hc_track \
-        $(BINDIR)/test_loop \
         $(BINDIR)/tokenize_mml
+
+$(BINDIR)/cmd_parse : MKDIRS $(OBJDIR)/cmd_parse.o $(BINDIR)/$(TARGET).a
+	$(CC) $(CFLAGS) -o $(BINDIR)/cmd_parse $(OBJDIR)/cmd_parse.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
 $(BINDIR)/play_audio: MKDIRS $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a
 	$(CC) $(CFLAGS) -o $(BINDIR)/play_audio $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
