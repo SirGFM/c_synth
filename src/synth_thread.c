@@ -131,6 +131,7 @@ void* synth_thread_main(void *arg) {
     pthread_mutex_destroy(&sigmux);
     
     pthread_exit(NULL);
+	return NULL;
 }
 
 /**
