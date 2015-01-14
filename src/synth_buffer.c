@@ -131,6 +131,7 @@ void synth_buf_update() {
         size = buflen - pos;
     }
     
+    // Clean up buffer, so it can be accumulated
     i = pos;
     while (i < size) {
         synth_buf_left[i] = 0;

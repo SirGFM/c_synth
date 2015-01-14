@@ -2,15 +2,18 @@
  * @file tst/cmd_parse.c
  */
 #include <signal.h>
-#include <unistd.h>
 
 #include <SDL2/SDL.h>
+
+#include <stdio.h>
 
 #include <synth/synth.h>
 #include <synth/synth_assert.h>
 #include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
+
+#include <unistd.h>
 
 #define FREQ 44100
 #define SAMPLES 2048
@@ -42,7 +45,29 @@ int main(int argc, char *argv[]) {
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     
     while (doRun) {
-        // TODO read cmd and create an audio
+        char mml[1024], *ret;
+        int i;
+        
+        ret = fgets(mml, 1024, stdout);
+        
+        SYNTH_ASSERT_ERR(mml == ret, SYNTH_MEM_ERR);
+        
+        i = 0;
+        while (i < 1024) {
+            if (mml[i] == '\n' || mml[i] == '\0')
+                break;
+            i++;
+        }
+        
+        mml[i] = '\0';
+        
+        if (aud)
+            synth_audio_free(&aud);
+        
+        srv = synth_audio_loads(&aud, mml, i);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
+        
+        synth_audio_playAudio(aud);
     }
     
     rv = 0;
