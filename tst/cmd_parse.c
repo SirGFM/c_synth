@@ -3,7 +3,9 @@
  */
 #include <signal.h>
 
+#ifdef USE_SDL
 #include <SDL2/SDL.h>
+#endif
 
 #include <stdio.h>
 
@@ -38,8 +40,10 @@ int main(int argc, char *argv[]) {
     aud = 0;
     
     // Initialize everything
+#ifdef USE_SDL
     rv = SDL_Init(0);
     SYNTH_ASSERT(rv >= 0);
+#endif
     
     srv = synth_init(FREQ, SYNTH_TRUE, SAMPLES, SYNTH_TRUE);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
@@ -73,7 +77,9 @@ int main(int argc, char *argv[]) {
     rv = 0;
 __err:
     synth_clean();
+#ifdef USE_SDL
     SDL_Quit();
+#endif
     synth_audio_free(&aud);
     
     return rv;

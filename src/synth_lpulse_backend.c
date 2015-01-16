@@ -7,6 +7,7 @@
 #include <pulse/error.h>
 
 #include <synth/synth.h>
+#include <synth/synth_assert.h>
 #include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
@@ -14,8 +15,14 @@
 
 #define LPULSE_LEN 1024
 
-// TODO check that everything works as expected!!
-
+/**
+ * Whether the audio was initialized or not
+ */
+synth_bool audio_is_init = SYNTH_FALSE;
+/**
+ * Whether the audio loop should continue or not
+ */
+synth_bool audio_is_running;
 /**
  * Whether the audio stream loop is active or not
  */
@@ -43,6 +50,9 @@ void *audio_thread_main(void *arg);
  */
 synth_err synth_bkend_setup() {
     synth_err rv;
+    int irv;
+    
+    SYNTH_ASSERT(audio_is_init == SYNTH_FALSE);
     
     // Initialize every mutex and condition variable
     irv = pthread_cond_init(&audsignal, NULL);
@@ -52,10 +62,11 @@ synth_err synth_bkend_setup() {
     SYNTH_ASSERT_ERR(irv == 0, SYNTH_THREAD_INIT_FAILED);
     
     // Actually initialize the  thread
-    thread_running = SYNTH_TRUE;
+    audio_is_running = SYNTH_TRUE;
     irv = pthread_create(&audio_thread, NULL, audio_thread_main, NULL);
     SYNTH_ASSERT_ERR(irv == 0, SYNTH_THREAD_INIT_FAILED);
     
+    audio_is_init = SYNTH_TRUE;
     rv = SYNTH_OK;
 __err:
     return rv;
@@ -65,10 +76,14 @@ __err:
  * Cleanup the backend
  */
 void synth_bkend_clean() {
-    thread_running = SYNTH_FALSE;
+    SYNTH_ASSERT(audio_is_init == SYNTH_TRUE);
+    
+    audio_is_running = SYNTH_FALSE;
     synth_bkend_unpause();
     
-    // TODO [...]
+    audio_is_init = SYNTH_FALSE;
+__err:
+    return;
 }
 
 /**
@@ -84,8 +99,10 @@ void synth_bkend_pause() {
  * Unpauses the backend (if it runs on its own thread)
  */
 void synth_bkend_unpause() {
-    audio_is_playing = SYNTH_TRUE;
-    pthread_cond_signal(&signal);
+    if (audio_is_playing == SYNTH_FALSE) {
+        audio_is_playing = SYNTH_TRUE;
+        pthread_cond_signal(&audsignal);
+    }
     
     // TODO libpulse uncork?
 }
@@ -122,16 +139,22 @@ void synth_bkend_getParam(void *data, synth_param param) {
 
 void *audio_thread_main(void *arg) {
     pa_simple *s;
-    pa_samples_spec ss;
+    pa_sample_spec ss;
+    pa_buffer_attr ba;
     uint16_t data[LPULSE_LEN], *left, *right;
     
     // Set the playback specs
-    ss.format = PA_SAMPLES_S16LE;
+    ss.format = PA_SAMPLE_S16LE;
     ss.rate = synth_getFrequency();
     ss.channels = 2;
     
+    ba.maxlength = sizeof(uint16_t)*LPULSE_LEN;
+    ba.tlength = sizeof(uint16_t)*LPULSE_LEN;
+    ba.prebuf = sizeof(uint16_t)*LPULSE_LEN;
+    ba.minreq = sizeof(uint16_t)*LPULSE_LEN;
+    
     // Create the playback stream
-    s = pa_simples_new
+    s = pa_simple_new
             (
             0, // server
             "c_synth", // app name
@@ -140,7 +163,7 @@ void *audio_thread_main(void *arg) {
             "game audio", // stream name
             &ss, // samples specs
             0, // channel map
-            0, // buffering attributes
+            0, //&ba, // buffering attributes
             0 // error
             );
     SYNTH_ASSERT(s);
@@ -148,6 +171,7 @@ void *audio_thread_main(void *arg) {
     pthread_mutex_lock(&audsigmux);   
     // Keep streaming audio
     while (audio_is_running == SYNTH_TRUE) {
+        synth_err rv;
         int irv, err, i;
         
         pthread_mutex_unlock(&audsigmux);   
@@ -155,7 +179,6 @@ void *audio_thread_main(void *arg) {
         while (audio_is_playing == SYNTH_FALSE &&
                audio_is_running == SYNTH_TRUE) {
             pthread_cond_wait(&audsignal, &audsigmux);
-            // Wait for signal
         }
         if (audio_is_running == SYNTH_FALSE)
             break;
@@ -197,8 +220,14 @@ void *audio_thread_main(void *arg) {
     }
     
 __err:
+    if (s)
+        pa_simple_free(s);
+    
+    pthread_mutex_trylock(&audsigmux);
     pthread_mutex_unlock(&audsigmux);
     pthread_mutex_destroy(&audsigmux);
-    return;
+    
+    pthread_exit(NULL);
+    return NULL;
 }
 

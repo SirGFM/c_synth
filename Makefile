@@ -33,15 +33,27 @@ CC := gcc
   ifneq ($(RELEASE), yes)
     CFLAGS := $(CFLAGS) -O0 -g
   endif
+  ifeq ($(USE_SDL), yes)
+    CFLAGS := $(CFLAGS) -DUSE_SDL
+  endif
 #===============================================================================
 
 #===============================================================================
 # Define LFLAGS (linker flags)
 #===============================================================================
   LFLAGS := -lpthread
-  SDLLFLAGS := -lm -lSDL2
+  ifeq ($(USE_SDL), yes)
+    SDLLFLAGS := -lm -lSDL2
+  else
+    SDLLFLAGS := -lm -lpulse-simple
+  endif
+  
   ifeq ($(OS), Win)
-    SDLLFLAGS := -lmingw32:-lSDL2main $(SDLLFLAGS)
+    ifeq ($(USE_SDL), yes)
+      SDLLFLAGS := -lmingw32 -lSDL2main $(SDLLFLAGS)
+    else
+      SDLLFLAGS := -lmingw32 $(SDLLFLAGS)
+    endif
   endif
 #===============================================================================
 
@@ -65,10 +77,15 @@ CC := gcc
           $(OBJDIR)/synth_note.o \
           $(OBJDIR)/synth_parser.o \
           $(OBJDIR)/synth_prng.o \
-          $(OBJDIR)/synth_sdl2_backend.o \
           $(OBJDIR)/synth_thread.o \
           $(OBJDIR)/synth_track.o \
           $(OBJDIR)/synth_volume.o
+ 
+ ifeq ($(USE_SDL), yes)
+   OBJS := $(OBJS) $(OBJDIR)/synth_sdl2_backend.o
+ else
+   OBJS := $(OBJS) $(OBJDIR)/synth_lpulse_backend.o
+ endif
 #===============================================================================
 
 #===============================================================================

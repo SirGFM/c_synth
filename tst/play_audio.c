@@ -1,7 +1,10 @@
 /**
  * @file tst/play_audio.c
  */
-#include <SDL2/SDL.h>
+
+#ifdef USE_SDL
+#  include <SDL2/SDL.h>
+#endif
 
 #include <synth/synth.h>
 #include <synth/synth_assert.h>
@@ -10,6 +13,7 @@
 #include <synth/synth_types.h>
 
 #include <stdio.h>
+#include <unistd.h>
 
 static char mml[] = "t90 l16 o5 e e8 e r c e r g4 > g4 <";
 #define TIME 3
@@ -24,8 +28,10 @@ int main(int argc, char *argv[]) {
     aud = NULL;
     
     // Initialize everything
+#ifdef USE_SDL
     rv = SDL_Init(0);
     SYNTH_ASSERT(rv >= 0);
+#endif
     
     srv = synth_init(FREQ, SYNTH_TRUE, SAMPLES, SYNTH_TRUE);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
@@ -65,12 +71,14 @@ int main(int argc, char *argv[]) {
     
     // Play the audio and wait while it's playing
     synth_audio_playAudio(aud);
-    SDL_Delay((time)*1000);
+    sleep(time);
     
     rv = 0;
 __err:
     synth_clean();
+#ifdef USE_SDL
     SDL_Quit();
+#endif
     synth_audio_free(&aud);
     
     return rv;
