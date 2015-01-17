@@ -19,7 +19,8 @@ static synth_bool synth_inited = SYNTH_FALSE;
  * 
  * @param freq At which frequency (samples per minute) should synthesizer work
  * @param doBuf Whether the buffering thread should run or not
- * @param size How many samples should be buffered per channel
+ * @param size How many samples should be buffered per channel. Must be at least
+ *             synth_bkend_getSamplesPerChannel()
  * @param doBkend Whether should start the compiled backend
  * @return Error code
  */
@@ -27,6 +28,8 @@ synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
     synth_err rv;
     
     SYNTH_ASSERT_ERR(synth_inited == SYNTH_FALSE, SYNTH_ALREADY_INITIALIZED);
+    SYNTH_ASSERT_ERR(size >= synth_bkend_getSamplesPerChannel(),
+        SYNTH_BAD_PARAM_ERR);
     
     rv = synth_cache_init(freq);
     SYNTH_ASSERT(rv == SYNTH_OK);
