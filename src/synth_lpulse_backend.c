@@ -178,7 +178,6 @@ void *audio_thread_main(void *arg) {
         synth_err rv;
         int irv, err, i;
         
-        pthread_mutex_unlock(&audsigmux);   
         // Pause the song using a conditional variable
         while (audio_is_playing == SYNTH_FALSE &&
                audio_is_running == SYNTH_TRUE) {

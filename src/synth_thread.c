@@ -110,6 +110,9 @@ __err:
 void* synth_thread_main(void *arg) {
     // Just started this new thread
     
+    // The docs says it must be locked...
+    pthread_mutex_lock(&sigmux);
+    
     while (thread_running == SYNTH_TRUE) {
         while (synth_buf_doBuffer() == SYNTH_FALSE &&
             thread_running == SYNTH_TRUE)
@@ -122,11 +125,10 @@ void* synth_thread_main(void *arg) {
         
         // Update the buffer
         synth_buf_update();
-        
-        pthread_mutex_unlock(&sigmux);   
     }
     
     // Unlock the mutex, destroy it and exit the thread
+    pthread_mutex_trylock(&sigmux);
     pthread_mutex_unlock(&sigmux);
     pthread_mutex_destroy(&sigmux);
     
