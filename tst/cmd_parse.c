@@ -22,7 +22,7 @@
 
 int doRun = 1;
 
-void sighnd(int sig) {
+void sighnd(int sig, siginfo_t *a, void *b) {
     doRun = 0;
 }
 

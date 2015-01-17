@@ -13,7 +13,7 @@
 #include <synth/synth_types.h>
 #include <synth_internal/synth_thread.h>
 
-#define LPULSE_LEN 1024
+#define LPULSE_LEN 44100
 
 /**
  * Whether the audio was initialized or not
@@ -137,21 +137,25 @@ void synth_bkend_getParam(void *data, synth_param param) {
     
 }
 
+/**
+ * Streaming thread
+ */
 void *audio_thread_main(void *arg) {
     pa_simple *s;
     pa_sample_spec ss;
-    pa_buffer_attr ba;
-    uint16_t data[LPULSE_LEN], *left, *right;
+    //pa_buffer_attr ba;
+    int16_t data[LPULSE_LEN];
+    uint16_t *left, *right;
     
     // Set the playback specs
     ss.format = PA_SAMPLE_S16LE;
     ss.rate = synth_getFrequency();
     ss.channels = 2;
     
-    ba.maxlength = sizeof(uint16_t)*LPULSE_LEN;
-    ba.tlength = sizeof(uint16_t)*LPULSE_LEN;
-    ba.prebuf = sizeof(uint16_t)*LPULSE_LEN;
-    ba.minreq = sizeof(uint16_t)*LPULSE_LEN;
+    //ba.maxlength = sizeof(int16_t)*LPULSE_LEN;
+    //ba.tlength = sizeof(int16_t)*LPULSE_LEN;
+    //ba.prebuf = sizeof(int16_t)*LPULSE_LEN;
+    //ba.minreq = sizeof(int16_t)*LPULSE_LEN;
     
     // Create the playback stream
     s = pa_simple_new
@@ -211,7 +215,7 @@ void *audio_thread_main(void *arg) {
         synth_requestBuffering();
         
         // Output the current buffer
-        irv = pa_simple_write(s, data, LPULSE_LEN, &err);
+        irv = pa_simple_write(s, data, sizeof(int16_t)*LPULSE_LEN, &err);
         SYNTH_ASSERT(irv >= 0);
         
         // Wait until everything is played

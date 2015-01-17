@@ -13,7 +13,7 @@
  * 
  * @param freq At which frequency (samples per minute) should synthesizer work
  * @param doBuf Whether the buffering thread should run or not
- * @param size How many samples should be buffered
+ * @param size How many samples should be buffered per channel
  * @param doBkend Whether should start the compiled backend
  * @return Error code
  */

@@ -9,6 +9,7 @@
 #include <synth/synth.h>
 #include <synth/synth_assert.h>
 #include <synth/synth_audio.h>
+#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
 
@@ -18,7 +19,6 @@
 static char mml[] = "t90 l16 o5 e e8 e r c e r g4 > g4 <";
 #define TIME 3
 #define FREQ 44100
-#define SAMPLES 2048
 
 int main(int argc, char *argv[]) {
     int rv, time;
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     SYNTH_ASSERT(rv >= 0);
 #endif
     
-    srv = synth_init(FREQ, SYNTH_TRUE, SAMPLES, SYNTH_TRUE);
+    srv = synth_init(FREQ, SYNTH_TRUE, synth_bkend_getSamplesPerChannel(), SYNTH_TRUE);
     SYNTH_ASSERT_ERR(srv == SYNTH_OK, srv);
     
     // Create the audio
