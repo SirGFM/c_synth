@@ -3,16 +3,21 @@
  * 
  * An audio structure. Can play multiple tracks simutaneously.
  */
-#ifndef __SYNTH_AUDIO_H_
-#define __SYNTH_AUDIO_H_
-
-#include <synth/synth_errors.h>
-#include <synth/synth_types.h>
+#ifndef __SYNTH_AUDIO_STRUCT__
+#define __SYNTH_AUDIO_STRUCT__
 
 /**
  * Forward declaration of the audio type
  */
 typedef struct stSynthAudio synthAudio;
+
+#endif /* __SYNTH_AUDIO_STRUCT__ */
+
+#ifndef __SYNTH_AUDIO_H__
+#define __SYNTH_AUDIO_H__
+
+#include <synth/synth_errors.h>
+#include <synth/synth_types.h>
 
 /**
  * Parse a mml file into an audio
@@ -78,5 +83,5 @@ void synth_audio_stopBgm();
  */
 synth_bool synth_audio_didFinish(synthAudio *audio);
 
-#endif
+#endif /* __SYNTH_AUDIO_H__ */
 
