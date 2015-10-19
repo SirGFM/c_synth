@@ -82,6 +82,19 @@ synth_err synth_init(synthCtx **ppCtx, int freq);
 synth_err synth_free(synthCtx **ppCtx);
 
 /**
+ * Parse a file into a compiled song
+ * 
+ * The compiled song can later be used to playback the audio, get its samples
+ * (i.e., buffer the whole song) or to export it to WAVE or OGG
+ * 
+ * @param  [out]pHandle   Handle of the loaded song
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pFilename File with the song's MML
+ * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ */
+synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename);
+
+/**
  * Load a already compiled song into the context (so it can be played/rendered)
  * 
  * This function exists mostly to remind me that I want to implement it sometime

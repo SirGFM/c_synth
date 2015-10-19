@@ -248,6 +248,39 @@ __err:
     return rv;
 }
 
+/**
+ * Parse a file into a compiled song
+ * 
+ * The compiled song can later be used to playback the audio, get its samples
+ * (i.e., buffer the whole song) or to export it to WAVE or OGG
+ * 
+ * @param  [out]pHandle   Handle of the loaded song
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pFilename File with the song's MML
+ * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ */
+synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename) {
+    FILE *pFp;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pHandle, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
+    /* TODO Check that the filename is valid? (i.e., actually \0-terminated?) */
+
+    /* Check that the file exists */
+    pFp = fopen(pFilename, "rt");
+    SYNTH_ASSERT_ERR(pFp, SYNTH_OPEN_FILE_ERR);
+    fclose(pFp);
+    pFp = 0;
+
+    /* TODO Actually parse it! */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
 
 #if 0
 static synth_bool synth_inited = SYNTH_FALSE;
