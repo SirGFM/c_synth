@@ -30,64 +30,6 @@ static char parser_rv_msg[] = "ERROR: %s\n"
                                "       Last character: %c\n";
 static char parser_error[TOKEN_MAX_STR*2+sizeof(parser_def_msg)+EXTRA_CHARS];
 
-struct stSynthParserCtx {
-    /**
-     * Audio being parsed
-     */
-    synthAudio *audio;
-    /**
-     * Current track being parsed
-     */
-    synthTrack *track;
-    /**
-     * Lexer context
-     */
-    synthLexCtx *lexCtx;
-    /**
-     * Expected token (only valid on error)
-     */
-    synth_token expected;
-    /**
-     * Gotten token (only valid on error)
-     */
-    synth_token gotten;
-    /**
-     * Whether an error occured or note
-     */
-    synth_bool errorFlag;
-    /**
-     * Which error code was raised
-     */
-    synth_err errorCode;
-    /**
-     * Song BPM
-     */
-    int bpm;
-    /**
-     * Current octave
-     */
-    int octave;
-    /**
-     * Default duration (when not specified)
-     */
-    int duration;
-    /**
-     * Default volume
-     */
-    synthVolume *vol;
-    /**
-     * Current keyoff
-     */
-    int keyoff;
-    /**
-     * Current pan
-     */
-    int pan;
-    /**
-     * Current wave
-     */
-    synth_wave wave;
-};
 
 static synth_err synth_parser_initStruct(synthParserCtx **ctx);
 

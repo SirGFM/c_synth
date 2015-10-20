@@ -10,55 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct stString {
-    /**
-     * Total length of the string
-     */
-    int len;
-    /**
-     * Current position on the string
-     */
-    int pos;
-    /**
-     * The string
-     */
-    char *str;
-};
-
-struct stSynthLexCtx {
-    /**
-     * Last read character
-     */
-    char lastChar;
-    /**
-     * Whether it's currently processing a file or a string
-     */
-    synth_bool isFile;
-    /**
-     * Current line on the stream
-     */
-    int line;
-    /**
-     * Position inside the current line
-     */
-    int linePos;
-    /**
-     * Token read on the privous getToken call
-     */
-    synth_token lastToken;
-    /**
-     * Integer value gotten when reading a token
-     */
-    int ivalue;
-    /**
-     * MML's source; either a file descriptor or a string
-     */
-    union {
-        FILE *file;
-        struct stString str;
-    };
-};
-
 /**
  * Setup a context for tokenizing a mml file
  * 
