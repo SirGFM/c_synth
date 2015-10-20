@@ -61,6 +61,76 @@
  * are statically alloc'ed stuff into the structs; Obviously, in case of
  * pointers, the order becomes irrelevant */
 
+/** Define a simple static string for parsing */
+struct stSynthString {
+    /** Total length of the string */
+    int len;
+    /** Current position on the string */
+    int pos;
+    /** Pointer to the static (and NULL-terminated) string */
+    char *str;
+};
+
+/** Define a source for a MML audio, which can either be a file or a string */
+union unSynthSource {
+    /** TODO Add support for SDL's SDL_RWops, so it works on mobile! */
+    /** A file */
+    FILE *file;
+    /** A static string, with its current position and length */
+    synthString str;
+};
+
+/** Define the context for the lexer */
+struct stSynthLexCtx {
+    /** Last read character */
+    char lastChar;
+    /** Whether it's currently processing a file or a string */
+    synth_bool isFile;
+    /** Current line on the stream */
+    int line;
+    /** Position inside the current line */
+    int linePos;
+    /** Token read on the privous getToken call */
+    synth_token lastToken;
+    /** Integer value gotten when reading a token */
+    int ivalue;
+    /** MML's source; either a file descriptor or a string */
+    synthSource source;
+};
+
+/** Define the context for the parser */
+struct stSynthParserCtx {
+    /** Audio being parsed */
+    synthAudio *audio;
+    /** Current track being parsed */
+    synthTrack *track;
+    /** Lexer context */
+    synthLexCtx *lexCtx;
+    /** Expected token (only valid on error) */
+    synth_token expected;
+    /** Gotten token (only valid on error) */
+    synth_token gotten;
+    /** Whether an error occured or note */
+    synth_bool errorFlag;
+    /** Which error code was raised */
+    synth_err errorCode;
+    /** Song BPM */
+    int bpm;
+    /** Current octave */
+    int octave;
+    /** Default duration (when not specified) */
+    int duration;
+    /** Default volume */
+    int volumeIndex;
+    /** Current keyoff */
+    int keyoff;
+    /** Current pan */
+    int pan;
+    /** Current wave */
+    synth_wave wave;
+};
+
+
 /** Union with all possible buffers (i.e., list of items) */
 union unSynthBuffer {
     /* Points to an array of audios */
@@ -103,6 +173,10 @@ struct stSynthCtx {
     synthList notes;
     /** List of volumes */
     synthList volumes;
+    /** Lexer context */
+    synthLexCtx lexCtx;
+    /** Parser context */
+    synthParserCtx parserCtx;
 };
 
 /** Define an audio, which is simply an aggregation of tracks */
@@ -173,75 +247,6 @@ struct stSynthVolume {
     char ini;
     /** Final volume */
     char fin;
-};
-
-/** Define a simple static string for parsing */
-struct stSynthString {
-    /** Total length of the string */
-    int len;
-    /** Current position on the string */
-    int pos;
-    /** Pointer to the static (and NULL-terminated) string */
-    char *str;
-};
-
-/** Define a source for a MML audio, which can either be a file or a string */
-union unSynthSource {
-    /** TODO Add support for SDL's SDL_RWops, so it works on mobile! */
-    /** A file */
-    FILE *file;
-    /** A static string, with its current position and length */
-    synthString str;
-};
-
-/** Define the context for the lexer */
-struct stSynthLexCtx {
-    /** Last read character */
-    char lastChar;
-    /** Whether it's currently processing a file or a string */
-    synth_bool isFile;
-    /** Current line on the stream */
-    int line;
-    /** Position inside the current line */
-    int linePos;
-    /** Token read on the privous getToken call */
-    synth_token lastToken;
-    /** Integer value gotten when reading a token */
-    int ivalue;
-    /** MML's source; either a file descriptor or a string */
-    synthSource source;
-};
-
-/** Define the context for the parser */
-struct stSynthParserCtx {
-    /** Audio being parsed */
-    synthAudio *audio;
-    /** Current track being parsed */
-    synthTrack *track;
-    /** Lexer context */
-    synthLexCtx *lexCtx;
-    /** Expected token (only valid on error) */
-    synth_token expected;
-    /** Gotten token (only valid on error) */
-    synth_token gotten;
-    /** Whether an error occured or note */
-    synth_bool errorFlag;
-    /** Which error code was raised */
-    synth_err errorCode;
-    /** Song BPM */
-    int bpm;
-    /** Current octave */
-    int octave;
-    /** Default duration (when not specified) */
-    int duration;
-    /** Default volume */
-    int volumeIndex;
-    /** Current keyoff */
-    int keyoff;
-    /** Current pan */
-    int pan;
-    /** Current wave */
-    synth_wave wave;
 };
 
 #endif /* __SYNTH_INTERNAL_TYPES_H__ */

@@ -6,6 +6,7 @@
 #include <synth/synth_errors.h>
 
 #include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_types.h>
 
 #include <stdio.h>
@@ -171,6 +172,10 @@ synth_err synth_free(synthCtx **ppCtx) {
     SYNTH_ASSERT_ERR(ppCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(*ppCtx, SYNTH_BAD_PARAM_ERR);
 
+    /* This must be done either way, since any open file must be manually
+     * closed */
+    synthLexer_clear(&((*ppCtx)->lexCtx));
+
     /* Check that it was dynamic alloc'ed */
     if (!((*ppCtx)->autoAlloced)) {
         *ppCtx = 0;
@@ -212,7 +217,8 @@ __err:
  * @param  [out]pHandle   Handle of the loaded song
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]pFilename File with the song's MML
- * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR,
+ *                        SYNTH_OPEN_FILE_ERR
  */
 synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename) {
     synth_err rv;

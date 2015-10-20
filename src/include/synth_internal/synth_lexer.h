@@ -3,11 +3,36 @@
  * 
  * Module for tokenizing a mml file/string
  */
-#ifndef __SYNTH_LEXER_H_
-#define __SYNTH_LEXER_H_
+#ifndef __SYNTH_LEXER_H__
+#define __SYNTH_LEXER_H__
 
 #include <synth/synth_errors.h>
-#include <synth/synth_types.h>
+#include <synth_internal/synth_types.h>
+
+/**
+ * Initialize the lexer, reading tokens from a file
+ * 
+ * If the lexer has already been initialized, it will be reset and
+ * re-initialized with this new source
+ * 
+ * @param  [ in]pCtx      The lexer context, to be initialized
+ * @param  [ in]pFilename The file
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
+ */
+synth_err synthLexer_initFromFile(synthLexCtx *pCtx, char *pFilename);
+
+/**
+ * Clear a lexer and all of its resources
+ * 
+ * This functions only needs really to be called when using a file as input
+ * source, since, otherwise, everything is kept in RAM;
+ * 
+ * @param  [ in]pCtx      The lexer context, to be initialized
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthLexer_clear(synthLexCtx *pCtx);
+
+#if 0
 
 /**
  * Context for a tokenification operation
@@ -235,5 +260,7 @@ int synth_lex_getCurrentLinePosition(synthLexCtx *ctx);
  */
 char synth_lex_getLastCharacter(synthLexCtx *ctx);
 
-#endif
+#endif /* 0 */
+
+#endif /* __SYNTH_LEXER_H__ */
 

@@ -6,18 +6,17 @@
 #include <synth/synth_errors.h>
 
 #include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_types.h>
 
+#include <string.h>
+
 #if 0
-#include <synth/synth_assert.h>
-#include <synth/synth_errors.h>
-#include <synth_internal/synth_audio.h>
 #include <synth_internal/synth_audiolist.h>
 #include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_track.h>
 
 #include <stdlib.h>
-#include <string.h>
 #endif /* 0 */
 
 /**
@@ -37,7 +36,13 @@ synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
     /* The file is checked for existance before, so no need to do it again */
 
-    /* TODO Init parser */
+    /* Clear the audio */
+    memset(pAudio, 0x0, sizeof(synthAudio));
+
+    /* Init parser */
+    rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
+    SYNTH_ASSERT_ERR(rv, rv);
+
     /* TODO Parse the audio */
 
     rv = SYNTH_OK;

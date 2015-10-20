@@ -21,12 +21,12 @@ endif
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS = $(OBJDIR)/synth.o            
-         #$(OBJDIR)/synth_audio.o     \
+  OBJS = $(OBJDIR)/synth.o           \
+         $(OBJDIR)/synth_audio.o     \
+         $(OBJDIR)/synth_lexer.o     
          #$(OBJDIR)/synth_audiolist.o \
          #$(OBJDIR)/synth_buffer.o    \
          #$(OBJDIR)/synth_cache.o     \
-         #$(OBJDIR)/synth_lexer.o     \
          #$(OBJDIR)/synth_note.o      \
          #$(OBJDIR)/synth_parser.o    \
          #$(OBJDIR)/synth_prng.o      \

@@ -1,53 +1,77 @@
 /**
  * @file src/synth_lexer.c
  */
-
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
+
 #include <synth_internal/synth_lexer.h>
+#include <synth_internal/synth_types.h>
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 /**
- * Setup a context for tokenizing a mml file
+ * Initialize the lexer, reading tokens from a file
  * 
- * @param ctx Variable that will hold the allocated context. Must be freed
- * afterward, by calling synth_lex_freeCtx
- * @param filename MML's filename
- * @return Error code
+ * If the lexer has already been initialized, it will be reset and
+ * re-initialized with this new source
+ * 
+ * @param  [ in]pCtx      The lexer context, to be initialized
+ * @param  [ in]pFilename The file
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
  */
-synth_err synth_lex_tokenizef(synthLexCtx **ctx, char *filename) {
+synth_err synthLexer_initFromFile(synthLexCtx *pCtx, char *pFilename) {
     synth_err rv;
-    synthLexCtx *tmp;
-    
-    // Alloc the contex
-    tmp = (synthLexCtx*)malloc(sizeof(synthLexCtx));
-    SYNTH_ASSERT_ERR(tmp, SYNTH_MEM_ERR);
-    
-    // Assign info about the file
-    tmp->isFile = SYNTH_TRUE;
-    tmp->file = fopen(filename, "rt");
-    SYNTH_ASSERT_ERR(tmp->file, SYNTH_OPEN_FILE_ERR);
-    
-    tmp->lastChar = '\0';
-    tmp->line = 0;
-    tmp->linePos = 0;
-    
-    // Set return stuff
-    *ctx = tmp;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
+
+    /* Clean the lexer */
+    rv = synthLexer_clear(pCtx);
+    SYNTH_ASSERT_ERR(rv, rv);
+    /* Store its source (i.e., a file) */
+    pCtx->source.file = fopen(pFilename, "rt");
+    SYNTH_ASSERT_ERR(pCtx->source.file, SYNTH_OPEN_FILE_ERR);
+
+    pCtx->isFile = SYNTH_TRUE;
+
     rv = SYNTH_OK;
 __err:
-    if (rv != SYNTH_OK) {
-        if (tmp->file)
-            fclose(tmp->file);
-        if (tmp)
-            free(tmp);
-    }
-    
     return rv;
 }
+
+/**
+ * Clear a lexer and all of its resources
+ * 
+ * This functions only needs really to be called when using a file as input
+ * source, since, otherwise, everything is kept in RAM;
+ * 
+ * @param  [ in]pCtx      The lexer context, to be initialized
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthLexer_clear(synthLexCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Close the file, if it's open */
+    if (pCtx->isFile == SYNTH_TRUE && pCtx->source.file) {
+        fclose(pCtx->source.file);
+    }
+
+    /* Clear everything */
+    memset(pCtx, 0x0, sizeof(synthLexCtx));
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+#if 0
+#include <stdlib.h>
 
 /**
  * Setup a context for tokenizing a mml file
@@ -80,29 +104,6 @@ __err:
         free(tmp);
     
     return rv;
-}
-
-/**
- * Clean up memory allocated during setup (on tokenize)
- * 
- * @param ctx The contex to be freed
- */
-void synth_lex_freeCtx(synthLexCtx **ctx) {
-    // Assert that the context exists
-    SYNTH_ASSERT(ctx);
-    SYNTH_ASSERT(*ctx);
-    
-    // Close the file, if it's open
-    if ((*ctx)->isFile == SYNTH_TRUE) {
-        if ((*ctx)->file != NULL)
-            fclose((*ctx)->file);
-    }
-    
-    // Dealloc the context
-    free(*ctx);
-    *ctx = NULL;
-__err:
-    return;
 }
 
 /**
@@ -890,4 +891,6 @@ int synth_lex_getCurrentLinePosition(synthLexCtx *ctx) {
 char synth_lex_getLastCharacter(synthLexCtx *ctx) {
     return ctx->lastChar;
 }
+
+#endif /* 0 */
 
