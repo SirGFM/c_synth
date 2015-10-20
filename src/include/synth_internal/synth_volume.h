@@ -6,17 +6,6 @@
 #ifndef __SYNTH_VOLUME_H_
 #define __SYNTH_VOLUME_H_
 
-struct stSynthVolume {
-    /**
-     * Initial volume
-     */
-    char ini;
-    /**
-     * Final volume
-     */
-    char fin;
-};
-typedef struct stSynthVolume synthVolume;
 
 /**
  * Initialize the volume with default values

@@ -3,56 +3,23 @@
  */
 #include <synth/synth.h>
 #include <synth/synth_assert.h>
-#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
-#include <synth/synth_types.h>
-#include <synth_internal/synth_audiolist.h>
-#include <synth_internal/synth_buffer.h>
-#include <synth_internal/synth_cache.h>
-#include <synth_internal/synth_thread.h>
+
+#include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/** Union with all possible buffers (i.e., list of items) */
-union unSynthBuffer {
-    synthAudio *pAudios;
-    synthTrack *pTracks;
-    synthNote *pNotes;
-};
-typedef union unSynthBuffer synthBuffer;
-
-/** A generic list of a buffer */
-struct stSynthList {
-    /** How many itens may this list may hold, at most */
-    int max;
-    /** How big is the list; Useful if there's no limit */
-    int len;
-    /** How many itens are currently in use */
-    int used;
-    /* TODO Add a map of used items? */
-    /** The actual list of itens */
-    synthBuffer buf;
-};
-typedef stSynthList synthList;
-
-/** synthCtx struct */
-struct stSynthCtx {
-    /**
-     * Whether the context was alloc'ed by the library (and, thus, must be
-     * freed) or if it was alloc'ed by the user
-     */
-    int autoAlloced;
-    /** Synthesizer frequency in samples per second */
-    int frequency;
-    /** List of songs */
-    synthList songs;
-    /** List of tracks */
-    synthList tracks;
-    /** List of notes */
-    synthList notes;
-};
+#if 0
+#include <synth/synth_backend.h>
+#include <synth/synth_types.h>
+#include <synth_internal/synth_audiolist.h>
+#include <synth_internal/synth_buffer.h>
+#include <synth_internal/synth_cache.h>
+#include <synth_internal/synth_thread.h>
+#endif /* 0 */
 
 /**
  * Retrieve the total size for a context
@@ -62,15 +29,15 @@ struct stSynthCtx {
  * call can determined how much memory would be required for a context with some
  * restrictions
  * 
- * @param  [out]pSize     The size of the context struct in bytes
- * @param  [ in]maxSongs  How many songs can be compiled at the same time
- * @param  [ in]maxTracks How many tracks can be used through all songs
- * @param  [ in]maxNotes  How many notes can be used through all tracks
- * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * @param  [out]pSize      The size of the context struct in bytes
+ * @param  [ in]maxSongs   How many songs can be compiled at the same time
+ * @param  [ in]maxTracks  How many tracks can be used through all songs
+ * @param  [ in]maxNotes   How many notes can be used through all tracks
+ * @param  [ in]maxVolumes How many volumes can be used through all tracks
+ * @return                 SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synth_getStaticContextSize(int *pSize, int maxSongs, int maxTracks,
-        int maxNotes) {
-    int noteSize, songSize, trackSize;
+        int maxNotes, int maxVolumes) {
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -78,21 +45,15 @@ synth_err synth_getStaticContextSize(int *pSize, int maxSongs, int maxTracks,
     SYNTH_ASSERT_ERR(maxNotes > 0, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(maxSongs > 0, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(maxTracks > 0, SYNTH_BAD_PARAM_ERR);
-
-    /* TODO Make sure these functions exists */
-    rv = synth_getNoteSize(&noteSize);
-    SYNTH_ASSERT_ERR(rv, rv);
-    rv = synth_getSongSize(&songSize);
-    SYNTH_ASSERT_ERR(rv, rv);
-    rv = synth_getTrackSize(&trackSize);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(maxVolumes > 0, SYNTH_BAD_PARAM_ERR);
 
     /* Retrieve the struct size */
     *pSize = (int)sizeof(synthCtx);
     /* Increase it for each object used (in a list) */
-    *pSize += (int)(songSize * maxSongs);
-    *pSize += (int)(trackSize * maxTracks);
-    *pSize += (int)(noteSize * maxNotes);
+    *pSize += (int)(sizeof(synthAudio) * maxSongs);
+    *pSize += (int)(sizeof(synthTrack) * maxTracks);
+    *pSize += (int)(sizeof(synthNote) * maxNotes);
+    *pSize += (int)(sizeof(synthVolume) * maxVolumes);
 
     rv = SYNTH_OK;
 __err:
@@ -107,27 +68,19 @@ __err:
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synth_getContextSize(int *pSize, synthCtx *pCtx) {
-    int noteSize, songSize, trackSize;
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pSize, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
-    /* TODO Make sure these functions exists */
-    rv = synth_getNoteSize(&noteSize);
-    SYNTH_ASSERT_ERR(rv, rv);
-    rv = synth_getSongSize(&songSize);
-    SYNTH_ASSERT_ERR(rv, rv);
-    rv = synth_getTrackSize(&trackSize);
-    SYNTH_ASSERT_ERR(rv, rv);
-
     /* Retrieve the struct size */
     *pSize = (int)sizeof(synthCtx);
     /* Increase it for each object used (in a list) */
-    *pSize += (int)(songSize * pCtx->songs.len);
-    *pSize += (int)(trackSize * pCtx->tracks.len);
-    *pSize += (int)(noteSize * pCtx->notes.len);
+    *pSize += (int)(sizeof(synthAudio) * pCtx->songs.len);
+    *pSize += (int)(sizeof(synthTrack) * pCtx->tracks.len);
+    *pSize += (int)(sizeof(synthNote) * pCtx->notes.len);
+    *pSize += (int)(sizeof(synthVolume) * pCtx->volumes.len);
 
     /* TODO Ensure no object is missing!! */
 
@@ -146,17 +99,18 @@ __err:
  * version, so the required memory to whatever is desired is calculated, before
  * trying to use this mode;
  * 
- * @param  [out]ppCtx     The new synthesizer context
- * @param  [ in]pMem      'synth_getContextSize' bytes or NULL, if the library
- *                        should alloc the structure however it wants
- * @param  [ in]freq      Synthesizer frequency, in samples per seconds
- * @param  [ in]maxSongs  How many songs can be compiled at the same time
- * @param  [ in]maxTracks How many tracks can be used through all songs
- * @param  [ in]maxNotes  How many notes can be used through all tracks
- * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ * @param  [out]ppCtx      The new synthesizer context
+ * @param  [ in]pMem       'synth_getContextSize' bytes or NULL, if the library
+ *                         should alloc the structure however it wants
+ * @param  [ in]freq       Synthesizer frequency, in samples per seconds
+ * @param  [ in]maxSongs   How many songs can be compiled at the same time
+ * @param  [ in]maxTracks  How many tracks can be used through all songs
+ * @param  [ in]maxNotes   How many notes can be used through all tracks
+ * @param  [ in]maxVolumes How many volumes can be used through all tracks
+ * @return                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
 synth_err synth_initStatic(synthCtx **ppCtx, void *pMem, int freq, int maxSongs,
-        int maxTracks, int maxNotes) {
+        int maxTracks, int maxNotes, int maxVolumes) {
     /* TODO Implement the function 'synth_initStatic' */
     return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 }
@@ -185,6 +139,8 @@ synth_err synth_init(synthCtx **ppCtx, int freq) {
 
     /* Set it as being dynamically alloc'ed */
     pCtx->autoAlloced = 1;
+    /* Set the synthesizer frequency */
+    pCtx->frequency = freq;
     /* TODO Initialize anything else? */
 
     /* Set the return */
@@ -210,7 +166,6 @@ __err:
  */
 synth_err synth_free(synthCtx **ppCtx) {
     synth_err rv;
-    synthCtx *pCtx;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(ppCtx, SYNTH_BAD_PARAM_ERR);
@@ -219,23 +174,23 @@ synth_err synth_free(synthCtx **ppCtx) {
     /* Check that it was dynamic alloc'ed */
     if (!((*ppCtx)->autoAlloced)) {
         *ppCtx = 0;
-        rv = SYNTH_ERR_OK;
-        goto __ret;
+        rv = SYNTH_OK;
+        goto __err;
     }
 
     /* Dealloc the struct itself */
-    if (pCtx->songs.buf.pAudios) {
-        free(pCtx->songs.buf.pAudios);
+    if ((*ppCtx)->songs.buf.pAudios) {
+        free((*ppCtx)->songs.buf.pAudios);
     }
-    if (pCtx->tracks.buf.pTracks) {
-        free(pCtx->tracks.buf.pTracks);
+    if ((*ppCtx)->tracks.buf.pTracks) {
+        free((*ppCtx)->tracks.buf.pTracks);
     }
-    if (pCtx->notes.buf.pNotes) {
-        free(pCtx->notes.buf.pNotes);
+    if ((*ppCtx)->notes.buf.pNotes) {
+        free((*ppCtx)->notes.buf.pNotes);
     }
-    pCtx->songs.buf.pAudios = 0;
-    pCtx->tracks.buf.pTracks = 0;
-    pCtx->notes.buf.pNotes = 0;
+    (*ppCtx)->songs.buf.pAudios = 0;
+    (*ppCtx)->tracks.buf.pTracks = 0;
+    (*ppCtx)->notes.buf.pNotes = 0;
 
     /* TODO Clean everything else */
 
@@ -260,25 +215,58 @@ __err:
  * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
  */
 synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename) {
-    FILE *pFp;
     synth_err rv;
+
+    /* TODO Store the previous buffer sizes so we can clean it on error */
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pHandle, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
+    /* Make sure there's enough space for another song */
+    SYNTH_ASSERT_ERR(pCtx->songs.max == 0 || pCtx->songs.used < pCtx->songs.max,
+            SYNTH_MEM_ERR);
     /* TODO Check that the filename is valid? (i.e., actually \0-terminated?) */
 
     /* Check that the file exists */
-    pFp = fopen(pFilename, "rt");
-    SYNTH_ASSERT_ERR(pFp, SYNTH_OPEN_FILE_ERR);
-    fclose(pFp);
-    pFp = 0;
+    do {
+        FILE *pFp;
 
-    /* TODO Actually parse it! */
+        pFp = fopen(pFilename, "rt");
+        SYNTH_ASSERT_ERR(pFp, SYNTH_OPEN_FILE_ERR);
+        fclose(pFp);
+    } while (0);
 
+    /* Retrieve the audio to be used */
+    if (pCtx->songs.used >= pCtx->songs.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first audio, in which len will be 0 */
+        pCtx->songs.buf.pAudios = (synthAudio*)realloc(pCtx->songs.buf.pAudios,
+                (1 + pCtx->songs.len * 2) * sizeof(synthAudio));
+        SYNTH_ASSERT_ERR(pCtx->songs.buf.pAudios, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->songs.buf.pAudios[pCtx->songs.used]), 0x0,
+                (1 + pCtx->songs.len) * sizeof(synthAudio));
+        /* Actually increase the buffer length */
+        pCtx->songs.len += 1 + pCtx->songs.len;
+    }
+
+    /* Compile the song */
+    rv = synthAudio_compile(&(pCtx->songs.buf.pAudios[pCtx->songs.used]), pCtx,
+            pFilename);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Return the newly compiled song */
+    *pHandle = pCtx->songs.used;
+    /* 'Push' the audio into the buffer */
+    pCtx->songs.used++;
     rv = SYNTH_OK;
 __err:
+    if (rv != SYNTH_OK) {
+        /* TODO Clear the newly used objects */
+    }
+
     return rv;
 }
 

@@ -1,13 +1,13 @@
 /**
  * @file include/synth/synth.h
  */
-#ifndef __SYNTH_STRUCT__
-#define __SYNTH_STRUCT__
+#ifndef __SYNTHCTX_STRUCT__
+#define __SYNTHCTX_STRUCT__
 
 /** 'Export' the synthCtx struct */
 typedef struct stSynthCtx synthCtx;
 
-#endif /* __SYNTH_STRUCT__ */
+#endif /* __SYNTHCTX_STRUCT__ */
 
 #ifndef __SYNTH_H__
 #define __SYNTH_H__
@@ -23,14 +23,15 @@ typedef struct stSynthCtx synthCtx;
  * call can determined how much memory would be required for a context with some
  * restrictions
  * 
- * @param  [out]pSize     The size of the context struct in bytes
- * @param  [ in]maxSongs  How many songs can be compiled at the same time
- * @param  [ in]maxTracks How many tracks can be used through all songs
- * @param  [ in]maxNotes  How many notes can be used through all tracks
- * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * @param  [out]pSize      The size of the context struct in bytes
+ * @param  [ in]maxSongs   How many songs can be compiled at the same time
+ * @param  [ in]maxTracks  How many tracks can be used through all songs
+ * @param  [ in]maxNotes   How many notes can be used through all tracks
+ * @param  [ in]maxVolumes How many volumes can be used through all tracks
+ * @return                 SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synth_getStaticContextSize(int *pSize, int maxSongs, int maxTracks,
-        int maxNotes);
+        int maxNotes, int maxVolumes);
 
 /**
  * Check how many bytes the context is currently using
@@ -51,17 +52,18 @@ synth_err synth_getContextSize(int *pSize, synthCtx *pCtx);
  * version, so the required memory to whatever is desired is calculated, before
  * trying to use this mode;
  * 
- * @param  [out]ppCtx     The new synthesizer context
- * @param  [ in]pMem      'synth_getContextSize' bytes or NULL, if the library
- *                        should alloc the structure however it wants
- * @param  [ in]freq      Synthesizer frequency, in samples per seconds
- * @param  [ in]maxSongs  How many songs can be compiled at the same time
- * @param  [ in]maxTracks How many tracks can be used through all songs
- * @param  [ in]maxNotes  How many notes can be used through all tracks
- * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ * @param  [out]ppCtx      The new synthesizer context
+ * @param  [ in]pMem       'synth_getContextSize' bytes or NULL, if the library
+ *                         should alloc the structure however it wants
+ * @param  [ in]freq       Synthesizer frequency, in samples per seconds
+ * @param  [ in]maxSongs   How many songs can be compiled at the same time
+ * @param  [ in]maxTracks  How many tracks can be used through all songs
+ * @param  [ in]maxNotes   How many notes can be used through all tracks
+ * @param  [ in]maxVolumes How many volumes can be used through all tracks
+ * @return                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
 synth_err synth_initStatic(synthCtx **ppCtx, void *pMem, int freq, int maxSongs,
-        int maxTracks, int maxNotes);
+        int maxTracks, int maxNotes, int maxVolumes);
 
 /**
  * Alloc and initialize the synthesizer

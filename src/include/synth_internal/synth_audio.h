@@ -4,22 +4,25 @@
 #ifndef __SYNTH_INTERNAL_AUDIO_H_
 #define __SYNTH_INTERNAL_AUDIO_H_
 
-#include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
+
+#include <synth_internal/synth_types.h>
+
+/**
+ * Compile a MML audio into a object
+ * 
+ * @param  [out]pAudio    Object that will be filled with the  compiled song
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pFilename File with the song's MML
+ */
+synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
+        char *pFilename);
+
+#if 0
+
+#include <synth/synth_audio.h>
 #include <synth_internal/synth_track.h>
 
-struct stSynthAudio {
-    synthTrack **tracks;
-    /**
-     * How many tracks are currently in use
-     */
-    int len;
-    /**
-     * How many slots there actually are in tracks
-     */
-    int tracksLen;
-};
-typedef struct stSynthAudio synthAudio;
 
 /**
  * Alloc a new audio structure and initialize it
@@ -55,6 +58,8 @@ void synth_audio_synthesize(synthAudio *aud, int samples, uint16_t *left,
  * @param The audio
  */
 void synth_audio_reset(synthAudio *aud);
+
+#endif /* 0 */
 
 #endif
 

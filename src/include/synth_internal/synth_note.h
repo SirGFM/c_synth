@@ -9,52 +9,6 @@
 #include <synth/synth_types.h>
 #include <synth_internal/synth_volume.h>
 
-struct stSynthNote {
-    /**
-     * Value between 0 and 100, where 0 means only left channel and 100 means
-     * only right channel
-     */
-    char pan;
-    /**
-     * Octave at which the note should play, from 1 to 8
-     */
-    char octave;
-    /**
-     * Duration of the note in samples (depends on the sample rate).
-     * If type is N_loop, represent how many times should repeat.
-     */
-    int len;
-    /**
-     * Current position on the note.
-     * If type is N_loop, represents note to which should jump.
-     */
-    int pos;
-    /**
-     * After how many samples should the note be muted
-     */
-    int keyoff;
-    /**
-     * Only used if type is N_loop; how many times has already looped
-     */
-    int numIterations;
-    /**
-     * Exact 'note duration', so as to search the cached value
-     */
-    int duration;
-    /**
-     * Wave type to be synthesized
-     */
-    synth_wave wave;
-    /**
-     * Musical note to be played
-     */
-    synth_note note;
-    /**
-     * Either a value between 0x0 and 0xff or a envelop.
-     */
-    synthVolume *vol;
-};
-typedef struct stSynthNote synthNote;
 
 /**
  * Initialize everything to default values.

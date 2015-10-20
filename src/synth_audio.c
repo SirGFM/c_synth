@@ -1,7 +1,14 @@
 /**
  * @file src/synth_audio.c
  */
+#include <synth/synth.h>
+#include <synth/synth_assert.h>
+#include <synth/synth_errors.h>
 
+#include <synth_internal/synth_audio.h>
+#include <synth_internal/synth_types.h>
+
+#if 0
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth_internal/synth_audio.h>
@@ -11,6 +18,35 @@
 
 #include <stdlib.h>
 #include <string.h>
+#endif /* 0 */
+
+/**
+ * Compile a MML audio into a object
+ * 
+ * @param  [out]pAudio    Object that will be filled with the  compiled song
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pFilename File with the song's MML
+ */
+synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
+        char *pFilename) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
+    /* The file is checked for existance before, so no need to do it again */
+
+    /* TODO Init parser */
+    /* TODO Parse the audio */
+
+    rv = SYNTH_OK;
+__err:
+
+    return rv;
+}
+
+#if 0
 
 // TODO feature: per-track volume
 
@@ -284,4 +320,6 @@ synth_bool synth_audio_didFinish(synthAudio *audio) {
 __err:
     return rv;
 }
+
+#endif /* 0 */
 

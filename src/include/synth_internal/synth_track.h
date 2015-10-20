@@ -10,35 +10,6 @@
 #include <synth/synth_types.h>
 #include <synth_internal/synth_note.h>
 
-struct stSynthTrack {
-    /**
-     * To which note should we come back after playing was complete. Set to -1
-     * if shouldn't loop
-     */
-    int loopPoint;
-    /**
-     * Number of notes in this track
-     */
-    int len;
-    /**
-     * Total length of the notes array
-     */
-    int buflen;
-    /**
-     * Current position on the notes array
-     */
-    int pos;
-    /**
-     * Position inside a note
-     */
-    int notepos;
-    /**
-     * Array of notes
-     */
-    synthNote **notes;
-};
-typedef struct stSynthTrack synthTrack;
-
 /**
  * Initialize the track
  * 
