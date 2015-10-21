@@ -7,6 +7,7 @@
 
 #include <synth_internal/synth_audio.h>
 #include <synth_internal/synth_lexer.h>
+#include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_types.h>
 
 #include <string.h>
@@ -41,6 +42,8 @@ synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Init parser */
     rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
+    SYNTH_ASSERT_ERR(rv, rv);
+    rv = synthParser_init(&(pCtx->parserCtx), pCtx);
     SYNTH_ASSERT_ERR(rv, rv);
 
     /* TODO Parse the audio */

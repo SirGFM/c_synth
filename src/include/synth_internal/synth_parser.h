@@ -1,8 +1,30 @@
 /**
  * @file @src/include/synth_internal/synth_parser.h
  */
-#ifndef __SYNTH_PARSER_H_
-#define __SYNTH_PARSER_H_
+#ifndef __SYNTH_PARSER_H__
+#define __SYNTH_PARSER_H__
+
+#include <synth_internal/synth_types.h>
+
+/**
+ * Initialize the parser
+ * 
+ * The default settings are as follows:
+ *   - BMP: 60bmp
+ *   - Octave: 4th
+ *   - Duration: quarter note
+ *   - Keyoff: 75% (i.e., pressed for that amount of the duration)
+ *   - Pan: 50% (i.e., equal to both channels)
+ *   - Wave: 50% square
+ *   - Volume: 50%
+ * 
+ * @param  [out]pParser The parser context to be initialized
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx);
+
+#if 0
 
 #include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
@@ -140,5 +162,8 @@ synthAudio *synth_parser_getAudio(synthParserCtx *ctx);
 
 char* synth_parser_getErrorString(synthParserCtx *ctx);
 
-#endif
+
+#endif /* 0 */
+
+#endif /* __SYNTH_PARSER_H__ */
 

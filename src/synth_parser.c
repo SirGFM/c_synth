@@ -2,13 +2,70 @@
  * @file @src/synth_parser.c
  */
 #include <synth/synth_assert.h>
-#include <synth/synth_audio.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
-#include <synth_internal/synth_audio.h>
-#include <synth_internal/synth_cache.h>
+
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_parser.h>
+#include <synth_internal/synth_types.h>
+#include <synth_internal/synth_volume.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * Initialize the parser
+ * 
+ * The default settings are as follows:
+ *   - BMP: 60bmp
+ *   - Octave: 4th
+ *   - Duration: quarter note
+ *   - Keyoff: 75% (i.e., pressed for that amount of the duration)
+ *   - Pan: 50% (i.e., equal to both channels)
+ *   - Wave: 50% square
+ *   - Volume: 50%
+ * 
+ * @param  [out]pParser The parser context to be initialized
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Remove any error flag */
+    pParser->errorFlag = SYNTH_FALSE;
+    pParser->bpm = 60;
+    pParser->octave = 4;
+    pParser->duration = 4;
+    pParser->keyoff = 75;
+    pParser->pan = 50;
+    pParser->wave = W_SQUARE;
+
+    /* Make sure there's a default volume on the main context */
+    if (pCtx->volumes.max == 0 && pCtx->volumes.len <= 0) {
+        /* Alloc a single volume */
+        pCtx->volumes.buf.pVolumes = (synthVolume*)malloc(sizeof(synthVolume));
+        SYNTH_ASSERT_ERR(pCtx->volumes.buf.pVolumes, SYNTH_MEM_ERR);
+        pCtx->volumes.len = 1;
+    }
+    /* Set the volume to half the maximum possible */
+    rv = synthVolume_setConst(&(pCtx->volumes.buf.pVolumes[0]), 0x7f);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Store the default volume */
+    pParser->volumeIndex = 0;
+    
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+#if 0
+#include <synth/synth_audio.h>
+#include <synth_internal/synth_cache.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -717,4 +774,6 @@ char* synth_parser_getErrorString(synthParserCtx *ctx) {
     // Return the error string
     return parser_error;
 }
+
+#endif /* 0 */
 

@@ -3,9 +3,23 @@
  * 
  * A simple volume envelop. Will, someday, allow for more complexes functions.
  */
-#ifndef __SYNTH_VOLUME_H_
-#define __SYNTH_VOLUME_H_
+#ifndef __SYNTH_VOLUME_H__
+#define __SYNTH_VOLUME_H__
 
+#include <synth/synth_errors.h>
+
+#include <synth_internal/synth_types.h>
+
+/**
+ * Set the volume as a simple linear function
+ * 
+ * @param [ in]pCtx The volume
+ * @param [ in]amp  The volume's amplitude
+ * @return          SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_setConst(synthVolume *pCtx, char amp);
+
+#if 0
 
 /**
  * Initialize the volume with default values
@@ -64,5 +78,7 @@ char synth_vol_getVolumeIni(synthVolume *vol);
  */
 char synth_vol_getVolumeFin(synthVolume *vol);
 
-#endif
+#endif /* 0 */
+
+#endif /* __SYNTH_VOLUME_H__ */
 

@@ -1,8 +1,34 @@
 /**
  * @file src/synth_volume.c
  */
-#include <synth_internal/synth_volume.h>
+#include <synth/synth_assert.h>
+#include <synth/synth_errors.h>
 
+#include <synth_internal/synth_volume.h>
+#include <synth_internal/synth_types.h>
+
+/**
+ * Set the volume as a simple linear function
+ * 
+ * @param [ in]pCtx The volume
+ * @param [ in]amp  The volume's amplitude
+ * @return          SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_setConst(synthVolume *pCtx, char amp) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    pCtx->ini = 0x7f;
+    pCtx->fin = 0x7f;
+    
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+#if 0
 /**
  * Initialize the volume with default values
  * 
@@ -74,4 +100,6 @@ char synth_vol_getVolumeIni(synthVolume *vol) {
 char synth_vol_getVolumeFin(synthVolume *vol) {
     return vol->fin;
 }
+
+#endif /* 0 */
 

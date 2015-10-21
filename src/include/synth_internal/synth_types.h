@@ -10,6 +10,8 @@
 /* Required because of a FILE* */
 #include <stdio.h>
 
+#include <synth/synth_types.h>
+
 /* First, define the name (i.e., typedef) of every type */
 
 #  ifndef __SYNTHAUDIO_STRUCT__
@@ -100,12 +102,6 @@ struct stSynthLexCtx {
 
 /** Define the context for the parser */
 struct stSynthParserCtx {
-    /** Audio being parsed */
-    synthAudio *audio;
-    /** Current track being parsed */
-    synthTrack *track;
-    /** Lexer context */
-    synthLexCtx *lexCtx;
     /** Expected token (only valid on error) */
     synth_token expected;
     /** Gotten token (only valid on error) */
