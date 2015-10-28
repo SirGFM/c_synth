@@ -63,6 +63,36 @@ __err:
     return rv;
 }
 
+/**
+ * Parse the currently loaded file into an audio
+ * 
+ * This function uses a lexer to break the file into tokens, as it does
+ * retrieve track, notes etc from the main synthesizer context
+ * 
+ * Note: The context's lexer must have already been initialized; Therefore,
+ * it's safer to simply use 'synthAudio_compile' (which calls this function),
+ * or, at least, look at how that function is implemented
+ * 
+ * @param  [out]pAudio  A clean audio object, that will be filled with the
+ *                      parsed song
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ */
+synth_err synthParser_getAudio(synthAudio *pAudio, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 #if 0
 #include <synth/synth_audio.h>
 #include <synth_internal/synth_cache.h>

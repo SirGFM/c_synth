@@ -9,13 +9,13 @@
 #include <synth_internal/synth_types.h>
 
 /**
- * Compile a MML audio into a object
+ * Compile a MML audio file into a object
  * 
- * @param  [out]pAudio    Object that will be filled with the  compiled song
+ * @param  [out]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]pFilename File with the song's MML
  */
-synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
+synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
         char *pFilename);
 
 #if 0

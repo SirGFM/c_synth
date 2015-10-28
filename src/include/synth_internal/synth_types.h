@@ -70,7 +70,7 @@ struct stSynthString {
     /** Current position on the string */
     int pos;
     /** Pointer to the static (and NULL-terminated) string */
-    char *str;
+    char *pStr;
 };
 
 /** Define a source for a MML audio, which can either be a file or a string */

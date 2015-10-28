@@ -21,13 +21,13 @@
 #endif /* 0 */
 
 /**
- * Compile a MML audio into a object
+ * Compile a MML audio file into a object
  * 
- * @param  [out]pAudio    Object that will be filled with the  compiled song
+ * @param  [out]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]pFilename File with the song's MML
  */
-synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
+synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
         char *pFilename) {
     synth_err rv;
 
@@ -46,7 +46,9 @@ synth_err synthAudio_compile(synthAudio *pAudio, synthCtx *pCtx,
     rv = synthParser_init(&(pCtx->parserCtx), pCtx);
     SYNTH_ASSERT_ERR(rv, rv);
 
-    /* TODO Parse the audio */
+    /* Parse the audio */
+    rv = synthParser_getAudio(pAudio, &(pCtx->parserCtx), pCtx);
+    SYNTH_ASSERT_ERR(rv, rv);
 
     rv = SYNTH_OK;
 __err:

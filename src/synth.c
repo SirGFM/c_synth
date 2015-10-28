@@ -259,8 +259,8 @@ synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename) {
     }
 
     /* Compile the song */
-    rv = synthAudio_compile(&(pCtx->songs.buf.pAudios[pCtx->songs.used]), pCtx,
-            pFilename);
+    rv = synthAudio_compileFile(&(pCtx->songs.buf.pAudios[pCtx->songs.used]),
+            pCtx, pFilename);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Return the newly compiled song */
