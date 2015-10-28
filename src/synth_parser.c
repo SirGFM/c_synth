@@ -88,6 +88,23 @@ synth_err synthParser_getAudio(synthAudio *pAudio, synthParserCtx *pParser,
     SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
+    /* Get the first token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Check that it's a MML token */
+    //SYNTH_ASSERT_TOKEN(T_MML);
+
+    /* Parse(optional) the bpm */
+    //rv = synth_parser_bpm(pParser);
+    //SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Parse every track in this audio */
+    //rv = synth_parser_tracks(pParser, pCtx);
+    //SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Check that parsing finished */
+    //SYNTH_ASSERT_TOKEN(T_DONE);
+
     rv = SYNTH_OK;
 __err:
     return rv;

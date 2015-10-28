@@ -18,6 +18,17 @@
 synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
         char *pFilename);
 
+/**
+ * Compile a MML audio string into a object
+ * 
+ * @param  [out]pAudio  Object that will be filled with the compiled song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pString The MML song
+ * @param  [ in]len     The MML song's length
+ */
+synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
+        char *pString, int len);
+
 #if 0
 
 #include <synth/synth_audio.h>

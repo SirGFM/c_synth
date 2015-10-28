@@ -94,7 +94,16 @@ synth_err synth_free(synthCtx **ppCtx);
  * @param  [ in]pFilename File with the song's MML
  * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
  */
-synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename);
+synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
+        char *pFilename);
+
+/* TODO
+synth_err synth_compileSongFromString(int *pHandle, synthCtx *pCtx,
+        char *pString, int len);
+
+#define synth_compileSongFromStringStatic(pHandle, pCtx, pString) \
+  synth_compileSongFromString(pHandle, pCtx, pString, sizeof(pString - 1))
+*/
 
 /**
  * Load a already compiled song into the context (so it can be played/rendered)

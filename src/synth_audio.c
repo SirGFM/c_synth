@@ -56,6 +56,43 @@ __err:
     return rv;
 }
 
+/**
+ * Compile a MML audio string into a object
+ * 
+ * @param  [out]pAudio  Object that will be filled with the compiled song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pString The MML song
+ * @param  [ in]len     The MML song's length
+ */
+synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
+        char *pString, int len) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pString, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(len > 0, SYNTH_BAD_PARAM_ERR);
+
+    /* Clear the audio */
+    memset(pAudio, 0x0, sizeof(synthAudio));
+
+    /* Init parser */
+    rv = synthLexer_initFromString(&(pCtx->lexCtx), pString, len);
+    SYNTH_ASSERT_ERR(rv, rv);
+    rv = synthParser_init(&(pCtx->parserCtx), pCtx);
+    SYNTH_ASSERT_ERR(rv, rv);
+
+    /* Parse the audio */
+    rv = synthParser_getAudio(pAudio, &(pCtx->parserCtx), pCtx);
+    SYNTH_ASSERT_ERR(rv, rv);
+
+    rv = SYNTH_OK;
+__err:
+
+    return rv;
+}
+
 #if 0
 
 // TODO feature: per-track volume

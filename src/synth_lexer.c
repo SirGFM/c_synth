@@ -12,6 +12,7 @@
 #include <string.h>
 
 static char *__synthLexer_tokenString[TK_MAX + 1] = {
+    "mml",
     "set bpm",
     "set duration",
     "set octave",
@@ -441,13 +442,58 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopEnd,   ']', T_SET_LOOP_END)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetWave,      'w', T_SET_WAVE)
 
 /**
+ * Check if the current stream is a valid MML (i.e., if it starts with "MML")
+ * 
+ * The stream isn't checked to be at its start
+ * 
+ * @param  [ in]pCtx The contex
+ * @return           SYNTH_TRUE, SYNTH_FALSE
+ */
+static synth_bool synthLexer_isMML(synthLexCtx *pCtx) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+    char target[] = "MML";
+    int i;
+
+    i = 0;
+    while (i < sizeof(target) - 1) {
+        /* Get the current character, without ignoring blank and whatnot */
+        srv = synthLexer_getRawChar(&c, pCtx);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+        /* Check that it's of the expected pattern */
+        SYNTH_ASSERT_ERR(c == target[i], SYNTH_FALSE);
+
+        /* Go to the next char */
+        i++;
+    }
+
+    pCtx->lastToken = T_MML;
+    rv = SYNTH_TRUE;
+__err:
+    if (rv != SYNTH_TRUE) {
+        /* On error, return the last char (that didn't belong to the pattern */
+        synthLexer_ungetChar(pCtx, c);
+
+        /* Then, return everything that belonged partially to the pattern */
+        while (i > 0) {
+            i--;
+            synthLexer_ungetChar(pCtx, target[i]);
+        }
+    }
+
+    return rv;
+}
+
+/**
  * Check if the current octave should be increased or decreased, through the
  * character '<' and '>', repectively
  * 
  * @param  [ in]pCtx The contex
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
-synth_bool synthLexer_isSetRelOctave(synthLexCtx *pCtx) {
+static synth_bool synthLexer_isSetRelOctave(synthLexCtx *pCtx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -484,7 +530,7 @@ __err:
  * @param  [ in]pCtx The contex
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
-synth_bool synthLexer_isNote(synthLexCtx *pCtx) {
+static synth_bool synthLexer_isNote(synthLexCtx *pCtx) {
     synth_bool rv;
     synth_err srv;
     char note;
@@ -563,7 +609,7 @@ __err:
  * @param  [ in]pCtx The contex
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
-synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
+static synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -623,7 +669,7 @@ __err:
  * @param  [ in]pCtx The contex
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
-synth_bool synthLexer_isNumber(synthLexCtx *pCtx) {
+static synth_bool synthLexer_isNumber(synthLexCtx *pCtx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -682,7 +728,7 @@ __err:
  * @param  [ in]pCtx The contex
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
-synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
+static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
     if (pCtx->isFile == SYNTH_TRUE) {
         /* If the stream is a file, first check for the EOF flag */
         if (feof(pCtx->source.file) != 0) {
@@ -732,7 +778,8 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
     /* Check if a valid token, and which, was found */
-    if (synthLexer_isSetBPM(pCtx) == SYNTH_TRUE ||
+    if (synthLexer_isMML(pCtx) == SYNTH_TRUE ||
+            synthLexer_isSetBPM(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetDuration(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetOctave(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetRelOctave(pCtx) == SYNTH_TRUE ||
@@ -976,7 +1023,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetBPM(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetBPM(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1002,7 +1049,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetDuration(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetDuration(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1028,7 +1075,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetOctave(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetOctave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1054,7 +1101,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetRelOctave(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetRelOctave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1086,7 +1133,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetLoopPoint(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetLoopPoint(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1112,7 +1159,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isEndOfTrack(synthLexCtx *ctx) {
+static synth_bool synth_lex_isEndOfTrack(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1138,7 +1185,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetVolume(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetVolume(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1164,7 +1211,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isOpenBracket(synthLexCtx *ctx) {
+static synth_bool synth_lex_isOpenBracket(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1190,7 +1237,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isCloseBracket(synthLexCtx *ctx) {
+static synth_bool synth_lex_isCloseBracket(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1216,7 +1263,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetKeyoff(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetKeyoff(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1242,7 +1289,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetPan(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetPan(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1268,7 +1315,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetLoopStart(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetLoopStart(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1294,7 +1341,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetLoopEnd(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetLoopEnd(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1321,7 +1368,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isSetWave(synthLexCtx *ctx) {
+static synth_bool synth_lex_isSetWave(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1347,7 +1394,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isNote(synthLexCtx *ctx) {
+static synth_bool synth_lex_isNote(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char note = 0;
@@ -1406,7 +1453,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
+static synth_bool synth_lex_isDotDuration(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1454,7 +1501,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
+static synth_bool synth_lex_isNumber(synthLexCtx *ctx) {
     synth_bool rv;
     synth_err srv;
     char c;
@@ -1505,7 +1552,7 @@ __err:
  * @param ctx The contex
  * @return Either SYNTH_TRUE or SYNTH_FALSE
  */
-synth_bool synth_lex_didFinish(synthLexCtx *ctx) {
+static synth_bool synth_lex_didFinish(synthLexCtx *ctx) {
     if (ctx->isFile == SYNTH_TRUE) {
         if (feof(ctx->file)  != 0)
             return SYNTH_TRUE;

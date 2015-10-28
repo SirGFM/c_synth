@@ -220,7 +220,8 @@ __err:
  * @param                 SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR,
  *                        SYNTH_OPEN_FILE_ERR
  */
-synth_err synth_compileSong(int *pHandle, synthCtx *pCtx, char *pFilename) {
+synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
+        char *pFilename) {
     synth_err rv;
 
     /* TODO Store the previous buffer sizes so we can clean it on error */
