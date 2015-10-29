@@ -14,6 +14,30 @@
 #include <string.h>
 
 /**
+ * Assert that the expected token was retrieved
+ * 
+ * A single parameter is needed (the expected token), but there must be a few
+ * variables on the context, with the following names/types:
+ *  - synthCtx *pCtx
+ *  - synthParserCtx *pParser
+ *  - synth_error rv
+ * Also, there must be a label __err, before the function's return
+ */
+#define SYNTH_ASSERT_TOKEN(Expected) \
+  do { \
+    synth_token tk; \
+    tk = synthLexer_lookupToken(&tk, &(pCtx->lexCtx)); \
+    if (tk != Expected) { \
+      pParser->errorFlag = SYNTH_TRUE; \
+      pParser->expected = Expected; \
+      pParser->gotten = tk; \
+      rv = SYNTH_UNEXPECTED_TOKEN; \
+      goto __err; \
+    } \
+  } while (0)
+
+
+/**
  * Initialize the parser
  * 
  * The default settings are as follows:
@@ -64,7 +88,214 @@ __err:
 }
 
 /**
+ * Retrieve the first token on the song
+ * 
+ * Parsing rule: T_MML
+ * 
+ * This token doesn't produce any output, but it must be found before anything else
+ * 
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
+ */
+static synth_err synthParser_mml(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Check that it's a MML token */
+    SYNTH_ASSERT_TOKEN(T_MML);
+
+    /* Read the next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Parse the audio's bpm, if any
+ * 
+ * Parsing rule: bmp = (T_SET_BPM T_NUMBER)?
+ * 
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
+ */
+static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+    synth_token token;
+
+    /* Retrieve the current token */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    if (token == T_SET_BPM) {
+        /* If the token was found, try to read its value */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        /* The following token MUST be a T_NUMBER */
+        SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+        /* Store the retrieved value */
+        rv = synthLexer_getValuei(&(pParser->bpm), &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Get the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Check if the next structure is a sequence
+ * 
+ * @param  [ in]pCtx The synthesizer context
+ * @return           SYNTH_TRUE, SYNTH_FALSE
+ */
+static synth_bool synthParser_isSequence(synthCtx *pCtx) {
+    synth_bool rv;
+    synth_err srv;
+    synth_token token;
+
+    /* Get the next token */
+    srv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+    /* Check if the next token belongs to a sequence */
+    switch (token) {
+        case T_SET_DURATION:
+        case T_SET_OCTAVE:
+        case T_SET_REL_OCTAVE:
+        case T_SET_VOLUME:
+        case T_OPEN_BRACKET:
+        case T_CLOSE_BRACKET:
+        case T_SET_KEYOFF:
+        case T_SET_PAN:
+        case T_SET_WAVE:
+        case T_NOTE:
+        case T_SET_LOOP_START:
+            rv = SYNTH_TRUE;
+        break;
+        default:
+            rv = SYNTH_FALSE;
+    }
+
+__err:
+    return rv;
+}
+
+/**
+ * Parse a track into the context
+ * 
+ * Parsing rule: sequence | sequence? T_SET_LOOPPOINT sequence
+ * 
+ * @param  [out]pTrack The parsed track handle
+ * @param  [ in]pParam The parser context
+ * @param  [ in]pCtx   The synthesizer context
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synth_err rv;
+    synth_token token;
+    int didFindSequence;
+
+    /* TODO Retrieve the next track */
+
+    didFindSequence = 0;
+    /* The first token may either be a sequence or a T_SET_LOOPPOINT */
+    if (synthParser_isSequence(pCtx) == SYNTH_TRUE) {
+        /* TODO Parse a sequence */
+        /* rv = synth_parser_sequence(ctx, &notes); */
+        /* SYNTH_ASSERT(rv == SYNTH_OK); */
+
+        didFindSequence = 1;
+    }
+
+    /* If no sequence was found, then the next token must be T_SET_LOOPPOINT */
+    if (!didFindSequence) {
+        SYNTH_ASSERT_TOKEN(T_SET_LOOPPOINT);
+    }
+
+    /* Parse the looped sequence */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (token == T_SET_LOOPPOINT) {
+        /* TODO Set the current position into the track as the looppoint */
+
+        /* Get the next token (since the previous was a T_SET_LOOPPOINT) */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* TODO Parse the looping sequence */
+        /* rv = synth_parser_sequence(ctx, &notes); */
+        /* SYNTH_ASSERT(rv == SYNTH_OK); */
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Parse tracks into the context
+ * 
+ * Parsing rule: tracks = track ( T_END_OF_TRACK track )*
+ * 
+ * @param  [ in]pParam The parser context
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]pAudio The audio
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_tracks(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
+    int track;
+    synth_err rv;
+    synth_token token;
+
+    /* Parse the first track */
+    rv = synthParser_track(&track, pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Set the audio's first track */
+    pAudio->tracksIndex = track;
+    pAudio->num = 1;
+
+    /* Check if there are any tracks to be parsed */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    while (token == T_END_OF_TRACK) {
+        /* Parse every other track */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Parse the current track (note that the track index will be ignored */
+        rv = synthParser_track(&track, pParser, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Simply increase the number of tracks, since they are retrieved
+         * sequentially */
+        pAudio->num++;
+
+        /* Get the next token */
+        rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Parse the currently loaded file into an audio
+ * 
+ * Parsing rule: T_MML bmp tracks
  * 
  * This function uses a lexer to break the file into tokens, as it does
  * retrieve track, notes etc from the main synthesizer context
@@ -73,14 +304,15 @@ __err:
  * it's safer to simply use 'synthAudio_compile' (which calls this function),
  * or, at least, look at how that function is implemented
  * 
- * @param  [out]pAudio  A clean audio object, that will be filled with the
- *                      parsed song
  * @param  [ in]pParser The parser context
  * @param  [ in]pCtx    The synthesizer context
- * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ * @param  [ in]pAudio  A clean audio object, that will be filled with the
+ *                      parsed song
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_UNEXPECTED_TOKEN,
+ *                      SYNTH_MEM_ERR, ...
  */
-synth_err synthParser_getAudio(synthAudio *pAudio, synthParserCtx *pParser,
-        synthCtx *pCtx) {
+synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -88,22 +320,24 @@ synth_err synthParser_getAudio(synthAudio *pAudio, synthParserCtx *pParser,
     SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
-    /* Get the first token */
+    /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    /* Check that it's a MML token */
-    //SYNTH_ASSERT_TOKEN(T_MML);
 
-    /* Parse(optional) the bpm */
-    //rv = synth_parser_bpm(pParser);
-    //SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Check that its actually a MML song */
+    rv = synthParser_mml(pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Parse the bpm (optional token) */
+    rv = synthParser_bpm(pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse every track in this audio */
-    //rv = synth_parser_tracks(pParser, pCtx);
-    //SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthParser_tracks(pParser, pCtx, pAudio);
+    SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Check that parsing finished */
-    //SYNTH_ASSERT_TOKEN(T_DONE);
+    SYNTH_ASSERT_TOKEN(T_DONE);
 
     rv = SYNTH_OK;
 __err:

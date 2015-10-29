@@ -47,7 +47,7 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(rv, rv);
 
     /* Parse the audio */
-    rv = synthParser_getAudio(pAudio, &(pCtx->parserCtx), pCtx);
+    rv = synthParser_getAudio(&(pCtx->parserCtx), pCtx, pAudio);
     SYNTH_ASSERT_ERR(rv, rv);
 
     rv = SYNTH_OK;
@@ -84,7 +84,7 @@ synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(rv, rv);
 
     /* Parse the audio */
-    rv = synthParser_getAudio(pAudio, &(pCtx->parserCtx), pCtx);
+    rv = synthParser_getAudio(&(pCtx->parserCtx), pCtx, pAudio);
     SYNTH_ASSERT_ERR(rv, rv);
 
     rv = SYNTH_OK;

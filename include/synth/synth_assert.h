@@ -33,24 +33,5 @@
     } \
   } while(0)
 
-/**
- * Assert that the expected token was retrieved
- * 
- * A single parameter is needed (the expected token), but there must be a
- * synthParserCtx var named ctx, a synth_error var named rv and a __err label
- */
-#define SYNTH_ASSERT_TOKEN(Expected) \
-  do { \
-    synth_token tk; \
-    tk = synth_lex_lookupToken(ctx->lexCtx); \
-    if (tk != Expected) { \
-      ctx->errorFlag = SYNTH_TRUE; \
-      ctx->expected = Expected; \
-      ctx->gotten = tk; \
-      rv = SYNTH_UNEXPECTED_TOKEN; \
-      goto __err; \
-    } \
-  } while (0)
-
 #endif
 

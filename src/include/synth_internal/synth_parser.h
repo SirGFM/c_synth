@@ -34,14 +34,14 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx);
  * it's safer to simply use 'synthAudio_compile' (which calls this function),
  * or, at least, look at how that function is implemented
  * 
- * @param  [out]pAudio  A clean audio object, that will be filled with the
- *                      parsed song
  * @param  [ in]pParser The parser context
  * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pAudio  A clean audio object, that will be filled with the
+ *                      parsed song
  * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
  */
-synth_err synthParser_getAudio(synthAudio *pAudio, synthParserCtx *pParser,
-        synthCtx *pCtx);
+synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio);
 
 #if 0
 
