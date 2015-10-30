@@ -28,6 +28,7 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "note",
     "duration",
     "number",
+    "comma",
     "done",
     "unknown token"
 };
@@ -440,6 +441,7 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetPan,       'p', T_SET_PAN)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopStart, '[', T_SET_LOOP_START)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopEnd,   ']', T_SET_LOOP_END)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetWave,      'w', T_SET_WAVE)
+SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,      ',', T_COMMA)
 
 /**
  * Check if the current stream is a valid MML (i.e., if it starts with "MML")
@@ -796,6 +798,7 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isNote(pCtx) == SYNTH_TRUE ||
             synthLexer_isDotDuration(pCtx) == SYNTH_TRUE ||
             synthLexer_isNumber(pCtx) == SYNTH_TRUE ||
+            synthLexer_isSetComma(pCtx) == SYNTH_TRUE ||
             synthLexer_didFinish(pCtx) == SYNTH_TRUE) {
         rv = SYNTH_OK;
     }

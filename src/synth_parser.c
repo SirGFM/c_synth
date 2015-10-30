@@ -190,6 +190,403 @@ __err:
 }
 
 /**
+ * Parse a note into the context
+ * 
+ * Parsing rule: note = T_NOTE T_NUMBER? T_DURATION?
+ * 
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+    synth_note note;
+    synthNote *pNote;
+    synth_token token;
+    int duration, octave, tmp;
+
+    /* Callee function already assures this, but... */
+    SYNTH_ASSERT_TOKEN(T_NOTE);
+
+    /* Set initial duration to whatever the current default is */
+    duration = pParser->duration;
+    octave = pParser->octave;
+
+    /* Store the note to be played */
+    rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    note = (synth_note)tmp;
+
+    /* Adjuste the note's octave */
+    if (note == N_CB) {
+        note = N_B;
+        octave--;
+    }
+    else if (note == N_BS) {
+        note = N_C;
+        octave++;
+    }
+
+    /* Get next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Any number following the note will override the note's duration */
+    synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* If there are any '.', add half the duration every time */
+    synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (token == T_DURATION) {
+        int dots, d;
+
+        rv = synthLexer_getValuei(&dots, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        d = duration;
+
+        /* For each consecutive bit in the duration, add half the current
+         * duration */
+        while (dots > 0) {
+            d <<= 1;
+            dots >>=1;
+
+            duration = duration | d;
+        }
+
+        /* Read whatever the next token is */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    /* Retrieve the new note */
+    if (pCtx->notes.used >= pCtx->notes.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first audio, in which len will be 0 */
+        pCtx->notes.buf.pNotes = (synthNote*)realloc(pCtx->notes.buf.pNotes,
+                (1 + pCtx->notes.len * 2) * sizeof(synthNote));
+        SYNTH_ASSERT_ERR(pCtx->notes.buf.pNotes, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->notes.buf.pNotes[pCtx->notes.used]), 0x0,
+                (1 + pCtx->notes.len) * sizeof(synthNote));
+        /* Actually increase the buffer length */
+        pCtx->notes.len += 1 + pCtx->notes.len;
+    }
+    pNote = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
+
+    /* TODO Initialize the note */
+    //rv = synthNote_init();
+    //SYNTH_ASSERT(rv == SYNTH_OK);
+
+    pCtx->notes.used++;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Parse a 'context modification' into the context
+ * 
+ * Parsing rule: mod = T_SET_DURATION T_NUMBER |
+ *                     T_SET_OCTAVE T_NUMBER |
+ *                     T_SET_REL_OCTAVE T_NUMBER |
+ *                     T_SET_VOLUME T_NUMBER |
+ *                     T_SET_VOLUME T_OPEN_BRACKETS T_NUMBER T_COMMA T_NUMBER
+ *                             T_CLOSE_BRACKETS |
+ *                     T_OPEN_BRACKETS |      // for relative volume
+ *                     T_CLOSE_BRACKETS |     // for relative volume
+ *                     T_SET_KEYOFF T_NUMBER |
+ *                     T_SET_PAN T_NUMBER |
+ *                     T_SET_WAVE T_NUMBER
+ * 
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+    synth_token token;
+    int tmp;
+
+    /* Check which configuration should be set */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    switch (token) {
+        case T_SET_DURATION: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the default duration for notes */
+            rv = synthLexer_getValuei(&(pParser->duration), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_OCTAVE: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the octave for notes */
+            rv = synthLexer_getValuei(&(pParser->octave), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_REL_OCTAVE: {
+            /* This token already have the amount to increase the octave, so
+             * simply use it */
+
+            /* Increase or decrease the octave */
+            rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            pParser->octave += tmp;
+        } break;
+        case T_SET_VOLUME: {
+            int isConst, vol1;
+
+            /* Initialy, set the volume as linear */
+            isConst = 1;
+
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+
+            /* Check if it's a tuple (or something more complex, when supported
+             * or a linear volume */
+            rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            if (token == T_OPEN_BRACKET) {
+                /* Set the volume as not constant */
+                isConst = 0;
+                /* Read the following number */
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+            }
+
+            /* Get the initial volume, whether it's constant or not */
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            rv = synthLexer_getValuei(&vol1, &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+
+            /* Read the following token */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+
+            /* Parse the rest of a 'complex' volume */
+            if (!isConst) {
+                int vol2;
+
+                /* Check there's a separator */
+                SYNTH_ASSERT_TOKEN(T_COMMA);
+
+                /* Read the following number */
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+                rv = synthLexer_getValuei(&vol2, &(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
+                /* Check that the tuple ended */
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
+
+                /* TODO Initialize/Search the volume */
+                rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+            }
+            else {
+                /* TODO Simply initialize/search the constant volume */
+                rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+            }
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_OPEN_BRACKET: {
+            /* TODO >__< */
+            rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_CLOSE_BRACKET: {
+            /* TODO >__< */
+            rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_KEYOFF: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the keyoff value */
+            rv = synthLexer_getValuei(&(pParser->keyoff), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_PAN: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the pan */
+            rv = synthLexer_getValuei(&(pParser->pan), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_WAVE: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Parse the number into a wave */
+            rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            switch (tmp) {
+                case 0: pParser->wave = W_SQUARE; break;
+                case 1: pParser->wave = W_PULSE_12_5; break;
+                case 2: pParser->wave = W_PULSE_25; break;
+                case 3: pParser->wave = W_PULSE_75; break;
+                case 4: pParser->wave = W_TRIANGLE; break;
+                case 5: pParser->wave = W_NOISE; break;
+                default: SYNTH_ASSERT_ERR(0, SYNTH_INVALID_WAVE);
+            }
+        } break;
+        default: {
+            SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
+        }
+    }
+
+    /* Read the next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/* Forward declaration of 'synthParser_sequence', since synthParser_loop
+ * requires this */
+static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx);
+
+/**
+ * Parse a loop into the context
+ * 
+ * Parsing rule: T_SET_LOOP_START sequence T_SET_LOOP_END T_NUMBER?
+ * 
+ * @param  [out]pNumNotes The total number of notes in this track, must have
+ *                        been initialized before hand!
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    int count, loopPosition;
+    synth_err rv;
+    synth_token token;
+
+    /* We're sure to have this token, but... */
+    SYNTH_ASSERT_TOKEN(T_SET_LOOP_START);
+
+    /* Set basic loop count to 2 (default) */
+    count = 2;
+
+    /* Store the current position in track (so the loop position can be set
+     * later on */
+    loopPosition = *pNumNotes;
+
+    /* Read the next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* After the loop start, there must be a sequence */
+    SYNTH_ASSERT_ERR(synthParser_isSequence(pCtx) == SYNTH_TRUE,
+        SYNTH_INVALID_TOKEN);
+    
+    /* Parse the sequence */
+    rv = synthParser_sequence(pNumNotes, pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Afterwards, a loop end must come */
+    SYNTH_ASSERT_TOKEN(T_SET_LOOP_END);
+
+    /* Get the next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* If the next token is a number, it's how many times the loop runs */
+    synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (token == T_NUMBER) {
+        // Store the loop count
+        rv = synthLexer_getValuei(&count, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        // Get the next token
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    /* TODO Add a 'loop note' to the track */
+    (*pNumNotes)++;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Parse a sequence into the context
+ * 
+ * Parsing rule: sequence = ( mod | note | loop )+
+ * 
+ * @param  [out]pNumNotes The total number of notes in this track, must have
+ *                        been initialized before hand!
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Make sure the next token is part of a sequence */
+    SYNTH_ASSERT_ERR(synthParser_isSequence(pCtx) == SYNTH_TRUE,
+        SYNTH_UNEXPECTED_TOKEN);
+
+    /* Fun stuff. Lookup next token and do whatever it requires */
+    while (synthParser_isSequence(pCtx) == SYNTH_TRUE) {
+        synth_token token;
+
+        synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Anything not a note or loop will be parsed as mod */
+        switch (token) {
+            case T_NOTE:
+                /* Simply parse the current note */
+                rv = synthParser_note(pParser, pCtx);
+                (*pNumNotes)++;
+            break;
+            case T_SET_LOOP_START:
+                /* Recursively parse a sub-sequence */
+                rv = synthParser_loop(pNumNotes, pParser, pCtx);
+            break;
+            default:
+                /* Modify the current context in some way */
+                rv = synthParser_mod(pParser, pCtx);
+        }
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Parse a track into the context
  * 
  * Parsing rule: sequence | sequence? T_SET_LOOPPOINT sequence
@@ -203,16 +600,40 @@ static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
         synthCtx *pCtx) {
     synth_err rv;
     synth_token token;
-    int didFindSequence;
+    int curTrack, didFindSequence, numNotes;
 
-    /* TODO Retrieve the next track */
+    /* Make sure there's enough space for another track */
+    SYNTH_ASSERT_ERR(pCtx->tracks.max == 0 ||
+            pCtx->tracks.used < pCtx->tracks.max, SYNTH_MEM_ERR);
+    /* Retrieve the next track */
+    if (pCtx->tracks.used >= pCtx->tracks.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first audio, in which len will be 0 */
+        pCtx->tracks.buf.pTracks = (synthTrack*)realloc(
+                pCtx->tracks.buf.pTracks, (1 + pCtx->tracks.len * 2) *
+                sizeof(synthTrack));
+        SYNTH_ASSERT_ERR(pCtx->tracks.buf.pTracks, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->tracks.buf.pTracks[pCtx->tracks.used]), 0x0,
+                (1 + pCtx->tracks.len) * sizeof(synthTrack));
+        /* Actually increase the buffer length */
+        pCtx->tracks.len += 1 + pCtx->tracks.len;
+    }
+    curTrack = pCtx->tracks.used;
+
+    /* Initialize the track as not being looped and without any notes */
+    pCtx->tracks.buf.pTracks[curTrack].loopPoint = -1;
+    numNotes = 0;
+    /* Also, set the index of the first note */
+    pCtx->tracks.buf.pTracks[curTrack].notesIndex = pCtx->notes.used;
 
     didFindSequence = 0;
     /* The first token may either be a sequence or a T_SET_LOOPPOINT */
     if (synthParser_isSequence(pCtx) == SYNTH_TRUE) {
-        /* TODO Parse a sequence */
-        /* rv = synth_parser_sequence(ctx, &notes); */
-        /* SYNTH_ASSERT(rv == SYNTH_OK); */
+        /* Parse a sequence */
+        rv = synthParser_sequence(&numNotes, pParser, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
 
         didFindSequence = 1;
     }
@@ -226,17 +647,23 @@ static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_SET_LOOPPOINT) {
-        /* TODO Set the current position into the track as the looppoint */
+        /* Set the current position into the track as the looppoint */
+        pCtx->tracks.buf.pTracks[curTrack].loopPoint = numNotes;
 
         /* Get the next token (since the previous was a T_SET_LOOPPOINT) */
         rv = synthLexer_getToken(&(pCtx->lexCtx));
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        /* TODO Parse the looping sequence */
-        /* rv = synth_parser_sequence(ctx, &notes); */
-        /* SYNTH_ASSERT(rv == SYNTH_OK); */
+        /* Parse the looping sequence */
+        rv = synthParser_sequence(&numNotes, pParser, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
+    /* Store the total number of notes in the track */
+    pCtx->tracks.buf.pTracks[curTrack].num = numNotes;
+
+    pCtx->tracks.used++;
+    *pTrack = curTrack;
     rv = SYNTH_OK;
 __err:
     return rv;

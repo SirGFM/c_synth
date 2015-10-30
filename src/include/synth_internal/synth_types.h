@@ -227,8 +227,6 @@ struct stSynthNote {
     int keyoff;
     /** Only used if type is N_loop; how many times has already looped */
     int numIterations;
-    /** Exact 'note duration', so as to search the cached value */
-    int duration;
     /** Wave type to be synthesized */
     synth_wave wave;
     /** Musical note to be played */

@@ -63,6 +63,7 @@ typedef enum {
     T_NOTE,
     T_DURATION,
     T_NUMBER,
+    T_COMMA,
     T_DONE,
     TK_MAX
 } synth_token;
