@@ -6,6 +6,7 @@
 #include <synth/synth_types.h>
 
 #include <synth_internal/synth_lexer.h>
+#include <synth_internal/synth_note.h>
 #include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>
@@ -275,11 +276,13 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     }
     pNote = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
 
+    /* Retrieve a new note */
+    rv = synthNote_init(&pNote, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
     /* TODO Initialize the note */
     //rv = synthNote_init();
     //SYNTH_ASSERT(rv == SYNTH_OK);
 
-    pCtx->notes.used++;
     rv = SYNTH_OK;
 __err:
     return rv;
@@ -486,6 +489,7 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
         synthCtx *pCtx) {
     int count, loopPosition;
     synth_err rv;
+    synthNote *pNote;
     synth_token token;
 
     /* We're sure to have this token, but... */
@@ -529,7 +533,11 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
-    /* TODO Add a 'loop note' to the track */
+    /* Add a 'loop note' to the track */
+    rv = synthNote_initLoop(&pNote, pCtx, count, loopPosition);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Increase the number of notes in the track */
     (*pNumNotes)++;
 
     rv = SYNTH_OK;

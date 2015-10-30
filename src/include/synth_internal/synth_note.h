@@ -3,12 +3,37 @@
  *
  * Representation of a single note in a track
  */
-#ifndef __SYNTH_NOTE_H_
-#define __SYNTH_NOTE_H_
+#ifndef __SYNTH_NOTE_H__
+#define __SYNTH_NOTE_H__
 
+#include <synth/synth_errors.h>
 #include <synth/synth_types.h>
+
+#include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>
 
+/**
+ * Retrieve a new note pointer, so it can be later initialized
+ * 
+ * @param  [out]ppNote The new note
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx);
+
+/**
+ * Retrieve a new note pointer, already initialized as a loop
+ * 
+ * @param  [out]ppNote   The new note
+ * @param  [ in]pCtx     The synthesizer context
+ * @param  [ in]repeat   How many times the loop should repeat
+ * @param  [ in]position Note to which the song should jump back, on loop
+ * @return               SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
+        int position);
+
+#if 0
 
 /**
  * Initialize everything to default values.
@@ -220,5 +245,7 @@ int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
  */
 int synth_note_getSampleSize(int bpm, int duration);
 
-#endif
+#endif /* 0 */
+
+#endif /* __SYNTH_NOTE_H__ */
 

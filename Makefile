@@ -24,6 +24,7 @@ endif
   OBJS = $(OBJDIR)/synth.o           \
          $(OBJDIR)/synth_audio.o     \
          $(OBJDIR)/synth_lexer.o     \
+         $(OBJDIR)/synth_note.o      \
          $(OBJDIR)/synth_parser.o    \
          $(OBJDIR)/synth_volume.o
          #$(OBJDIR)/synth_audiolist.o \

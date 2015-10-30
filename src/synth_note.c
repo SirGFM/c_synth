@@ -1,9 +1,90 @@
 /**
+ * 
  * @file src/synth_note.c
  */
 #include <synth/synth_assert.h>
-#include <synth/synth_backend.h>
 #include <synth/synth_errors.h>
+#include <synth/synth_types.h>
+#include <synth_internal/synth_note.h>
+#include <synth_internal/synth_types.h>
+#include <synth_internal/synth_volume.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * Retrieve a new note pointer, so it can be later initialized
+ * 
+ * @param  [out]pNote The new note
+ * @param  [ in]pCtx  The synthesizer context
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    /* Make sure there's enough space for another note */
+    SYNTH_ASSERT_ERR(pCtx->notes.max == 0 || pCtx->notes.used < pCtx->notes.max,
+            SYNTH_MEM_ERR);
+
+    /* Retrieve the note to be used */
+    if (pCtx->notes.used >= pCtx->notes.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first note, in which len will be 0 */
+        pCtx->notes.buf.pNotes = (synthNote*)realloc(pCtx->notes.buf.pNotes,
+                (1 + pCtx->notes.len * 2) * sizeof(synthNote));
+        SYNTH_ASSERT_ERR(pCtx->notes.buf.pNotes, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->notes.buf.pNotes[pCtx->notes.used]), 0x0,
+                (1 + pCtx->notes.len) * sizeof(synthNote));
+        /* Actually increase the buffer length */
+        pCtx->notes.len += 1 + pCtx->notes.len;
+    }
+    (*ppNote) = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
+    pCtx->notes.used++;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve a new note pointer, already initialized as a loop
+ * 
+ * @param  [out]ppNote   The new note
+ * @param  [ in]pCtx     The synthesizer context
+ * @param  [ in]repeat   How many times the loop should repeat
+ * @param  [ in]position Note to which the song should jump back, on loop
+ * @return               SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
+        int position) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Retrieve a new note 'object' */
+    rv = synthNote_init(ppNote, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Set the note's parameters */
+    (*ppNote)->note = N_LOOP;
+    (*ppNote)->len = repeat;
+    (*ppNote)->pos = position;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+
+#if 0
+#include <synth/synth_backend.h>
 #include <synth/synth_types.h>
 #include <synth_internal/synth_cache.h>
 #include <synth_internal/synth_note.h>
@@ -441,4 +522,6 @@ int synth_note_synthesizeHacky(synthNote *note, int samples, uint16_t *left,
 __err:
     return rem;
 }
+
+#endif /* 0 */
 
