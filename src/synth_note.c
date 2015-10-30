@@ -72,11 +72,11 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setOctave(*ppNote, 4);
     synthNote_setWave(*ppNote, W_SQUARE);
     synthNote_setNote(*ppNote, N_A);
+    synthNote_setDuration(*ppNote, pCtx, 60, 4);
+    synthNote_setKeyoff(*ppNote, 75);
 
     /*
-    synthNote_setDuration(*ppNote, 60, 4);
     synthNote_setVolume(*ppNote, 0);
-    synthNote_setKeyoff(*ppNote, 75);
     */
 
     (*ppNote)->numIterations = 0;
@@ -194,6 +194,96 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE, W_NOISE);
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
+
+/**
+ * Set the note duration
+ * 
+ * NOTE: The duration is stored in samples
+ * 
+ * @param [ in]pNote    The note
+ * @param [ in]pCtx     The synthesizer context
+ * @param [ in]bpm      The song's speed in beats-per-minute
+ * @param [ in]duration Bitfield for the duration. Each bit represents a
+ *                      fraction of the duration;
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
+        int duration) {
+    int freq, len, nSamples, time;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(bpm > 0, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(duration > 0, SYNTH_BAD_PARAM_ERR);
+
+    /* Store the synthesizer frequency */
+    freq = pCtx->frequency;
+    /* Caculate the duration (in miliseconds) of a semibreve (i.e., "full")
+     * note (i.e., 1000ms  * 60 * 4 beats = 60s * 4 beats  = 1 min * 4 beats*/
+    time = 60 * 1000 * 4 / bpm;
+    /* Calculate the duration of a semibreve in samples; Note that freq is in
+     * hertz (i.e., samples-per-seconds), while time is in miliseconds; This is
+     * done so the time loses less accuracy, when being divide by the BPM */
+    nSamples = freq * time;
+
+    /* Accumulate the note's duration in samples */
+    len = 0;
+    while (duration > 0) {
+        if ((duration & 1) == 1) {
+            /* Accumulate this duration, remembering to transform from
+             * samples-per-miliseconds back to hertz */
+            len += nSamples / 1000;
+        }
+
+        /* Remove a bit and halve the number of samples */
+        duration >>= 1;
+        nSamples >>= 1;
+    }
+
+    /* Store the calculated duration */
+    pNote->len = len;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Set the note's keyoff time
+ * 
+ * NOTE: This parameter must be set after the duration
+ * 
+ * Calculate (and store) after how many samples this note should be released;
+ * The value must be a number in the range [0, 100], represeting the percentage
+ * of the note that it must keep playing
+ * 
+ * @param  [ in]pNote  The note
+ * @param  [ in]keyoff The percentage of the note duration before it's released
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    /* Clamp the value to the valid range */
+    if (keyoff < 0) {
+        keyoff = 0;
+    }
+    else if (keyoff > 100) {
+        keyoff = 100;
+    }
+
+    /* Calculate (and store) the keyoff in samples */
+    pNote->keyoff = pNote->len * keyoff / 100;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
 
 #if 0
 #include <synth/synth_backend.h>
