@@ -13,6 +13,27 @@
 #include <string.h>
 
 /**
+ * Static array with note frequencies; to get lower octaves one, right-shift
+ * by the number of octaves going down
+ */
+static int __synthNote_frequency[] = {
+/* 'Cb' 8 */0xffff,
+/*  C   8 */  4186,
+/*  C#  8 */  4435,
+/*  D   8 */  4699,
+/*  D#  8 */  4978,
+/*  E   8 */  5274,
+/*  F   8 */  5588,
+/*  F#  8 */  5920,
+/*  G   8 */  6272,
+/*  G#  8 */  6645,
+/*  A   8 */  7040,
+/*  A#  8 */  7459,
+/*  B   8 */  7902,
+/* 'B#' 8 */0xffff
+};
+
+/**
  * Retrieve a new note pointer, so it can be later initialized
  * 
  * @param  [out]pNote The new note
@@ -45,6 +66,21 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     }
     (*ppNote) = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
     pCtx->notes.used++;
+
+    /* Initialize the note's default parameters */
+    synthNote_setPan(*ppNote, 50);
+    synthNote_setOctave(*ppNote, 4);
+    synthNote_setWave(*ppNote, W_SQUARE);
+    synthNote_setNote(*ppNote, N_A);
+
+    /*
+    synthNote_setDuration(*ppNote, 60, 4);
+    synthNote_setVolume(*ppNote, 0);
+    synthNote_setKeyoff(*ppNote, 75);
+    */
+
+    (*ppNote)->numIterations = 0;
+    (*ppNote)->pos = 0;
 
     rv = SYNTH_OK;
 __err:
@@ -82,6 +118,82 @@ __err:
     return rv;
 }
 
+/**
+ * Set an attribute, clamping it to the desired range
+ * 
+ * @param [ in]function The function name
+ * @param [ in]type     The type of the attribute being set
+ * @param [ in]attr     The name of the attribute
+ * @param [ in]min      The minimum valid value
+ * @param [ in]max      The maximum valid value
+ */
+#define SYNTHNOTE_CLAMPEDSETTER(function, type, attr, min, max) \
+  synth_err function(synthNote *pNote, type val) { \
+    synth_err rv; \
+  \
+    /* Sanitize the arguments */ \
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR); \
+  \
+    /* Clamp the value to the valid range */ \
+    if (val < min) { \
+        val = min; \
+    } \
+    else if (val > max) { \
+        val = max; \
+    } \
+  \
+    /* Set the value */ \
+    pNote->attr = val; \
+  \
+    rv = SYNTH_OK; \
+__err: \
+    return rv; \
+  }
+
+/**
+ * Set the note panning
+ * 
+ * Defines which channel, if any, should be louder; If the value is outside the
+ * expected [0, 100] range, it's automatically clamped
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]pan   Panning level; 0 means completelly to the left and 100
+ *                   means completelly to the right
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setPan, char, pan, 0, 100);
+
+/**
+ * Set the note octave
+ * 
+ * Define higher the pitch, the highed the numeric representation; The value is
+ * clamped to the range [1, 8]
+ * 
+ * @param [ in]pNote  The note
+ * @param [ in]octave The octave
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setOctave, char, octave, 1, 8);
+
+/**
+ * Set the note wave
+ * 
+ * If the wave isn't valid, it will be set to noise!
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]wave  The wave
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE, W_NOISE);
+
+/**
+ * Set the musical note
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]note  The musical note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
 
 #if 0
 #include <synth/synth_backend.h>

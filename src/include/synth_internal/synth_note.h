@@ -33,6 +33,51 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx);
 synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
         int position);
 
+/**
+ * Set the note panning
+ * 
+ * Defines which channel, if any, should be louder; If the value is outside the
+ * expected [0, 100] range, it's automatically clamped
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]pan   Panning level; 0 means completelly to the left and 100
+ *                   means completelly to the right
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setPan(synthNote *pNote, char pan);
+
+/**
+ * Set the note octave
+ * 
+ * Define higher the pitch, the highed the numeric representation; The value is
+ * clamped to the range [1, 8]
+ * 
+ * @param [ in]pNote  The note
+ * @param [ in]octave The octave
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setOctave(synthNote *pNote, char pan);
+
+/**
+ * Set the note wave
+ * 
+ * If the wave isn't valid, it will be set to noise!
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]wave  The wave
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setWave(synthNote *pNote, synth_wave wave);
+
+/**
+ * Set the musical note
+ * 
+ * @param [ in]pNote The note
+ * @param [ in]note  The musical note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setNote(synthNote *pNote, synth_note note);
+
 #if 0
 
 /**
