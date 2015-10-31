@@ -27,14 +27,13 @@ endif
          $(OBJDIR)/synth_lexer.o     \
          $(OBJDIR)/synth_note.o      \
          $(OBJDIR)/synth_parser.o    \
+         $(OBJDIR)/synth_track.o     \
          $(OBJDIR)/synth_volume.o
          #$(OBJDIR)/synth_audiolist.o \
          #$(OBJDIR)/synth_buffer.o    \
          #$(OBJDIR)/synth_cache.o     \
-         #$(OBJDIR)/synth_note.o      \
          #$(OBJDIR)/synth_prng.o      \
          #$(OBJDIR)/synth_thread.o    \
-         #$(OBJDIR)/synth_track.o     \
  
  #ifeq ($(USE_SDL), yes)
  #  OBJS += $(OBJS) $(OBJDIR)/synth_sdl2_backend.o

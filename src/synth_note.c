@@ -77,7 +77,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setVolume(*ppNote, 0);
 
     (*ppNote)->numIterations = 0;
-    (*ppNote)->pos = 0;
+    (*ppNote)->jumpPosition = 0;
 
     rv = SYNTH_OK;
 __err:
@@ -108,7 +108,7 @@ synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
     /* Set the note's parameters */
     (*ppNote)->note = N_LOOP;
     (*ppNote)->len = repeat;
-    (*ppNote)->pos = position;
+    (*ppNote)->jumpPosition = position;
 
     rv = SYNTH_OK;
 __err:

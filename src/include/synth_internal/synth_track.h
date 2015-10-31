@@ -1,10 +1,25 @@
 /**
+ * A sequence of notes
+ * 
  * @file src/include/synth_internal/synth_track.h
- *
- * A track (i.e., a instrument or a "single note staff", ...)
  */
-#ifndef __SYNTH_TRACK_H_
-#define __SYNTH_TRACK_H_
+#ifndef __SYNTH_TRACK_H__
+#define __SYNTH_TRACK_H__
+
+#include <synth/synth_errors.h>
+
+#include <synth_internal/synth_types.h>
+
+/**
+ * Retrieve a new track (alloc it as possible and necessary)
+ * 
+ * @param  [out]ppTrack The new track
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthTrack_init(synthTrack **ppTrack, synthCtx *pCtx);
+
+#if 0
 
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
@@ -76,5 +91,7 @@ void synth_track_synthesize(synthTrack *track, int samples, uint16_t *left,
  */
 void synth_track_reset(synthTrack *track);
 
-#endif
+#endif /* 0 */
+
+#endif /* __SYNTH_TRACK_H__ */
 

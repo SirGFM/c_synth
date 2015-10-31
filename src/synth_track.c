@@ -1,6 +1,67 @@
 /**
+ * A sequence of notes
+ * 
  * @file src/synth_track.c
  */
+#include <synth/synth.h>
+#include <synth/synth_assert.h>
+#include <synth/synth_errors.h>
+
+#include <synth_internal/synth_track.h>
+#include <synth_internal/synth_types.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * Retrieve a new track (alloc it as possible and necessary)
+ * 
+ * @param  [out]ppTrack The new track
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthTrack_init(synthTrack **ppTrack, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppTrack, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Make sure there's enough space for another track */
+    SYNTH_ASSERT_ERR(pCtx->tracks.max == 0 ||
+            pCtx->tracks.used < pCtx->tracks.max, SYNTH_MEM_ERR);
+
+    /* Expand the array as necessary */
+    if (pCtx->tracks.used >= pCtx->tracks.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first audio, in which len will be 0 */
+        pCtx->tracks.buf.pTracks = (synthTrack*)realloc(
+                pCtx->tracks.buf.pTracks, (1 + pCtx->tracks.len * 2) *
+                sizeof(synthTrack));
+        SYNTH_ASSERT_ERR(pCtx->tracks.buf.pTracks, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->tracks.buf.pTracks[pCtx->tracks.used]), 0x0,
+                (1 + pCtx->tracks.len) * sizeof(synthTrack));
+        /* Actually increase the buffer length */
+        pCtx->tracks.len += 1 + pCtx->tracks.len;
+    }
+
+    /* Retrieve the next track */
+    *ppTrack = &(pCtx->tracks.buf.pTracks[pCtx->tracks.used]);
+    pCtx->tracks.used++;
+
+    /* Initialize the track as not being looped and without any notes */
+    (*ppTrack)->loopPoint = -1;
+    (*ppTrack)->notesIndex = pCtx->notes.used;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+#if 0
+
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 #include <synth/synth_types.h>
@@ -185,4 +246,6 @@ void synth_track_reset(synthTrack *track) {
     track->notepos = 0;
     track->pos = 0;
 }
+
+#endif
 

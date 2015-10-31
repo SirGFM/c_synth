@@ -123,8 +123,11 @@ synth_err synthLexer_clear(synthLexCtx *pCtx) {
     }
     /* If it's a string, it'll be cleaned on the memset */
 
-    /* Clear everything */
-    memset(pCtx, 0x0, sizeof(synthLexCtx));
+    /* Clear everything (except for everything related to an error ) */
+    pCtx->isFile = 0;
+    pCtx->ivalue = 0;
+    pCtx->lastToken = 0;
+    memset(&(pCtx->source), 0x0, sizeof(synthSource));
 
     rv = SYNTH_OK;
 __err:

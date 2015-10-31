@@ -127,20 +127,14 @@ synth_err synth_compileSongFromString(int *pHandle, synthCtx *pCtx,
 synth_err synth_getCompilerErrorString(char **ppError, synthCtx *pCtx);
 
 /**
- * Load a already compiled song into the context (so it can be played/rendered)
+ * Return the number of tracks in a song
  * 
- * This function exists mostly to remind me that I want to implement it sometime
- * in the future; It could be useful in memory-constrained environment, so the
- * user would compile and load it (using whichever memory he has access to) and
- * then he would load it to the context... Maybe it makes no sense at all, but I
- * want to keep this pointer here
- * 
- * @param  [out]pHandle Handle of the loaded song
- * @param  [ in]pCtx    The synthesizer context
- * @param  [ in]pSong   The song to be loaded
- * @return              SYNTH_FUNCTION_NOT_IMPLEMENTED
+ * @param  [out]pNum   The number of tracks
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
  */
-synth_err synth_loadCompiledSong(int *pHandle, synthCtx *pCtx, void *pSong);
+synth_err synth_getAudioTrackCount(int *pNum, synthCtx *pCtx, int handle);
 
 #if 0
 /**

@@ -218,11 +218,8 @@ struct stSynthNote {
      * If type is N_loop, represent how many times should repeat.
      */
     int len;
-    /**
-     * Current position on the note.
-     * If type is N_loop, represents note to which should jump.
-     */
-    int pos;
+    /** Only used if type is N_loop; Represents note to which should jump. */
+    int jumpPosition;
     /** After how many samples should the note be muted */
     int keyoff;
     /** Only used if type is N_loop; how many times has already looped */

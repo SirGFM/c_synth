@@ -8,6 +8,7 @@
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_note.h>
 #include <synth_internal/synth_parser.h>
+#include <synth_internal/synth_track.h>
 #include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>
 
@@ -733,37 +734,17 @@ __err:
  * @param  [ in]pCtx   The synthesizer context
  * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
  */
-static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
+static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
         synthCtx *pCtx) {
+    synthTrack *pTrack;
     synth_err rv;
     synth_token token;
     int curTrack, didFindSequence, numNotes;
 
-    /* Make sure there's enough space for another track */
-    SYNTH_ASSERT_ERR(pCtx->tracks.max == 0 ||
-            pCtx->tracks.used < pCtx->tracks.max, SYNTH_MEM_ERR);
-    /* Retrieve the next track */
-    if (pCtx->tracks.used >= pCtx->tracks.len) {
-        /* 'Double' the current buffer; Note that this will never be called if
-         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
-         * for the first audio, in which len will be 0 */
-        pCtx->tracks.buf.pTracks = (synthTrack*)realloc(
-                pCtx->tracks.buf.pTracks, (1 + pCtx->tracks.len * 2) *
-                sizeof(synthTrack));
-        SYNTH_ASSERT_ERR(pCtx->tracks.buf.pTracks, SYNTH_MEM_ERR);
-        /* Clear only the new part of the buffer */
-        memset(&(pCtx->tracks.buf.pTracks[pCtx->tracks.used]), 0x0,
-                (1 + pCtx->tracks.len) * sizeof(synthTrack));
-        /* Actually increase the buffer length */
-        pCtx->tracks.len += 1 + pCtx->tracks.len;
-    }
-    curTrack = pCtx->tracks.used;
-
-    /* Initialize the track as not being looped and without any notes */
-    pCtx->tracks.buf.pTracks[curTrack].loopPoint = -1;
-    numNotes = 0;
-    /* Also, set the index of the first note */
-    pCtx->tracks.buf.pTracks[curTrack].notesIndex = pCtx->notes.used;
+    /* Retrieve a new track */
+    rv = synthTrack_init(&pTrack, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    curTrack = pCtx->tracks.used - 1;
 
     didFindSequence = 0;
     /* The first token may either be a sequence or a T_SET_LOOPPOINT */
@@ -785,7 +766,7 @@ static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_SET_LOOPPOINT) {
         /* Set the current position into the track as the looppoint */
-        pCtx->tracks.buf.pTracks[curTrack].loopPoint = numNotes;
+        pTrack->loopPoint = numNotes;
 
         /* Get the next token (since the previous was a T_SET_LOOPPOINT) */
         rv = synthLexer_getToken(&(pCtx->lexCtx));
@@ -797,10 +778,9 @@ static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
     }
 
     /* Store the total number of notes in the track */
-    pCtx->tracks.buf.pTracks[curTrack].num = numNotes;
+    pTrack->num = numNotes;
 
-    pCtx->tracks.used++;
-    *pTrack = curTrack;
+    *pTrackHnd = curTrack;
     rv = SYNTH_OK;
 __err:
     pParser->errorCode = rv;
