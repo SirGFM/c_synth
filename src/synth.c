@@ -222,6 +222,7 @@ __err:
  */
 synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
         char *pFilename) {
+    synthAudio *pAudio;
     synth_err rv;
 
     /* TODO Store the previous buffer sizes so we can clean it on error */
@@ -230,9 +231,6 @@ synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pHandle, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pFilename, SYNTH_BAD_PARAM_ERR);
-    /* Make sure there's enough space for another song */
-    SYNTH_ASSERT_ERR(pCtx->songs.max == 0 || pCtx->songs.used < pCtx->songs.max,
-            SYNTH_MEM_ERR);
     /* TODO Check that the filename is valid? (i.e., actually \0-terminated?) */
 
     /* Check that the file exists */
@@ -244,30 +242,16 @@ synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
         fclose(pFp);
     } while (0);
 
-    /* Retrieve the audio to be used */
-    if (pCtx->songs.used >= pCtx->songs.len) {
-        /* 'Double' the current buffer; Note that this will never be called if
-         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
-         * for the first audio, in which len will be 0 */
-        pCtx->songs.buf.pAudios = (synthAudio*)realloc(pCtx->songs.buf.pAudios,
-                (1 + pCtx->songs.len * 2) * sizeof(synthAudio));
-        SYNTH_ASSERT_ERR(pCtx->songs.buf.pAudios, SYNTH_MEM_ERR);
-        /* Clear only the new part of the buffer */
-        memset(&(pCtx->songs.buf.pAudios[pCtx->songs.used]), 0x0,
-                (1 + pCtx->songs.len) * sizeof(synthAudio));
-        /* Actually increase the buffer length */
-        pCtx->songs.len += 1 + pCtx->songs.len;
-    }
-
+    /* Retrieve the new audio */
+    rv = synthAudio_init(&pAudio, pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     /* Compile the song */
-    rv = synthAudio_compileFile(&(pCtx->songs.buf.pAudios[pCtx->songs.used]),
-            pCtx, pFilename);
+    rv = synthAudio_compileFile(pAudio, pCtx, pFilename);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Return the newly compiled song */
-    *pHandle = pCtx->songs.used;
+    *pHandle = pCtx->songs.used - 1;
     /* 'Push' the audio into the buffer */
-    pCtx->songs.used++;
     rv = SYNTH_OK;
 __err:
     if (rv != SYNTH_OK) {

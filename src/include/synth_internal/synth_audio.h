@@ -9,9 +9,18 @@
 #include <synth_internal/synth_types.h>
 
 /**
+ * Initialize a new audio, so a song can be compiled into it
+ * 
+ * @param  [out]pAudio Object that will be filled with the compiled song
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx);
+
+/**
  * Compile a MML audio file into a object
  * 
- * @param  [out]pAudio    Object that will be filled with the compiled song
+ * @param  [ in]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]pFilename File with the song's MML
  */
@@ -21,7 +30,7 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 /**
  * Compile a MML audio string into a object
  * 
- * @param  [out]pAudio  Object that will be filled with the compiled song
+ * @param  [ in]pAudio  Object that will be filled with the compiled song
  * @param  [ in]pCtx    The synthesizer context
  * @param  [ in]pString The MML song
  * @param  [ in]len     The MML song's length

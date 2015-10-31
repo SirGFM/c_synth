@@ -10,20 +10,52 @@
 #include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_types.h>
 
+#include <stdlib.h>
 #include <string.h>
 
-#if 0
-#include <synth_internal/synth_audiolist.h>
-#include <synth_internal/synth_parser.h>
-#include <synth_internal/synth_track.h>
+/**
+ * Initialize a new audio, so a song can be compiled into it
+ * 
+ * @param  [out]pAudio Object that will be filled with the compiled song
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ */
+synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx) {
+    synth_err rv;
 
-#include <stdlib.h>
-#endif /* 0 */
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    /* Make sure there's enough space for another song */
+    SYNTH_ASSERT_ERR(pCtx->songs.max == 0 || pCtx->songs.used < pCtx->songs.max,
+            SYNTH_MEM_ERR);
+
+    /* Retrieve the audio to be used */
+    if (pCtx->songs.used >= pCtx->songs.len) {
+        /* 'Double' the current buffer; Note that this will never be called if
+         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
+         * for the first audio, in which len will be 0 */
+        pCtx->songs.buf.pAudios = (synthAudio*)realloc(pCtx->songs.buf.pAudios,
+                (1 + pCtx->songs.len * 2) * sizeof(synthAudio));
+        SYNTH_ASSERT_ERR(pCtx->songs.buf.pAudios, SYNTH_MEM_ERR);
+        /* Clear only the new part of the buffer */
+        memset(&(pCtx->songs.buf.pAudios[pCtx->songs.used]), 0x0,
+                (1 + pCtx->songs.len) * sizeof(synthAudio));
+        /* Actually increase the buffer length */
+        pCtx->songs.len += 1 + pCtx->songs.len;
+    }
+
+    *ppAudio = &(pCtx->songs.buf.pAudios[pCtx->songs.used]);
+    pCtx->songs.used++;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
 
 /**
  * Compile a MML audio file into a object
  * 
- * @param  [out]pAudio    Object that will be filled with the compiled song
+ * @param  [ in]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]pFilename File with the song's MML
  */
@@ -52,14 +84,13 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
-
     return rv;
 }
 
 /**
  * Compile a MML audio string into a object
  * 
- * @param  [out]pAudio  Object that will be filled with the compiled song
+ * @param  [ in]pAudio  Object that will be filled with the compiled song
  * @param  [ in]pCtx    The synthesizer context
  * @param  [ in]pString The MML song
  * @param  [ in]len     The MML song's length
