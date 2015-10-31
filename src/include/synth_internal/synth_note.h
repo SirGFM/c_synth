@@ -108,6 +108,15 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
  */
 synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff);
 
+/**
+ * Set the volume envelop
+ * 
+ * @param  [ in]pNote The note
+ * @param  [ in]pVol  The volume
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setVolume(synthNote *pNote, synthVolume *pVol);
+
 #if 0
 
 /**

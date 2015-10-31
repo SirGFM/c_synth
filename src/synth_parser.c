@@ -78,10 +78,8 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
         pCtx->volumes.len = 1;
     }
     /* Set the volume to half the maximum possible */
-    rv = synthVolume_setConst(&(pCtx->volumes.buf.pVolumes[0]), 0x7f);
+    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 0x7f);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
-    /* Store the default volume */
-    pParser->volumeIndex = 0;
     
     rv = SYNTH_OK;
 __err:
@@ -279,9 +277,21 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     /* Retrieve a new note */
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    /* TODO Initialize the note */
-    //rv = synthNote_init();
-    //SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Initialize the note */
+    rv = synthNote_setPan(pNote, pParser->pan);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setOctave(pNote, octave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setNote(pNote, note);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setWave(pNote, pParser->wave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setDuration(pNote, pCtx, pParser->bpm, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setKeyoff(pNote, pParser->keyoff);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setVolume(pNote, pParser->pVolume);
+    SYNTH_ASSERT(rv == SYNTH_OK);
 
     rv = SYNTH_OK;
 __err:
@@ -397,12 +407,16 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
                 SYNTH_ASSERT(rv == SYNTH_OK);
                 SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
 
-                /* TODO Initialize/Search the volume */
+                /* Initialize/Search the volume */
+                rv = synthVolume_getLinear(&(pParser->pVolume), pCtx, vol1,
+                        vol2);
                 rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+                SYNTH_ASSERT(rv == SYNTH_OK);
             }
             else {
-                /* TODO Simply initialize/search the constant volume */
-                rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+                /* Simply initialize/search the constant volume */
+                rv = synthVolume_getConst(&(pParser->pVolume), pCtx, vol1);
+                SYNTH_ASSERT(rv == SYNTH_OK);
             }
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;

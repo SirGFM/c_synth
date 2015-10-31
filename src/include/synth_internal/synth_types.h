@@ -117,7 +117,7 @@ struct stSynthParserCtx {
     /** Default duration (when not specified) */
     int duration;
     /** Default volume */
-    int volumeIndex;
+    synthVolume *pVolume;
     /** Current keyoff */
     int keyoff;
     /** Current pan */
@@ -232,7 +232,7 @@ struct stSynthNote {
     /** Musical note to be played */
     synth_note note;
     /** Either a value between 0x0 and 0xff or a envelop */
-    synthVolume *vol;
+    synthVolume *pVol;
 };
 
 /** Define a simple note envelop */

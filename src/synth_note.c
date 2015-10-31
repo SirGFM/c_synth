@@ -74,10 +74,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setNote(*ppNote, N_A);
     synthNote_setDuration(*ppNote, pCtx, 60, 4);
     synthNote_setKeyoff(*ppNote, 75);
-
-    /*
     synthNote_setVolume(*ppNote, 0);
-    */
 
     (*ppNote)->numIterations = 0;
     (*ppNote)->pos = 0;
@@ -279,6 +276,27 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff) {
 
     /* Calculate (and store) the keyoff in samples */
     pNote->keyoff = pNote->len * keyoff / 100;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Set the volume envelop
+ * 
+ * @param  [ in]pNote The note
+ * @param  [ in]pVol  The volume
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setVolume(synthNote *pNote, synthVolume *pVol) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    /* Store the volume */
+    pNote->pVol = pVol;
 
     rv = SYNTH_OK;
 __err:
