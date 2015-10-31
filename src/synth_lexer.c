@@ -748,6 +748,7 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
     if (pCtx->isFile == SYNTH_TRUE) {
         /* If the stream is a file, first check for the EOF flag */
         if (feof(pCtx->source.file) != 0) {
+            pCtx->lastToken = T_DONE;
             return SYNTH_TRUE;
         }
         else {

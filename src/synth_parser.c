@@ -486,13 +486,13 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = synthLexer_getValuei(&vol1, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
 
-            /* Read the following token */
-            rv = synthLexer_getToken(&(pCtx->lexCtx));
-            SYNTH_ASSERT(rv == SYNTH_OK);
-
             /* Parse the rest of a 'complex' volume */
             if (!isConst) {
                 int vol2;
+
+                /* Read the following token */
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
 
                 /* Check there's a separator */
                 SYNTH_ASSERT_TOKEN(T_COMMA);
