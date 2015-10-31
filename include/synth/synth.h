@@ -97,13 +97,23 @@ synth_err synth_free(synthCtx **ppCtx);
 synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
         char *pFilename);
 
-/* TODO
+/**
+ * Parse a string into a compiled song
+ * 
+ * The compiled song can later be used to playback the audio, get its samples
+ * (i.e., buffer the whole song) or to export it to WAVE or OGG
+ * 
+ * @param  [out]pHandle Handle of the loaded song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pString Song's MML
+ * @param  [ in]length  The string's length
+ * @param               SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ */
 synth_err synth_compileSongFromString(int *pHandle, synthCtx *pCtx,
-        char *pString, int len);
+        char *pString, int length);
 
 #define synth_compileSongFromStringStatic(pHandle, pCtx, pString) \
   synth_compileSongFromString(pHandle, pCtx, pString, sizeof(pString - 1))
-*/
 
 /**
  * Load a already compiled song into the context (so it can be played/rendered)

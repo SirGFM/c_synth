@@ -261,6 +261,51 @@ __err:
     return rv;
 }
 
+/**
+ * Parse a string into a compiled song
+ * 
+ * The compiled song can later be used to playback the audio, get its samples
+ * (i.e., buffer the whole song) or to export it to WAVE or OGG
+ * 
+ * @param  [out]pHandle Handle of the loaded song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pString Song's MML
+ * @param  [ in]length  The string's length
+ * @param               SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
+ */
+synth_err synth_compileSongFromString(int *pHandle, synthCtx *pCtx,
+        char *pString, int length) {
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* TODO Store the previous buffer sizes so we can clean it on error */
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pHandle, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pString, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(length, SYNTH_BAD_PARAM_ERR);
+    /* TODO Check that the filename is valid? (i.e., actually \0-terminated?) */
+
+    /* Retrieve the new audio */
+    rv = synthAudio_init(&pAudio, pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Compile the song */
+    rv = synthAudio_compileString(pAudio, pCtx, pString, length);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Return the newly compiled song */
+    *pHandle = pCtx->songs.used - 1;
+    /* 'Push' the audio into the buffer */
+    rv = SYNTH_OK;
+__err:
+    if (rv != SYNTH_OK) {
+        /* TODO Clear the newly used objects */
+    }
+
+    return rv;
+}
+
 #if 0
 static synth_bool synth_inited = SYNTH_FALSE;
 

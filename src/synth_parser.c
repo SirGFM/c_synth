@@ -70,13 +70,6 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
 
-    /* Make sure there's a default volume on the main context */
-    if (pCtx->volumes.max == 0 && pCtx->volumes.len <= 0) {
-        /* Alloc a single volume */
-        pCtx->volumes.buf.pVolumes = (synthVolume*)malloc(sizeof(synthVolume));
-        SYNTH_ASSERT_ERR(pCtx->volumes.buf.pVolumes, SYNTH_MEM_ERR);
-        pCtx->volumes.len = 1;
-    }
     /* Set the volume to half the maximum possible */
     rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 0x7f);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);

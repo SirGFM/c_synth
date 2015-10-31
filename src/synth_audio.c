@@ -84,6 +84,9 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
+    /* Clear the lexer, so any open file is closed */
+    synthLexer_clear(&(pCtx->lexCtx));
+
     return rv;
 }
 
