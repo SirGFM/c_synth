@@ -8,6 +8,7 @@ endif
 # Define compilation target
 #==============================================================================
   TARGET := libCSynth
+  LIBNAME := lCSynth
   MAJOR_VERSION := 1
   MINOR_VERSION := 0
   REV_VERSION   := 0
@@ -122,6 +123,7 @@ endif
   VPATH := src:tst
   OBJDIR := obj/$(OS)
   BINDIR := bin/$(OS)
+  TESTDIR := tst
   ifeq ($(OS), Win)
      ifeq ($(ARCH), x64)
        LIBPATH := /d/windows/mingw/lib
@@ -134,6 +136,20 @@ endif
     HEADERPATH := /usr/include
   endif
 #===============================================================================
+
+#==============================================================================
+# Automatically look up for tests and compile them
+#==============================================================================
+ TEST_SRC := $(wildcard $(TESTDIR)/tst_*.c)
+ TEST_OBJS := $(TEST_SRC:$(TESTDIR)/%.c=$(OBJDIR)/%.o)
+ TEST_BIN := $(addprefix $(BINDIR)/, $(TEST_SRC:$(TESTDIR)/%.c=%$(BIN_EXT)))
+#==============================================================================
+
+#==============================================================================
+# Make sure the test's object files aren't automatically deleted
+#==============================================================================
+.SECONDARY: $(TEST_OBJS)
+#==============================================================================
 
 #==============================================================================
 # Make the objects list constant (and the icon, if any)
@@ -158,7 +174,7 @@ endif
 #===============================================================================
 # Define default compilation rule
 #===============================================================================
-all: static shared
+all: static shared tests
 #===============================================================================
 
 #==============================================================================
@@ -171,6 +187,12 @@ static: MKDIRS $(BINDIR)/$(TARGET).a
 # Rule for building the shared libs
 #==============================================================================
 shared: MKDIRS $(BINDIR)/$(TARGET).$(MNV)
+#==============================================================================
+
+#==============================================================================
+# Rule for building tests
+#==============================================================================
+tests: MKDIRS shared $(TEST_BIN)
 #==============================================================================
 
 #==============================================================================
@@ -200,25 +222,18 @@ endif
 #==============================================================================
 
 #==============================================================================
+# Rule for compiling a test binary (it's prefixed by 'tst_')
+#==============================================================================
+$(BINDIR)/tst_%$(BIN_EXT): $(OBJDIR)/tst_%.o
+	$(CC) $(CFLAGS) $(LFLAGS) -L$(BINDIR) -o $@ $< $(LFLAGS) -$(LIBNAME)
+#==============================================================================
+
+#==============================================================================
 # Rule for compiling any .c in its object
 #==============================================================================
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 #==============================================================================
-
-#tests:  \
-#        $(BINDIR)/cmd_parse \
-#        $(BINDIR)/play_audio \
-#        $(BINDIR)/tokenize_mml
-
-#$(BINDIR)/cmd_parse : MKDIRS $(OBJDIR)/cmd_parse.o $(BINDIR)/$(TARGET).a
-#	$(CC) $(CFLAGS) -o $(BINDIR)/cmd_parse $(OBJDIR)/cmd_parse.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
-
-#$(BINDIR)/play_audio: MKDIRS $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a
-#	$(CC) $(CFLAGS) -o $(BINDIR)/play_audio $(OBJDIR)/play_audio.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
-
-#$(BINDIR)/tokenize_mml: MKDIRS $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a
-#	$(CC) $(CFLAGS) -o $(BINDIR)/tokenize_mml $(OBJDIR)/tokenize_mml.o $(BINDIR)/$(TARGET).a $(LFLAGS) $(SDLLFLAGS)
 
 #==============================================================================
 # Rule for creating every directory
