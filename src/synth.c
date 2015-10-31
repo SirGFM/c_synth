@@ -7,6 +7,7 @@
 
 #include <synth_internal/synth_audio.h>
 #include <synth_internal/synth_lexer.h>
+#include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_types.h>
 
 #include <stdio.h>
@@ -303,6 +304,30 @@ __err:
         /* TODO Clear the newly used objects */
     }
 
+    return rv;
+}
+
+/**
+ * Return a string representing the compiler error raised
+ * 
+ * This string is statically allocated and mustn't be freed by user
+ * 
+ * @param  [out]ppError The error string
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NO_ERRORS
+ */
+synth_err synth_getCompilerErrorString(char **ppError, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppError, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    rv = synthParser_getErrorString(ppError, &(pCtx->parserCtx), pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
     return rv;
 }
 

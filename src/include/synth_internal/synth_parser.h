@@ -25,6 +25,19 @@
 synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx);
 
 /**
+ * Return the error string
+ * 
+ * This string is statically allocated and mustn't be freed by user
+ * 
+ * @param  [out]ppError The error string
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NO_ERRORS
+ */
+synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
+        synthCtx *pCtx);
+
+/**
  * Parse the currently loaded file into an audio
  * 
  * This function uses a lexer to break the file into tokens, as it does

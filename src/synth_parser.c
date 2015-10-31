@@ -14,6 +14,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define TOKEN_MAX_STR 30
+#define EXTRA_CHARS 5+6+2
+/** Template used to generate a 'unespected token found' */
+static char __synthParser_defaultMsg[] =
+        "ERROR: Expected %s but got %s.\n"
+        "       Line: %i\n"
+        "       Position: %i\n"
+        "       Last character: %c\n";
+/** Template used to generate a generic error */
+static char __synthParser_customMsg[] =
+        "ERROR: %s\n"
+        "       Line: %i\n"
+        "       Position: %i\n"
+        "       Last character: %c\n";
+/** Error string returned to the user */
+static char __synthParser_errorMsg[TOKEN_MAX_STR * 2 +
+        sizeof(__synthParser_defaultMsg) + EXTRA_CHARS];
+
 /**
  * Assert that the expected token was retrieved
  * 
@@ -27,7 +45,8 @@
 #define SYNTH_ASSERT_TOKEN(Expected) \
   do { \
     synth_token tk; \
-    tk = synthLexer_lookupToken(&tk, &(pCtx->lexCtx)); \
+    rv = synthLexer_lookupToken(&tk, &(pCtx->lexCtx)); \
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv); \
     if (tk != Expected) { \
       pParser->errorFlag = SYNTH_TRUE; \
       pParser->expected = Expected; \
@@ -76,6 +95,92 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
     
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
+    return rv;
+}
+
+/**
+ * Return the error string
+ * 
+ * This string is statically allocated and mustn't be freed by user
+ * 
+ * @param  [out]ppError The error string
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NO_ERRORS
+ */
+synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    char lastChar;
+    int curLine, curPosition;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppError, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    /* Check that an error happened */
+    SYNTH_ASSERT_ERR(pParser->errorFlag == SYNTH_TRUE, SYNTH_NO_ERRORS);
+
+    /* Retrieve the current status of the lexer */
+    rv = synthLexer_getCurrentLine(&curLine, &(pCtx->lexCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    rv = synthLexer_getCurrentLinePosition(&curPosition, &(pCtx->lexCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    rv = synthLexer_getLastCharacter(&lastChar, &(pCtx->lexCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Generate an error message according to the error */
+    if (pParser->errorCode == SYNTH_UNEXPECTED_TOKEN) {
+        char *pExpected, *pGotten;
+
+        /* Retrieve the names of the related tokens */
+        rv = synthLexer_printToken(&pExpected, pParser->expected);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+        rv = synthLexer_printToken(&pGotten, pParser->gotten);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Finally, generate the error string */
+        sprintf(__synthParser_errorMsg, __synthParser_defaultMsg, pExpected,
+                pGotten, curLine, curPosition, lastChar);
+    }
+    else {
+        char *pError;
+
+        /* Retrieve the error */
+        switch (pParser->errorCode) {
+            case SYNTH_EOF: {
+                pError = "File ended before parsing ended";
+            } break;
+            case SYNTH_EOS: {
+                pError = "Stream ended before parsing ended";
+            } break;
+            case SYNTH_UNEXPECTED_TOKEN: {
+                pError = "Unexpected token";
+            } break;
+            case SYNTH_EMPTY_SEQUENCE: {
+                    pError = "Got a track without notes";
+            } break;
+            case SYNTH_INVALID_WAVE: {
+                pError = "Invalid wave type";
+            } break;
+            default: {
+                pError = "Unkown error";
+            }
+        }
+
+        /* Finally, generate the error string */
+        sprintf(__synthParser_errorMsg, __synthParser_customMsg, pError,
+                curLine, curPosition, lastChar);
+    }
+
+    /* Set the return */
+    *ppError = __synthParser_errorMsg;
+    rv = SYNTH_OK;
+__err:
     return rv;
 }
 
@@ -102,6 +207,10 @@ static synth_err synthParser_mml(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -140,6 +249,10 @@ static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -227,6 +340,15 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
 
+    if (token == T_NUMBER) {
+        rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Get the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
     /* If there are any '.', add half the duration every time */
     synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -251,22 +373,6 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
-    /* Retrieve the new note */
-    if (pCtx->notes.used >= pCtx->notes.len) {
-        /* 'Double' the current buffer; Note that this will never be called if
-         * the context was pre-alloc'ed, since 'max' will be set; The '+1' is
-         * for the first audio, in which len will be 0 */
-        pCtx->notes.buf.pNotes = (synthNote*)realloc(pCtx->notes.buf.pNotes,
-                (1 + pCtx->notes.len * 2) * sizeof(synthNote));
-        SYNTH_ASSERT_ERR(pCtx->notes.buf.pNotes, SYNTH_MEM_ERR);
-        /* Clear only the new part of the buffer */
-        memset(&(pCtx->notes.buf.pNotes[pCtx->notes.used]), 0x0,
-                (1 + pCtx->notes.len) * sizeof(synthNote));
-        /* Actually increase the buffer length */
-        pCtx->notes.len += 1 + pCtx->notes.len;
-    }
-    pNote = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
-
     /* Retrieve a new note */
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -288,6 +394,10 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -473,6 +583,10 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -549,6 +663,10 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -598,6 +716,10 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -681,6 +803,10 @@ static synth_err synthParser_track(int *pTrack, synthParserCtx *pParser,
     *pTrack = curTrack;
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -731,6 +857,10 @@ static synth_err synthParser_tracks(synthParserCtx *pParser, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 
@@ -783,6 +913,10 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
     return rv;
 }
 

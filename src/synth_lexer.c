@@ -25,6 +25,8 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "set loop start",
     "set loop end",
     "set wave",
+    "increase volume",
+    "decrease volume",
     "note",
     "duration",
     "number",
@@ -52,7 +54,7 @@ synth_err synthLexer_initFromFile(synthLexCtx *pCtx, char *pFilename) {
 
     /* Clean the lexer */
     rv = synthLexer_clear(pCtx);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     /* Store its source (i.e., a file) */
     pCtx->source.file = fopen(pFilename, "rt");
     SYNTH_ASSERT_ERR(pCtx->source.file, SYNTH_OPEN_FILE_ERR);
@@ -82,10 +84,12 @@ synth_err synthLexer_initFromString(synthLexCtx *pCtx, char *pString, int len) {
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pString, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(len > 0, SYNTH_BAD_PARAM_ERR);
+    /* Check that the string is NULL-terminated */
+    SYNTH_ASSERT_ERR(pString[len] == '\0', SYNTH_BAD_PARAM_ERR);
 
     /* Clean the lexer */
     rv = synthLexer_clear(pCtx);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     /* Store its source (i.e., a string) */
     pCtx->source.str.pStr = pString;
     pCtx->source.str.len = len;
@@ -441,7 +445,7 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetPan,       'p', T_SET_PAN)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopStart, '[', T_SET_LOOP_START)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopEnd,   ']', T_SET_LOOP_END)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetWave,      'w', T_SET_WAVE)
-SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,      ',', T_COMMA)
+SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,     ',', T_COMMA)
 
 /**
  * Check if the current stream is a valid MML (i.e., if it starts with "MML")
@@ -461,7 +465,7 @@ static synth_bool synthLexer_isMML(synthLexCtx *pCtx) {
     i = 0;
     while (i < sizeof(target) - 1) {
         /* Get the current character, without ignoring blank and whatnot */
-        srv = synthLexer_getRawChar(&c, pCtx);
+        srv = synthLexer_getChar(&c, pCtx);
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
 
         /* Check that it's of the expected pattern */
@@ -642,6 +646,11 @@ static synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
         srv = synthLexer_getChar(&c, pCtx);
         SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
             , SYNTH_FALSE);
+
+        /* Also stop if the source finished */
+        if (srv == SYNTH_EOF || srv == SYNTH_EOS) {
+            break;
+        }
     }
     
     pCtx->lastToken = T_DURATION;
@@ -701,6 +710,11 @@ static synth_bool synthLexer_isNumber(synthLexCtx *pCtx) {
         srv = synthLexer_getChar(&c, pCtx);
         SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
             , SYNTH_FALSE);
+
+        /* Also stop if the source finished */
+        if (srv == SYNTH_EOF || srv == SYNTH_EOS) {
+            break;
+        }
     }
 
     pCtx->lastToken = T_NUMBER;

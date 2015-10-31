@@ -106,14 +106,25 @@ synth_err synth_compileSongFromFile(int *pHandle, synthCtx *pCtx,
  * @param  [out]pHandle Handle of the loaded song
  * @param  [ in]pCtx    The synthesizer context
  * @param  [ in]pString Song's MML
- * @param  [ in]length  The string's length
+ * @param  [ in]length  The string's length (must contain the NULL-terminator!)
  * @param               SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR, ...
  */
 synth_err synth_compileSongFromString(int *pHandle, synthCtx *pCtx,
         char *pString, int length);
 
 #define synth_compileSongFromStringStatic(pHandle, pCtx, pString) \
-  synth_compileSongFromString(pHandle, pCtx, pString, sizeof(pString - 1))
+  synth_compileSongFromString(pHandle, pCtx, pString, sizeof(pString))
+
+/**
+ * Return a string representing the compiler error raised
+ * 
+ * This string is statically allocated and mustn't be freed by user
+ * 
+ * @param  [out]ppError The error string
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NO_ERRORS
+ */
+synth_err synth_getCompilerErrorString(char **ppError, synthCtx *pCtx);
 
 /**
  * Load a already compiled song into the context (so it can be played/rendered)

@@ -74,13 +74,13 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Init parser */
     rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     rv = synthParser_init(&(pCtx->parserCtx), pCtx);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Parse the audio */
     rv = synthParser_getAudio(&(pCtx->parserCtx), pCtx, pAudio);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
 __err:
@@ -113,13 +113,13 @@ synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Init parser */
     rv = synthLexer_initFromString(&(pCtx->lexCtx), pString, len);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     rv = synthParser_init(&(pCtx->parserCtx), pCtx);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Parse the audio */
     rv = synthParser_getAudio(&(pCtx->parserCtx), pCtx, pAudio);
-    SYNTH_ASSERT_ERR(rv, rv);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
 __err:
