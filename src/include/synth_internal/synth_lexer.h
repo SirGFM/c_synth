@@ -7,6 +7,7 @@
 #define __SYNTH_LEXER_H__
 
 #include <synth/synth_errors.h>
+
 #include <synth_internal/synth_types.h>
 
 /**

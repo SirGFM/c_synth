@@ -10,8 +10,6 @@
 /* Required because of a FILE* */
 #include <stdio.h>
 
-#include <synth/synth_types.h>
-
 /* First, define the name (i.e., typedef) of every type */
 
 #  ifndef __SYNTHAUDIO_STRUCT__
@@ -58,6 +56,86 @@
 #  define __SYNTHVOLUME_STRUCT__
      typedef struct stSynthVolume synthVolume;
 #  endif /* __SYNTHVOLUME_STRUCT__ */
+#  ifndef __SYNTHBOOL_ENUM__
+#  define __SYNTHBOOL_ENUM__
+     typedef enum enSynthBool synth_bool;
+#  endif /* __SYNTHBOOL_ENUM__ */
+#  ifndef __SYNTHWAVE_ENUM__
+#  define __SYNTHWAVE_ENUM__
+     typedef enum enSynthWave synth_wave;
+#  endif /* __SYNTHWAVE_ENUM__ */
+#  ifndef __SYNTHNOTE_ENUM__
+#  define __SYNTHNOTE_ENUM__
+     typedef enum enSynthNote synth_note;
+#  endif /* __SYNTHNOTE_ENUM__ */
+#  ifndef __SYNTHTOKEN_ENUM__
+#  define __SYNTHTOKEN_ENUM__
+     typedef enum enSynthToken synth_token;
+#  endif /* __SYNTHTOKEN_ENUM__ */
+
+/* Define every enumeration */
+
+/* Simple boolean value */
+enum enSynthBool {
+    SYNTH_TRUE = 0,
+    SYNTH_FALSE
+};
+
+/* Wave types for a note */
+enum enSynthWave {
+    W_SQUARE = 0,
+    W_PULSE_12_5,
+    W_PULSE_25,
+    W_PULSE_75,
+    W_TRIANGLE,
+    W_NOISE,
+    SYNTH_MAX_WAVE
+};
+
+/* Musical notes */
+enum enSynthNote {
+    N_CB = 0,   /* Required for decreasing octave */
+    N_C,
+    N_CS,
+    N_D,
+    N_DS,
+    N_E,
+    N_F,
+    N_FS,
+    N_G,
+    N_GS,
+    N_A,
+    N_AS,
+    N_B,
+    N_BS,   /* Required for increasing octave */
+    N_REST,
+    N_LOOP
+};
+
+/* Tokens used on a song's compilation */
+enum enSynthToken {
+    T_MML = 0,
+    T_SET_BPM,
+    T_SET_DURATION,
+    T_SET_OCTAVE,
+    T_SET_REL_OCTAVE,
+    T_SET_LOOPPOINT,
+    T_END_OF_TRACK,
+    T_SET_VOLUME,
+    T_SET_KEYOFF,
+    T_SET_PAN,
+    T_SET_LOOP_START,
+    T_SET_LOOP_END,
+    T_SET_WAVE,
+    T_OPEN_BRACKET,
+    T_CLOSE_BRACKET,
+    T_NOTE,
+    T_DURATION,
+    T_NUMBER,
+    T_COMMA,
+    T_DONE,
+    TK_MAX
+};
 
 /* Now, define every struct/union; Note that the order may be relevant, as there
  * are statically alloc'ed stuff into the structs; Obviously, in case of

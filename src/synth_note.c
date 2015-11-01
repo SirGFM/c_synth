@@ -4,7 +4,7 @@
  */
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
-#include <synth/synth_types.h>
+
 #include <synth_internal/synth_note.h>
 #include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>

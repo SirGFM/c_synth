@@ -13,7 +13,6 @@ typedef struct stSynthCtx synthCtx;
 #define __SYNTH_H__
 
 #include <synth/synth_errors.h>
-#include <synth/synth_types.h>
 
 /**
  * Retrieve the total size for a context

@@ -55,15 +55,16 @@ int main(int argc, char *argv[]) {
                 isFile = 1;
             }
             IS_PARAM("--frequency", "-F") {
+                char *pNum;
                 int tmp;
 
-                pSrc = argv[i + 1];
+                pNum = argv[i + 1];
 
                 tmp = 0;
 
-                while (*pSrc != '\0') {
-                    tmp = tmp * 10 + (*pSrc) - '0';
-                    pSrc++;
+                while (*pNum != '\0') {
+                    tmp = tmp * 10 + (*pNum) - '0';
+                    pNum++;
                 }
 
                 freq = tmp;

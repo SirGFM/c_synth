@@ -7,7 +7,6 @@
 #define __SYNTH_NOTE_H__
 
 #include <synth/synth_errors.h>
-#include <synth/synth_types.h>
 
 #include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>
