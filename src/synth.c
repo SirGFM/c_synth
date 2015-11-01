@@ -14,15 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if 0
-#include <synth/synth_backend.h>
-#include <synth/synth_types.h>
-#include <synth_internal/synth_audiolist.h>
-#include <synth_internal/synth_buffer.h>
-#include <synth_internal/synth_cache.h>
-#include <synth_internal/synth_thread.h>
-#endif /* 0 */
-
 /**
  * Retrieve the total size for a context
  * 
@@ -412,127 +403,37 @@ __err:
     return rv;
 }
 
-#if 0
-static synth_bool synth_inited = SYNTH_FALSE;
-
 /**
- * Initialize the synthesizer, including buffering thread and other
- * buffers
+ * Render a track into a buffer
  * 
- * @param freq At which frequency (samples per minute) should synthesizer work
- * @param doBuf Whether the buffering thread should run or not
- * @param size How many samples should be buffered per channel. Must be at least
- *             synth_bkend_getSamplesPerChannel()
- * @param doBkend Whether should start the compiled backend
- * @return Error code
+ * The buffer must be prepared by the caller, and it must have
+ * 'synth_getTrackLength' bytes times the number of bytes per samples
+ * 
+ * @param  [ in]pBuf   Buffer that will be filled with the track
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @param  [ in]mode   Desired mode for the wave
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend) {
+synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
+        synthBufMode mode) {
     synth_err rv;
-    
-    SYNTH_ASSERT_ERR(synth_inited == SYNTH_FALSE, SYNTH_ALREADY_INITIALIZED);
-    SYNTH_ASSERT_ERR(size >= synth_bkend_getSamplesPerChannel(),
-        SYNTH_BAD_PARAM_ERR);
-    
-    rv = synth_cache_init(freq);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    
-    if (doBuf == SYNTH_TRUE) {
-        rv = synth_buf_init(size);
-        SYNTH_ASSERT(rv == SYNTH_OK);
-        
-        rv = synth_list_init();
-        SYNTH_ASSERT(rv == SYNTH_OK);
-        
-        rv = synth_thread_init();
-        SYNTH_ASSERT(rv == SYNTH_OK);
-    }
-    
-    if (doBkend == SYNTH_TRUE) {
-        rv = synth_bkend_setup();
-        SYNTH_ASSERT(rv == SYNTH_OK);
-    }
-    
-    synth_inited = SYNTH_TRUE;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(mode >= SYNTH_1CHAN_U8BITS, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(mode < SYNTH_MAX_MODE, SYNTH_BAD_PARAM_ERR);
+    /* Check that the handle is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    rv = synthAudio_renderTrack(pBuf, &(pCtx->songs.buf.pAudios[handle]),
+            pCtx, track, mode);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
     rv = SYNTH_OK;
 __err:
     return rv;
 }
-
-/**
- * Clean up any allocated memory and the buffering thread
- */
-synth_err synth_clean() {
-    synth_err rv;
-    
-    SYNTH_ASSERT_ERR(synth_inited == SYNTH_TRUE, SYNTH_NOT_INITIALIZED);
-    
-    synth_bkend_pause();
-    synth_bkend_clean();
-    synth_thread_clean();
-    synth_buf_clean();
-    synth_list_clean();
-    synth_cache_clean();
-    
-    rv = SYNTH_OK;
-__err:
-    return rv;
-}
-
-/**
- * Get the frequency being used
- * 
- * @return The frequency
- */
-int synth_getFrequency() {
-    return synth_cache_getFrequency();
-}
-
-/**
- * Get how many samples should be buffered
- * 
- * @return The number of samples
- */
-int synth_getSamples() {
-    return synth_buf_getSize();
-}
-
-/**
- * Signal the buffering thread to buffer more samples
- */
-void synth_requestBuffering() {
-    synth_thread_wakeupThread();
-}
-
-/**
- * Try to lock buffer, allowing it to be read. SYNTH_COULDNT_LOCK means that the
- * buffer is already in use.
- * 
- * @return Error code
- */
-synth_err synth_lockBuffer() {
-    return synth_thread_tryLockBuffer();
-}
-
-/**
- * Unlock the buffer
- */
-void synth_unlockBuffer() {
-    return synth_thread_unlockBuffer();
-}
-
-/**
- * NOT thread-safe.
- * Read some samples from the buffer. If it returns
- * SYNTH_BUFFER_NOT_ENOUGH_SAMPLES then more samples were requested than there
- * are currently buffered.
- * 
- * @param left Returns the left channel buffer
- * @param right Returns the right channel buffer
- * @param samples How many samples should be read
- * @return Error code
- */
-synth_err synth_getBuffer(uint16_t **left, uint16_t **right, int samples) {
-    return synth_buf_getBuffer(left, right, samples);
-}
-#endif /* 0 */
 

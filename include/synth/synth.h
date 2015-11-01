@@ -9,6 +9,28 @@ typedef struct stSynthCtx synthCtx;
 
 #endif /* __SYNTHCTX_STRUCT__ */
 
+#ifndef __SYNTHBUFMODE_ENUM__
+#define __SYNTHBUFMODE_ENUM__
+
+/* Define the renderable types of buffers */
+/* TODO Check if 8 bits waves can be signed */
+enum enSynthBufMode {
+    SYNTH_1CHAN_U8BITS,
+    SYNTH_1CHAN_8BITS,
+    SYNTH_1CHAN_U16BITS,
+    SYNTH_1CHAN_16BITS,
+    SYNTH_2CHAN_U8BITS,
+    SYNTH_2CHAN_8BITS,
+    SYNTH_2CHAN_U16BITS,
+    SYNTH_2CHAN_16BITS,
+    SYNTH_MAX_MODE
+};
+
+/* Export the buffer mode enum */
+typedef enum enSynthBufMode synthBufMode;
+
+#endif /* __SYNTHBUFMODE_ENUM__ */
+
 #ifndef __SYNTH_H__
 #define __SYNTH_H__
 
@@ -159,69 +181,21 @@ synth_err synth_getTrackLength(int *pLen, synthCtx *pCtx, int handle,
 synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
         int track);
 
-#if 0
 /**
- * Initialize the synthesizer, including buffering thread and other
- * buffers
+ * Render a track into a buffer
  * 
- * @param freq At which frequency (samples per minute) should synthesizer work
- * @param doBuf Whether the buffering thread should run or not
- * @param size How many samples should be buffered per channel. Must be at least
- *             synth_bkend_getSamplesPerChannel()
- * @param doBkend Whether should start the compiled backend
- * @return Error code
- */
-synth_err synth_init(int freq, synth_bool doBuf, int size, synth_bool doBkend);
-
-/**
- * Clean up any allocated memory and the buffering thread
- */
-synth_err synth_clean();
-
-/**
- * Get the frequency being used
+ * The buffer must be prepared by the caller, and it must have
+ * 'synth_getTrackLength' bytes times the number of bytes per samples
  * 
- * @return The frequency
+ * @param  [ in]pBuf   Buffer that will be filled with the track
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @param  [ in]mode   Desired mode for the wave
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-int synth_getFrequency();
-
-/**
- * Get how many samples should be buffered
- * 
- * @return The number of samples
- */
-int synth_getSamples();
-
-/**
- * Signal the buffering thread to buffer more samples
- */
-void synth_requestBuffering();
-
-/**
- * Try to lock buffer, allowing it to be read. SYNTH_COULDNT_LOCK means that the
- * buffer is already in use.
- * 
- * @return Error code
- */
-synth_err synth_lockBuffer();
-
-/**
- * Unlock the buffer
- */
-void synth_unlockBuffer();
-
-/**
- * Read some samples from the buffer. If it returns
- * SYNTH_BUFFER_NOT_ENOUGH_SAMPLES then more samples were requested than there
- * are currently buffered.
- * 
- * @param left Returns the left channel buffer
- * @param right Returns the right channel buffer
- * @param samples How many samples should be read
- * @return Error code
- */
-synth_err synth_getBuffer(uint16_t **left, uint16_t **right, int samples);
-#endif /* 0 */
+synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
+        synthBufMode mode);
 
 #endif /* __SYNTH_H__ */
 

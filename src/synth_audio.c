@@ -204,6 +204,39 @@ __err:
     return rv;
 }
 
+/**
+ * Render a track into a buffer
+ * 
+ * The buffer must be prepared by the caller, and it must have
+ * 'synth_getTrackLength' bytes times the number of bytes per samples
+ * 
+ * @param  [ in]pBuf   Buffer that will be filled with the track
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]pTrack The track
+ * @param  [ in]mode   Desired mode for the wave
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_renderTrack(char *pBuf, synthAudio *pAudio, synthCtx *pCtx,
+        int track, synthBufMode mode) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    /* Check that the track is valid */
+    SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
+
+    rv = synthTrack_render(pBuf, &(pCtx->tracks.buf.pTracks[track]), pCtx,
+            mode);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 #if 0
 
 // TODO feature: per-track volume

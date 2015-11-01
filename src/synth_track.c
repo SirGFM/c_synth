@@ -228,6 +228,24 @@ __err:
     return rv;
 }
 
+/**
+ * Render a track into a buffer
+ * 
+ * The buffer must be prepared by the caller, and it must have
+ * 'synth_getTrackLength' bytes times the number of bytes per samples
+ * 
+ * @param  [ in]pBuf   Buffer that will be filled with the track
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]mode   Desired mode for the wave
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthTrack_render(char *pBuf, synthTrack *pTrack, synthCtx *pCtx,
+        synthBufMode mode) {
+    /* TODO Implement this function */
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+}
+
 #if 0
 
 #include <synth/synth_assert.h>
