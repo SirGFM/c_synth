@@ -117,6 +117,41 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff);
  */
 synth_err synthNote_setVolume(synthNote *pNote, synthVolume *pVol);
 
+/**
+ * Check if the note is a loop point
+ * 
+ * @param  [ in]pNote The note
+ * @return            SYNTH_TRUE, SYNTH_FALSE
+ */
+synth_bool synthNote_isLoop(synthNote *pNote);
+
+/**
+ * Retrieve the note duration, in samples
+ * 
+ * @param  [out]pVal  The duration
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_getDuration(int *pVal, synthNote *pNote);
+
+/**
+ * Retrieve the number of times this loop should repeat
+ * 
+ * @param  [out]pVal  The repeat count
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_getRepeat(int *pVal, synthNote *pNote);
+
+/**
+ * Retrieve the position, in the track, to which it should jump on loop
+ * 
+ * @param  [out]pVal  The repeat position
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_getJumpPosition(int *pVal, synthNote *pNote);
+
 #if 0
 
 /**

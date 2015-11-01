@@ -136,6 +136,30 @@ synth_err synth_getCompilerErrorString(char **ppError, synthCtx *pCtx);
  */
 synth_err synth_getAudioTrackCount(int *pNum, synthCtx *pCtx, int handle);
 
+/**
+ * Retrieve the number of samples in a track
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]track  Track index
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
+ */
+synth_err synth_getTrackLength(int *pLen, synthCtx *pCtx, int handle,
+        int track);
+
+/**
+ * Retrieve the number of samples until a track's loop point
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
+        int track);
+
 #if 0
 /**
  * Initialize the synthesizer, including buffering thread and other

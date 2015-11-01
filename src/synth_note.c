@@ -303,6 +303,75 @@ __err:
     return rv;
 }
 
+/**
+ * Check if the note is a loop point
+ * 
+ * @param  [ in]pNote The note
+ * @return            SYNTH_TRUE, SYNTH_FALSE
+ */
+synth_bool synthNote_isLoop(synthNote *pNote) {
+    if (!pNote || pNote->note != N_LOOP) {
+        return SYNTH_FALSE;
+    }
+    else {
+        return SYNTH_TRUE;
+    }
+}
+
+/**
+ * Retrieve an attribute
+ * 
+ * @param [ in]function The function name
+ * @param [ in]type     The type of the attribute being set
+ * @param [ in]attr     The name of the attribute
+ * @param [ in]loopOnly Whether this attribute is only valid for loops; If 0,
+ *                      the attribute is only valid for notes (i.e., not loops)
+ */
+#define SYNTHNOTE_GETTER(function, type, attr, loopOnly) \
+  synth_err function(type *pVal, synthNote *pNote) { \
+    synth_err rv; \
+  \
+    /* Sanitize the arguments */ \
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR); \
+    SYNTH_ASSERT_ERR(pVal, SYNTH_BAD_PARAM_ERR); \
+    /* Check that it's either a note or loop (as required by the attribute */ \
+    SYNTH_ASSERT_ERR((!loopOnly && pNote->note != N_LOOP) || \
+            (loopOnly && pNote->note == N_LOOP), SYNTH_BAD_PARAM_ERR); \
+  \
+    *pVal = pNote->attr; \
+  \
+    rv = SYNTH_OK; \
+__err: \
+    return rv; \
+  }
+
+/**
+ * Retrieve the note duration, in samples
+ * 
+ * @param  [out]pVal  The duration
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_GETTER(synthNote_getDuration, int, len, 0)
+
+/**
+ * Retrieve the number of times this loop should repeat
+ * 
+ * @param  [out]pVal  The repeat count
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_GETTER(synthNote_getRepeat, int, len, 1)
+
+/**
+ * Retrieve the position, in the track, to which it should jump on loop
+ * 
+ * @param  [out]pVal  The repeat position
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
+
 #if 0
 #include <synth/synth_backend.h>
 #include <synth/synth_types.h>

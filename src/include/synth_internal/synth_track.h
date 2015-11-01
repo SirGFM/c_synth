@@ -19,6 +19,27 @@
  */
 synth_err synthTrack_init(synthTrack **ppTrack, synthCtx *pCtx);
 
+/**
+ * Retrieve the number of samples in a track
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthTrack_getLength(int *pLen, synthTrack *pTrack, synthCtx *pCtx);
+
+/**
+ * Retrieve the number of samples until a track's loop point
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthTrack_getIntroLength(int *pLen, synthTrack *pTrack,
+        synthCtx *pCtx);
+
 #if 0
 
 #include <synth/synth_errors.h>

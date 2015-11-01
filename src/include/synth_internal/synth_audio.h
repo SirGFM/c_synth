@@ -38,6 +38,39 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
         char *pString, int len);
 
+/**
+ * Return the number of tracks in a song
+ * 
+ * @param  [out]pNum   The number of tracks
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTrackCount(int *pNum, synthAudio *pAudio);
+
+/**
+ * Retrieve the number of samples in a track
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]track  Track index
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
+ */
+synth_err synthAudio_getTrackLength(int *pLen, synthAudio *pAudio,
+        synthCtx *pCtx, int track);
+
+/**
+ * Retrieve the number of samples until a track's loop point
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]track  The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTrackIntroLength(int *pLen, synthAudio *pAudio,
+        synthCtx *pCtx, int track);
+
 #if 0
 
 #include <synth/synth_audio.h>

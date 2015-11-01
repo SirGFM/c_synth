@@ -746,6 +746,8 @@ static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
     SYNTH_ASSERT(rv == SYNTH_OK);
     curTrack = pCtx->tracks.used - 1;
 
+    numNotes = 0;
+
     didFindSequence = 0;
     /* The first token may either be a sequence or a T_SET_LOOPPOINT */
     if (synthParser_isSequence(pCtx) == SYNTH_TRUE) {

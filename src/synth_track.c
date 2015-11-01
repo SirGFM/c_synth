@@ -7,6 +7,7 @@
 #include <synth/synth_assert.h>
 #include <synth/synth_errors.h>
 
+#include <synth_internal/synth_note.h>
 #include <synth_internal/synth_track.h>
 #include <synth_internal/synth_types.h>
 
@@ -54,6 +55,173 @@ synth_err synthTrack_init(synthTrack **ppTrack, synthCtx *pCtx) {
     /* Initialize the track as not being looped and without any notes */
     (*ppTrack)->loopPoint = -1;
     (*ppTrack)->notesIndex = pCtx->notes.used;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/* !!!WARNING!!! This functions calls 'synthTrack_countSample', which in turn
+ * MAY call this function back. Since the song is parsed from a file or from a
+ * string it's guaranteed to end and there should be no infinite loops.
+ * 
+ * However, beware that "bad things may happen"... */
+static synth_err synthTrack_getLoopLength(int *pLen, synthTrack *pTrack,
+        synthCtx *pCtx, int pos);
+
+/**
+ * Loop through some notes and accumulate their samples
+ * 
+ * This was mostly done to avoid repeating the loop count, thus all
+ * verifications are done in previous calls
+ * 
+ * Also, don't forget that the loop is done in inverse order, from the last note
+ * to the first. So, initialPos must always be greater than finalPosition
+ * 
+ * @param  [out]pLen         The length of the track in samples
+ * @param  [ in]pTrack       The track
+ * @param  [ in]pCtx         The synthesizer context
+ * @param  [ in]initalPos    Initial position (inclusive)
+ * @param  [ in]finalPos     Final position (inclusive)
+ * @return                   SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+static synth_err synthTrack_countSample(int *pLen, synthTrack *pTrack,
+        synthCtx *pCtx, int initialPos, int finalPosition) {
+    int i, len;
+    synthNote *pNote;
+    synth_err rv;
+
+    len = 0;
+
+    /* Simply loop though all notes */
+    i = initialPos;
+    while (i >= finalPosition) {
+        int tmp;
+
+        /* Retrieve the current note */
+        pNote = &(pCtx->notes.buf.pNotes[pTrack->notesIndex + i]);
+
+        /* Check if note is a loop */
+        if (synthNote_isLoop(pNote) == SYNTH_TRUE) {
+            int pos;
+
+            /* Retrieve the length of the loop, in samples (already taking into
+             * account the number of repetitions) */
+            rv = synthTrack_getLoopLength(&tmp, pTrack, pCtx, i);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Get the loop destination */
+            rv = synthNote_getJumpPosition(&pos, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+            /* Update the curent note accordingly */
+            i = pos;
+
+            len += tmp;
+        }
+        else {
+            /* Accumulate the note duration */
+            rv = synthNote_getDuration(&tmp, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            len += tmp;
+        }
+
+        i--;
+    }
+
+    *pLen = len;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Count how many samples there are in a loop
+ * 
+ * Since loops are recursive, this function may also be called recursively
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]pos    Position of the loop note
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+static synth_err synthTrack_getLoopLength(int *pLen, synthTrack *pTrack,
+        synthCtx *pCtx, int pos) {
+    int jumpPosition, repeatCount;
+    synthNote *pNote;
+    synth_err rv;
+
+    /* Retrieve the current note */
+    pNote = &(pCtx->notes.buf.pNotes[pTrack->notesIndex + pos]);
+
+    /* Retrieve the loop attributes */
+    rv = synthNote_getRepeat(&repeatCount, pNote);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    rv = synthNote_getJumpPosition(&jumpPosition, pNote);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Loop through all notes and calculate the total length */
+    rv = synthTrack_countSample(pLen, pTrack, pCtx, pos - 1, jumpPosition);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    *pLen *= repeatCount;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the number of samples in a track
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthTrack_getLength(int *pLen, synthTrack *pTrack, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pTrack, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Count from the last note so we can recursivelly calculate all loops lengths */
+    rv = synthTrack_countSample(pLen, pTrack, pCtx, pTrack->num - 1, 0);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the number of samples until a track's loop point
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthTrack_getIntroLength(int *pLen, synthTrack *pTrack,
+        synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pTrack, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Count how many samples there are from the loop point to the song start */
+    if (pTrack->loopPoint != -1) {
+        rv = synthTrack_countSample(pLen, pTrack, pCtx, pTrack->loopPoint - 1,
+                0);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    }
+    else {
+        *pLen = 0;
+    }
 
     rv = SYNTH_OK;
 __err:

@@ -9,6 +9,7 @@
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_parser.h>
 #include <synth_internal/synth_types.h>
+#include <synth_internal/synth_track.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -124,6 +125,82 @@ synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
     rv = SYNTH_OK;
 __err:
 
+    return rv;
+}
+
+/**
+ * Return the number of tracks in a song
+ * 
+ * @param  [out]pNum   The number of tracks
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTrackCount(int *pNum, synthAudio *pAudio) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNum, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+
+    *pNum = pAudio->num;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the number of samples in a track
+ * 
+ * @param  [out]pLen   The length of the track in samples
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]track  Track index
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
+ */
+synth_err synthAudio_getTrackLength(int *pLen, synthAudio *pAudio,
+        synthCtx *pCtx, int track) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    /* Check that the track is valid */
+    SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
+
+    rv = synthTrack_getLength(pLen, &(pCtx->tracks.buf.pTracks[track]), pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the number of samples until a track's loop point
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]track  The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTrackIntroLength(int *pLen, synthAudio *pAudio,
+        synthCtx *pCtx, int track) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    /* Check that the track is valid */
+    SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
+
+    rv = synthTrack_getIntroLength(pLen, &(pCtx->tracks.buf.pTracks[track]),
+            pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
     return rv;
 }
 
