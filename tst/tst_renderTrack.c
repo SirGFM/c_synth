@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 
     /* Store the default frequency */
     freq = 44100;
-    /* TODO Retrieve the mode */
+    /* Store the default mode */
     mode = SYNTH_1CHAN_U8BITS;
     isFile = 0;
     pSrc = 0;
@@ -49,12 +49,24 @@ int main(int argc, char *argv[]) {
 #define IS_PARAM(l_cmd, s_cmd) \
   if (strcmp(argv[i], l_cmd) == 0 || strcmp(argv[i], s_cmd) == 0)
             IS_PARAM("--string", "-s") {
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_renderTrack --help' for usage!\n");
+                    return 1;
+                }
+
                 /* Store the string and retrieve its length */
                 pSrc = argv[i + 1];
                 isFile = 0;
                 len = strlen(argv[i + 1]);
             }
             IS_PARAM("--file", "-f") {
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_renderTrack --help' for usage!\n");
+                    return 1;
+                }
+
                 /* Store the filename */
                 pSrc = argv[i + 1];
                 isFile = 1;
@@ -62,6 +74,12 @@ int main(int argc, char *argv[]) {
             IS_PARAM("--frequency", "-F") {
                 char *pNum;
                 int tmp;
+
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_renderTrack --help' for usage!\n");
+                    return 1;
+                }
 
                 pNum = argv[i + 1];
 
@@ -74,16 +92,67 @@ int main(int argc, char *argv[]) {
 
                 freq = tmp;
             }
+            IS_PARAM("--mode", "-m") {
+                char *pMode;
+
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_renderTrack --help' for usage!\n");
+                    return 1;
+                }
+
+                pMode = argv[i + 1];
+
+                if (strcmp(pMode, "1chan-u8") == 0) {
+                    mode = SYNTH_1CHAN_U8BITS;
+                }
+                else if (strcmp(pMode, "1chan-8") == 0) {
+                    mode = SYNTH_1CHAN_8BITS;
+                }
+                else if (strcmp(pMode, "1chan-u16") == 0) {
+                    mode = SYNTH_1CHAN_U16BITS;
+                }
+                else if (strcmp(pMode, "1chan-16") == 0) {
+                    mode = SYNTH_1CHAN_16BITS;
+                }
+                else if (strcmp(pMode, "2chan-u8") == 0) {
+                    mode = SYNTH_2CHAN_U8BITS;
+                }
+                else if (strcmp(pMode, "2chan-8") == 0) {
+                    mode = SYNTH_2CHAN_8BITS;
+                }
+                else if (strcmp(pMode, "2chan-u16") == 0) {
+                    mode = SYNTH_2CHAN_U16BITS;
+                }
+                else if (strcmp(pMode, "2chan-16") == 0) {
+                    mode = SYNTH_2CHAN_16BITS;
+                }
+                else {
+                    printf("Invalid mode! Run 'tst_renderTrack --help' to "
+                            "check the usage!\n");
+                    return 1;
+                }
+            }
             IS_PARAM("--help", "-h") {
                 printf("A simple test for the c_synth library\n"
                         "\n"
                         "Usage: tst_renderTrack [--string | -s \"the song\"] "
                             "[--file | -f <file>]\n"
                         "                       [--frequency | -F <freq>] "
-                            "[--help | -h]\n"
+                            "[--mode | -m <mode>] \n"
+                        "                       [--help | -h]\n"
                         "\n"
                         "Compiles a single song and then render each of its "
                             "tracks.\n"
+                        "'<mode>' must be one of the following:\n"
+                        "  1chan-u8 : 1 channel, unsigned  8 bits samples\n"
+                        "  1chan-8  : 1 channel,   signed  8 bits samples\n"
+                        "  1chan-u16: 1 channel, unsigned 16 bits samples\n"
+                        "  1chan-16 : 1 channel,   signed 16 bits samples\n"
+                        "  2chan-u8 : 2 channel, unsigned  8 bits samples\n"
+                        "  2chan-8  : 2 channel,   signed  8 bits samples\n"
+                        "  2chan-u16: 2 channel, unsigned 16 bits samples\n"
+                        "  2chan-16 : 2 channel,   signed 16 bits samples\n"
                         "\n"
                         "If no argument is passed, it will compile a simple "
                             "test song.\n");

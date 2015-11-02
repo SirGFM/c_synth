@@ -44,17 +44,35 @@ int main(int argc, char *argv[]) {
 #define IS_PARAM(l_cmd, s_cmd) \
   if (strcmp(argv[i], l_cmd) == 0 || strcmp(argv[i], s_cmd) == 0)
             IS_PARAM("--string", "-s") {
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_countSampler --help' for usage!\n");
+                    return 1;
+                }
+
                 /* Store the string and retrieve its length */
                 pSrc = argv[i + 1];
                 isFile = 0;
                 len = strlen(argv[i + 1]);
             }
             IS_PARAM("--file", "-f") {
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_countSampler --help' for usage!\n");
+                    return 1;
+                }
+
                 /* Store the filename */
                 pSrc = argv[i + 1];
                 isFile = 1;
             }
             IS_PARAM("--frequency", "-F") {
+                if (argc <= i + 1) {
+                    printf("Expected parameter but got nothing! Run "
+                            "'tst_countSampler --help' for usage!\n");
+                    return 1;
+                }
+
                 char *pNum;
                 int tmp;
 
