@@ -412,11 +412,6 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         numBytes *= 2;
     }
 
-    /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
-    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
-    /* Calculate how many 'samples-per-cycle' there are for the Note's note */
-    spc = synthFreq / noteFreq;
-
     /* Clear the note */
     memset(pBuf, 0x0, pNote->len * numBytes);
     /* If it's a rest, simply return (since it was already cleared */
@@ -424,6 +419,11 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         rv = SYNTH_OK;
         goto __err;
     }
+
+    /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
+    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
+    /* Calculate how many 'samples-per-cycle' there are for the Note's note */
+    spc = synthFreq / noteFreq;
 
     /* Synthesize the note audio */
     i = 0;

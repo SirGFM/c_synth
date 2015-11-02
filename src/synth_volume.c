@@ -93,7 +93,7 @@ synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, char amp) {
     }
 
     /* If the volume wasn't found, create a new one */
-    if (*ppVol != 0) {
+    if (*ppVol == 0) {
         rv = synthVolume_init(ppVol, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
@@ -143,7 +143,7 @@ synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
     }
 
     /* If the volume wasn't found, create a new one */
-    if (*ppVol != 0) {
+    if (*ppVol == 0) {
         rv = synthVolume_init(ppVol, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 

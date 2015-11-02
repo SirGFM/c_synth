@@ -229,6 +229,75 @@ __err:
 }
 
 /**
+ * Renders a sequence of notes
+ * 
+ * Note that the track is rendered in inverse order, from the last to the first
+ * note. Therefore, 'i' must be greater than 'dst' (though it isn't checked!!)
+ * 
+ * @param  [out]pBytes How many bytes were rendered (so the buffer's position
+ *                     can be updated accordingly)
+ * @param  [ in]pBuf   The buffer to be filled with the rendered sequence
+ * @param  [ in]pTrack The track
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]mode   Current rendering mode
+ * @param  [ in]i      Current position into the sequence of notes
+ * @param  [ in]dst    Last note to be rendered
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, ...
+ */
+static synth_err synthTrack_renderSequence(int *pBytes, char *pBuf,
+        synthTrack *pTrack, synthCtx *pCtx, synthBufMode mode, int i, int dst) {
+    int bytes;
+    synth_err rv;
+
+    bytes = 0;
+
+    while (i >= dst) {
+        synthNote *pNote;
+
+        /* Retrieve the current note */
+        pNote = &(pCtx->notes.buf.pNotes[pTrack->notesIndex + i]);
+
+        /* Check if it's a loop or a common note */
+        if (synthNote_isLoop(pNote) == SYNTH_TRUE) {
+            /* TODO Render the loop (must account for recursion!) */
+            SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+        }
+        else {
+            int duration;
+
+            /* Get the note's duration in samples */
+            rv = synthNote_getDuration(&duration, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Convert the number of samples into bytes */
+            if (mode & SYNTH_16BITS) {
+                duration *= 2;
+            }
+            if (mode & SYNTH_2CHAN) {
+                duration *= 2;
+            }
+
+            /* Place the buffer at the start of the note */
+            pBuf -= duration;
+
+            /* Render the current note */
+            rv = synthNote_render(pBuf, pNote, mode, pCtx->frequency);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Update the amount of bytes rendered */
+            bytes += duration;
+        }
+
+        i--;
+    }
+
+    *pBytes = bytes;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Render a full track into a buffer
  * 
  * The buffer must be prepared by the caller, and it must have
@@ -242,14 +311,28 @@ __err:
  */
 synth_err synthTrack_render(char *pBuf, synthTrack *pTrack, synthCtx *pCtx,
         synthBufMode mode) {
-    int i;
+    int len, tmp;
     synth_err rv;
 
-    /* TODO Loop through all notes and render 'em */
-    i = 0;
-    while (i < pTrack->num) {
-        i++;
+    /* Retrieve the track's duration in samples */
+    rv = synthTrack_getLength(&len, pTrack, pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Convert the number of samples into bytes */
+    if (mode & SYNTH_16BITS) {
+        len *= 2;
     }
+    if (mode & SYNTH_2CHAN) {
+        len *= 2;
+    }
+
+    /* Place the buffer at its expected end */
+    pBuf += len;
+
+    /* Loop through all notes and render 'em */
+    rv = synthTrack_renderSequence(&tmp, pBuf, pTrack, pCtx, mode,
+            pTrack->num - 1, 0);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
 __err:
