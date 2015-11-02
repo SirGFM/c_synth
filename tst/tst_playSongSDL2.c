@@ -13,9 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Required because of sleep() */
-#include <unistd.h>
-
 /* Structure to hold every track pointer as well as how many samples/bytes were
  * played */
 struct stSharedData {
@@ -540,8 +537,9 @@ int main(int argc, char *argv[]) {
     SDL_PauseAudioDevice(dev, 0);
 
     /* Wait long enough, until the audio is played */
-    printf("Sleeping for %is, while the song plays...\n", maxLen / freq + 1);
-    sleep(maxLen / freq + 1);
+    printf("Sleeping for %ims, while the song plays...\n",
+            maxLen * 1000 / freq + 1);
+    SDL_Delay(maxLen * 1000 / freq + 1);
 
     rv = SYNTH_OK;
 __err:
