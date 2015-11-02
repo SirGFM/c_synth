@@ -34,12 +34,6 @@ endif
          #$(OBJDIR)/synth_cache.o     \
          #$(OBJDIR)/synth_prng.o      \
          #$(OBJDIR)/synth_thread.o    \
- 
- #ifeq ($(USE_SDL), yes)
- #  OBJS += $(OBJS) $(OBJDIR)/synth_sdl2_backend.o
- #else
- #  OBJS += $(OBJS) $(OBJDIR)/synth_lpulse_backend.o
- #endif
 #===============================================================================
 
 #===============================================================================
@@ -79,9 +73,6 @@ endif
     else
       CFLAGS := $(CFLAGS) -O3
     endif
-    #ifeq ($(USE_SDL), yes)
-    #  CFLAGS := $(CFLAGS) -DUSE_SDL
-    #endif
   endif
 # Set flags required by OS
   ifeq ($(OS), Win)
@@ -99,20 +90,11 @@ endif
 # Define LFLAGS (linker flags)
 #===============================================================================
   LFLAGS := 
-  #LFLAGS := -lpthread
-  #ifeq ($(USE_SDL), yes)
-  #  SDLLFLAGS := -lm -lSDL2
-  #else
-  #  SDLLFLAGS := -lm -lpulse-simple
-  #endif
+  SDL_LFLAGS := -lSDL2
   
   ifeq ($(OS), Win)
     LFLAGS := $(LFLAGS) -lmingw32
-    ifeq ($(USE_SDL), yes)
-      SDLLFLAGS := -lmingw32 -lSDL2main $(SDLLFLAGS)
-    else
-      SDLLFLAGS := -lmingw32 $(SDLLFLAGS)
-    endif
+    SDL_LFLAGS := -lSDL2main -lSDL2
   endif
 #===============================================================================
 
@@ -225,7 +207,7 @@ endif
 # prefixed by 'tst_' and suffixed by 'SDL2')
 #==============================================================================
 $(BINDIR)/tst_%SDL2$(BIN_EXT): $(OBJDIR)/tst_%SDL2.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME) -lSDL2
+	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME) $(SDL_LFLAGS)
 #==============================================================================
 
 #==============================================================================
