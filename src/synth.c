@@ -423,8 +423,7 @@ synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
-    SYNTH_ASSERT_ERR(mode >= SYNTH_1CHAN_U8BITS, SYNTH_BAD_PARAM_ERR);
-    SYNTH_ASSERT_ERR(mode < SYNTH_MAX_MODE, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR((mode & SYNTH_VALID_MODE_MASK) != 0, SYNTH_BAD_PARAM_ERR);
     /* Check that the handle is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
 

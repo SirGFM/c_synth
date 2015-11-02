@@ -44,6 +44,16 @@ synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, char amp);
 synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
         char fin);
 
+/**
+ * Retrieve the volume at a given percentage of a note
+ * 
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the note (in the range [0, 1024))
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getAmplitude(char *pAmp, synthVolume *pVol, int perc);
+
 #if 0
 
 /**

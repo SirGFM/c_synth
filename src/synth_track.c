@@ -229,7 +229,7 @@ __err:
 }
 
 /**
- * Render a track into a buffer
+ * Render a full track into a buffer
  * 
  * The buffer must be prepared by the caller, and it must have
  * 'synth_getTrackLength' bytes times the number of bytes per samples
@@ -242,8 +242,18 @@ __err:
  */
 synth_err synthTrack_render(char *pBuf, synthTrack *pTrack, synthCtx *pCtx,
         synthBufMode mode) {
-    /* TODO Implement this function */
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+    int i;
+    synth_err rv;
+
+    /* TODO Loop through all notes and render 'em */
+    i = 0;
+    while (i < pTrack->num) {
+        i++;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
 }
 
 #if 0

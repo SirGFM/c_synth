@@ -157,6 +157,33 @@ __err:
     return rv;
 }
 
+/**
+ * Retrieve the volume at a given percentage of a note
+ * 
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the note (in the range [0, 1024))
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getAmplitude(char *pAmp, synthVolume *pVol, int perc) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pAmp, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
+
+    /* Calculate the current amplitude */
+    *pAmp = (((pVol->ini * (1024 - perc)) + (pVol->fin * perc)) >> 10) & 0xff;
+    /* If the previous didn't work out (because of integer division), use the
+     * following */
+    /* *pAmp = (pVol->ini + (pVol->fin - pVol->ini) * (perc / 1024.0f)) &
+     *         0xff; */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 #if 0
 /**
  * Initialize the volume with default values

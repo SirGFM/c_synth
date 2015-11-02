@@ -6,6 +6,7 @@
 #ifndef __SYNTH_NOTE_H__
 #define __SYNTH_NOTE_H__
 
+#include <synth/synth.h>
 #include <synth/synth_errors.h>
 
 #include <synth_internal/synth_types.h>
@@ -150,6 +151,21 @@ synth_err synthNote_getRepeat(int *pVal, synthNote *pNote);
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthNote_getJumpPosition(int *pVal, synthNote *pNote);
+
+/**
+ * Render a note into a buffer
+ * 
+ * The buffer must have at least 'synthNote_getDuration' bytes time the number
+ * of bytes required by the mode
+ * 
+ * @param  [ in]pBuf      Buffer that will be filled with the track
+ * @param  [ in]pNote     The note
+ * @param  [ in]mode      Desired mode for the wave
+ * @param  [ in]synthFreq Synthesizer's frequency
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
+        int synthFreq);
 
 #if 0
 

@@ -372,6 +372,138 @@ SYNTHNOTE_GETTER(synthNote_getRepeat, int, len, 1)
  */
 SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
 
+/**
+ * Render a note into a buffer
+ * 
+ * The buffer must have at least 'synthNote_getDuration' bytes time the number
+ * of bytes required by the mode
+ * 
+ * @param  [ in]pBuf      Buffer that will be filled with the track
+ * @param  [ in]pNote     The note
+ * @param  [ in]mode      Desired mode for the wave
+ * @param  [ in]synthFreq Synthesizer's frequency
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
+        int synthFreq) {
+    int i, noteFreq, numBytes, spc;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    /* Calculate the number of bytes per samples */
+    numBytes = 1;
+    if (mode & SYNTH_16BITS) {
+        numBytes = 2;
+    }
+    if (mode & SYNTH_2CHAN) {
+        numBytes *= 2;
+    }
+
+    /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
+    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
+    /* Calculate how many 'samples-per-cycle' there are for the Note's note */
+    spc = synthFreq / noteFreq;
+
+    /* Clear the note */
+    memset(pBuf, 0x0, pNote->len * numBytes);
+    /* If it's a rest, simply return (since it was already cleared */
+    if (pNote->note == N_REST) {
+        rv = SYNTH_OK;
+        goto __err;
+    }
+
+    /* Synthesize the note audio */
+    i = 0;
+    while (i < pNote->keyoff) {
+        char amp;
+        int perc;
+
+        /* Calculate the percentage into the current cycle in the range
+         * [0,1024) */
+        perc = ((i % spc) << 10) / spc;
+
+        /* Retrieve the current amplitude */
+        rv = synthVolume_getAmplitude(&amp, pNote->pVol, perc);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Retrieve the sample's amplitude, according to the note's wave form */
+        switch (pNote->wave) {
+            case W_SQUARE: {
+                /* 50% duty cycle */
+                if (perc > 512) {
+                    amp = 0;
+                }
+            } break;
+            case W_PULSE_12_5: {
+                /* 12.5% duty cycle */
+                if (perc > 128) {
+                    amp = 0;
+                }
+            } break;
+            case W_PULSE_25: {
+                /* 25% duty cycle */
+                if (perc > 256) {
+                    amp = 0;
+                }
+            } break;
+            case W_PULSE_75: {
+                /* 75% duty cycle */
+                if (perc > 768) {
+                    amp = 0;
+                }
+            } break;
+            case W_TRIANGLE: {
+                /* Convert the percentage into a triangular wave with its peak
+                 * at 512 sample */
+                if (amp < 512) {
+                    amp = (int)(amp * (perc / 512.0f)) & 0xff;
+                }
+                else {
+                    amp = (int)(amp * ((1024.0f - perc) / 512.0f)) & 0xff;
+                }
+                /* TODO Conver the above to an integer calculation (something
+                 * among these lines:
+                 * 
+                 * amp = (amp * perc * (1 - (perc >> 9)) + amp * (1024 - perc) *
+                 *         (perc >> 9)) >> 9;
+                 * 
+                 * Note that it uses the fact that 'perc >> 9' comes out as 0 if
+                 * the percentage is less than 512 and as 1, otherwise (since
+                 * perc's range is [0, 1024))
+                 * 
+                 * The current problem with the above is that 'amp * perc' (and
+                 * 'amp * (1024 - perc)') will have to be divided by 512, but it
+                 * might come out as 0 for small amplitudes and at the start/end
+                 * of the current cycle.
+                 */
+            } break;
+            case W_NOISE: {
+                /* TODO Implement a decent noise */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+            } break;
+            default: { /* Avoids warnings */ }
+        }
+
+        /* TODO Don't forget to calculate the note's panning!!! */
+
+        /* TODO Convert the amplitude to the desired format and store it at the
+         * buffer */
+
+        /* Increase, since we are looping through the samples (and not through
+         * the bytes) */
+        i++;
+    }
+    /* The silence (after the key was released) was already cleared, so simply
+     * return */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 #if 0
 #include <synth/synth_backend.h>
 #include <synth/synth_types.h>
