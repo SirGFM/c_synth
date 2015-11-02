@@ -513,6 +513,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             } break;
             case SYNTH_1CHAN_8BITS: {
                 /* TODO */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
             } break;
             case SYNTH_1CHAN_U16BITS: {
                 int amp16;
@@ -524,10 +525,11 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                 /* Simply store the calculated value; Storing the lower bits on
                  * byte 0 and the higher ones on bit 1 */
                 pBuf[j] = amp16 & 0xff;
-                pBuf[j] = (amp16 >> 8) & 0xff;
+                pBuf[j + 1] = (amp16 >> 8) & 0xff;
             } break;
             case SYNTH_1CHAN_16BITS: {
                 /* TODO */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
             } break;
             case SYNTH_2CHAN_U8BITS: {
                 /* Simply store the calculated value on both channels;
@@ -538,6 +540,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             } break;
             case SYNTH_2CHAN_8BITS: {
                 /* TODO */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
             } break;
             case SYNTH_2CHAN_U16BITS: {
                 int lAmp16, rAmp16;
@@ -556,6 +559,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             } break;
             case SYNTH_2CHAN_16BITS: {
                 /* TODO */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
             } break;
             default : { /* Avoids warnings */ }
         }
