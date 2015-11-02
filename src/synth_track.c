@@ -236,7 +236,7 @@ __err:
  * 
  * @param  [out]pBytes How many bytes were rendered (so the buffer's position
  *                     can be updated accordingly)
- * @param  [ in]pBuf   The buffer to be filled with the rendered sequence
+ * @param  [ in]pBuf   End of the buffer to be filled with the rendered sequence
  * @param  [ in]pTrack The track
  * @param  [ in]pCtx   The synthesizer context
  * @param  [ in]mode   Current rendering mode
@@ -259,8 +259,38 @@ static synth_err synthTrack_renderSequence(int *pBytes, char *pBuf,
 
         /* Check if it's a loop or a common note */
         if (synthNote_isLoop(pNote) == SYNTH_TRUE) {
-            /* TODO Render the loop (must account for recursion!) */
-            SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+            int count, jumpPosition, repeatCount, tmpBytes;
+
+            /* Get the loop parameters */
+            rv = synthNote_getRepeat(&repeatCount, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+            rv = synthNote_getJumpPosition(&jumpPosition, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Render the loop and any sub-loops */
+            rv = synthTrack_renderSequence(&tmpBytes, pBuf, pTrack, pCtx, mode,
+                    i - 1, jumpPosition);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Move the buffer back as many bytes as were rendered */
+            pBuf -= tmpBytes;
+
+            /* Copy the sequence back into the buffer as many times as
+             * necessary */
+            count = 1;
+            while (count < repeatCount) {
+                memcpy(pBuf - tmpBytes, pBuf, tmpBytes);
+                count++;
+                /* Move the buffer back before the sequence */
+                pBuf -= tmpBytes;
+            }
+
+            /* Update the number of bytes rendered */
+            bytes += tmpBytes * repeatCount;
+
+            /* Place the buffer as if it just rendered the last note on the
+             * loop (it will be decreased afterward */
+            i = jumpPosition;
         }
         else {
             int duration;
