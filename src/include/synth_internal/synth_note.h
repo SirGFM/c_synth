@@ -56,7 +56,7 @@ synth_err synthNote_setPan(synthNote *pNote, char pan);
  * @param [ in]octave The octave
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setOctave(synthNote *pNote, char pan);
+synth_err synthNote_setOctave(synthNote *pNote, char octave);
 
 /**
  * Set the note wave
@@ -133,6 +133,16 @@ synth_bool synthNote_isLoop(synthNote *pNote);
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthNote_getDuration(int *pVal, synthNote *pNote);
+
+/**
+ * Retrieve the panning of the note, where 0 means completely on the left
+ * channel and 100 means completely on the right channel
+ * 
+ * @param  [out]pVal  The panning
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_getPan(char *pVal, synthNote *pNote);
 
 /**
  * Retrieve the number of times this loop should repeat

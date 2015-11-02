@@ -355,6 +355,16 @@ __err: \
 SYNTHNOTE_GETTER(synthNote_getDuration, int, len, 0)
 
 /**
+ * Retrieve the panning of the note, where 0 means completely on the left
+ * channel and 100 means completely on the right channel
+ * 
+ * @param  [out]pVal  The panning
+ * @param  [ in]pNote The note
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+SYNTHNOTE_GETTER(synthNote_getPan, char, pan, 0)
+
+/**
  * Retrieve the number of times this loop should repeat
  * 
  * @param  [out]pVal  The repeat count
@@ -418,8 +428,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
     /* Synthesize the note audio */
     i = 0;
     while (i < pNote->keyoff) {
-        char amp;
-        int perc;
+        char amp, pan;
+        int j, perc;
 
         /* Calculate the percentage into the current cycle in the range
          * [0,1024) */
@@ -487,10 +497,68 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             default: { /* Avoids warnings */ }
         }
 
-        /* TODO Don't forget to calculate the note's panning!!! */
+        /* Retrieve the note panning (in case it uses 2 channels) */
+        rv = synthNote_getPan(&pan, pNote);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-        /* TODO Convert the amplitude to the desired format and store it at the
+        /* Calculate the sample's actual index */
+        j = i * numBytes;
+
+        /* Convert the amplitude to the desired format and store it at the
          * buffer */
+        switch (mode) {
+            case SYNTH_1CHAN_U8BITS: {
+                /* Simply store the calculated value */
+                pBuf[j] = amp;
+            } break;
+            case SYNTH_1CHAN_8BITS: {
+                /* TODO */
+            } break;
+            case SYNTH_1CHAN_U16BITS: {
+                int amp16;
+
+                /* Simply calculate the 16 bits amplitude by 'converting' the
+                 * 8 bits one to the 16 bits range*/
+                amp16 = amp << 8;
+
+                /* Simply store the calculated value; Storing the lower bits on
+                 * byte 0 and the higher ones on bit 1 */
+                pBuf[j] = amp16 & 0xff;
+                pBuf[j] = (amp16 >> 8) & 0xff;
+            } break;
+            case SYNTH_1CHAN_16BITS: {
+                /* TODO */
+            } break;
+            case SYNTH_2CHAN_U8BITS: {
+                /* Simply store the calculated value on both channels;
+                 * Position 0 is the left channel and position 1 is the right
+                 * one */
+                pBuf[j] = ((amp * 100 - amp * pan) / 100) & 0xff;
+                pBuf[j + 1] = ((amp * 100 - amp * (100 - pan)) / 100) & 0xff;
+            } break;
+            case SYNTH_2CHAN_8BITS: {
+                /* TODO */
+            } break;
+            case SYNTH_2CHAN_U16BITS: {
+                int lAmp16, rAmp16;
+
+                /* Calculate the panning between channels as having double the
+                 * bits */
+                lAmp16 = (((amp * 100 - amp * pan) << 8) / 100);
+                rAmp16 = (((amp * 100 - amp * (100 - pan)) << 8) / 100);
+
+                /* Store the left channel on bytes 0 (low) and 1 (high) and the
+                 * right one on 2 (low) and 3 (high) */
+                pBuf[j] = lAmp16 & 0xff;
+                pBuf[j + 1] = (lAmp16 >> 8) & 0xff;
+                pBuf[j + 2] = rAmp16 & 0xff;
+                pBuf[j + 3] = (rAmp16 >> 8) & 0xff;
+            } break;
+            case SYNTH_2CHAN_16BITS: {
+                /* TODO */
+            } break;
+            default : { /* Avoids warnings */ }
+        }
 
         /* Increase, since we are looping through the samples (and not through
          * the bytes) */
