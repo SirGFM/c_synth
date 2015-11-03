@@ -513,7 +513,6 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
                 /* Initialize/Search the volume */
                 rv = synthVolume_getLinear(&(pParser->pVolume), pCtx, vol1,
                         vol2);
-                rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
                 SYNTH_ASSERT(rv == SYNTH_OK);
             }
             else {
