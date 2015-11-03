@@ -429,7 +429,157 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
     i = 0;
     while (i < pNote->keyoff) {
         char amp, pan;
-        int j, perc;
+        int j;
+        float perc, waveAmp;
+
+        /* TODO Rewrite this loop without using floats */
+
+        /* Calculate the percentage of the note into the current cycle */
+        perc = ((float)(i % spc)) / spc;
+
+        /* Retrieve the current amplitude */
+        rv = synthVolume_getAmplitude(&amp, pNote->pVol, perc * 1024);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Retrieve the note panning (in case it uses 2 channels) */
+        rv = synthNote_getPan(&pan, pNote);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Calculate the sample's actual index */
+        j = i * numBytes;
+
+        /* Retrieve the sample's amplitude, according to the note's wave form.
+         * This amplitude is calculated in the range [-1.0f, 1.0f], so it can
+         * correctly be downsampled for 8 and 16 bits amplitudes (as well as
+         * signed and unsigned) */
+        switch (pNote->wave) {
+            case W_SQUARE: {
+                /* 50% duty cycle */
+                if (perc < 0.5f) {
+                    waveAmp = 1.0f;
+                }
+                else {
+                    waveAmp = -1.0f;
+                }
+            } break;
+            case W_PULSE_12_5: {
+                /* 12.5% duty cycle */
+                if (perc < 0.125f) {
+                    waveAmp = 1.0f;
+                }
+                else {
+                    waveAmp = -1.0f;
+                }
+            } break;
+            case W_PULSE_25: {
+                /* 25% duty cycle */
+                if (perc < 0.25f) {
+                    waveAmp = 1.0f;
+                }
+                else {
+                    waveAmp = -1.0f;
+                }
+            } break;
+            case W_PULSE_75: {
+                /* 75% duty cycle */
+                if (perc < 0.75f) {
+                    waveAmp = 1.0f;
+                }
+                else {
+                    waveAmp = -1.0f;
+                }
+            } break;
+            case W_TRIANGLE: {
+                /* Convert the percentage into a triangular wave with its
+                 * positive peak at 0.25% samples and its negative peak at 0.75%
+                 * samples */
+                if (perc < 0.25f) {
+                    waveAmp = 4.0f * perc;
+                }
+                else if (perc < 0.5f) {
+                    waveAmp = 4.0f * (0.5f - perc);
+                }
+                else if (perc < 0.75f) {
+                    waveAmp = -4.0f * (perc - 0.5f);
+                }
+                else {
+                    waveAmp = -4.0f * (1.0f - perc);
+                }
+            } break;
+            case W_NOISE: {
+                /* TODO Implement a decent noise */
+                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+            } break;
+            default: { /* Avoids warnings */ }
+        }
+
+        /* If it's unsigned, convert it to the range [0.0f, 1.0f] */
+        if (mode & SYNTH_UNSIGNED) {
+            waveAmp = (waveAmp + 1.0f) * 0.5f;
+        }
+
+        /* Convert the amplitude to the desired format and store it at the
+         * buffer */
+        switch (mode) {
+            case SYNTH_1CHAN_U8BITS:
+            case SYNTH_1CHAN_8BITS: {
+                /* Simply store the calculated value; The amplitude is halved to
+                 * avoid overflows */
+                pBuf[j] = (amp >> 1) * waveAmp;
+            } break;
+            case SYNTH_1CHAN_U16BITS:
+            case SYNTH_1CHAN_16BITS: {
+                int amp16;
+
+                /* Simply calculate the 16 bits amplitude by 'converting' the
+                 * 8 bits one to the 16 bits range; The amplitude is halved to
+                 * avoid overflows */
+                amp16 = (amp << 7) * waveAmp;
+
+                /* Simply store the calculated value; Storing the lower bits on
+                 * byte 0 and the higher ones on bit 1 */
+                pBuf[j] = amp16 & 0xff;
+                pBuf[j + 1] = (amp16 >> 8) & 0xff;
+            } break;
+            case SYNTH_2CHAN_U8BITS:
+            case SYNTH_2CHAN_8BITS: {
+                char lAmp8, rAmp8;
+
+                /* Calculate the amplitude on both channels, 0 means left only
+                 * and 100 means right only */
+                lAmp8 = amp * waveAmp * ((100 - pan) / 100.0f);
+                rAmp8 = amp * waveAmp * (pan / 100.0f);
+
+                pBuf[j] = lAmp8 & 0xff;
+                pBuf[j + 1] = rAmp8 & 0xff;
+            } break;
+            case SYNTH_2CHAN_U16BITS:
+            case SYNTH_2CHAN_16BITS: {
+                int lAmp16, rAmp16;
+
+                /* Calculate the panning between channels as having double the
+                 * bits */
+                lAmp16 = (amp << 8) * waveAmp * ((100 - pan) / 100.0f);
+                rAmp16 = (amp << 8) * waveAmp * (pan / 100.0f);
+
+                /* Store the left channel on bytes 0 (low) and 1 (high) and the
+                 * right one on 2 (low) and 3 (high) */
+                pBuf[j] = lAmp16 & 0xff;
+                pBuf[j + 1] = (lAmp16 >> 8) & 0xff;
+                pBuf[j + 2] = rAmp16 & 0xff;
+                pBuf[j + 3] = (rAmp16 >> 8) & 0xff;
+            } break;
+            default : { /* Avoids warnings */ }
+        }
+
+        /* Increase, since we are looping through the samples (and not through
+         * the bytes) */
+        i++;
+#if 0
+
+        char amp, pan;
+        int j, perc, waveAmp;
+
 
         /* Calculate the percentage into the current cycle in the range
          * [0,1024) */
@@ -439,35 +589,57 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         rv = synthVolume_getAmplitude(&amp, pNote->pVol, perc);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-        /* Retrieve the sample's amplitude, according to the note's wave form */
+        /* Retrieve the sample's amplitude, according to the note's wave form.
+         * This amplitude is calculated in the range [-0x10000, 0x10000], so it
+         * can correctly be downsampled for 8 and 16 bits amplitudes (as well as
+         * signed and unsigned) */
         switch (pNote->wave) {
             case W_SQUARE: {
                 /* 50% duty cycle */
                 if (perc > 512) {
-                    amp = 0;
+                    waveAmp = 0x1000;
+                }
+                else {
+                    waveAmp = -0x10000;
                 }
             } break;
             case W_PULSE_12_5: {
                 /* 12.5% duty cycle */
                 if (perc > 128) {
-                    amp = 0;
+                    waveAmp = 0x1000;
+                }
+                else {
+                    waveAmp = -0x10000;
                 }
             } break;
             case W_PULSE_25: {
                 /* 25% duty cycle */
                 if (perc > 256) {
-                    amp = 0;
+                    waveAmp = 0x1000;
+                }
+                else {
+                    waveAmp = -0x10000;
                 }
             } break;
             case W_PULSE_75: {
                 /* 75% duty cycle */
                 if (perc > 768) {
-                    amp = 0;
+                    waveAmp = 0x1000;
+                }
+                else {
+                    waveAmp = -0x10000;
                 }
             } break;
             case W_TRIANGLE: {
-                /* Convert the percentage into a triangular wave with its peak
-                 * at 512 sample */
+                /* Convert the percentage into a triangular wave with its
+                 * positive peak at 256 samples and its negative peak at 768
+                 * samples */
+                if ((perc % 512) < 256) {
+                    waveAmp = 0x10000 * (perc % 256) / 256.0f;
+                }
+                else {
+                    waveAmp = 0x10000 * (256.0f - (perc % 256)) / 256.0f;
+                }
                 if (amp < 512) {
                     amp = (int)(amp * (perc / 512.0f)) & 0xff;
                 }
@@ -567,6 +739,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         /* Increase, since we are looping through the samples (and not through
          * the bytes) */
         i++;
+#endif /* 0 */
     }
     /* The silence (after the key was released) was already cleared, so simply
      * return */
