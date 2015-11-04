@@ -465,9 +465,17 @@ static synth_bool synthLexer_isMML(synthLexCtx *pCtx) {
     int i;
 
     i = 0;
+
+    /* Find the first valid (not blank, comment etc) */
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    /* Return it to the stream */
+    srv = synthLexer_ungetChar(pCtx, c);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
     while (i < sizeof(target) - 1) {
         /* Get the current character, without ignoring blank and whatnot */
-        srv = synthLexer_getChar(&c, pCtx);
+        srv = synthLexer_getRawChar(&c, pCtx);
         SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
 
         /* Check that it's of the expected pattern */
