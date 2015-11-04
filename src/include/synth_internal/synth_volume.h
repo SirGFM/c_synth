@@ -28,7 +28,7 @@
  * @param  [ in]amp   The requested amplitude (in the range [0, 255])
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, char amp);
+synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp);
 
 /**
  * Retrieve a linear volume
@@ -41,8 +41,8 @@ synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, char amp);
  * @param  [ in]fin   The final amplitude (in the range [0, 255])
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
-        char fin);
+synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
+        int fin);
 
 /**
  * Retrieve the volume at a given percentage of a note
@@ -52,7 +52,7 @@ synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
  * @param  [ in]perc Percentage into the note (in the range [0, 1024))
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthVolume_getAmplitude(char *pAmp, synthVolume *pVol, int perc);
+synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc);
 
 #endif /* __SYNTH_VOLUME_H__ */
 

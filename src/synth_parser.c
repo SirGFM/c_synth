@@ -90,7 +90,7 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
     pParser->wave = W_SQUARE;
 
     /* Set the volume to half the maximum possible */
-    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 0x7f);
+    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 64);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     
     rv = SYNTH_OK;

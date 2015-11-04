@@ -428,8 +428,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
     /* Synthesize the note audio */
     i = 0;
     while (i < pNote->keyoff) {
-        char amp, pan;
-        int j;
+        char pan;
+        int amp, j;
         float perc, waveAmp;
 
         /* TODO Rewrite this loop without using floats */
@@ -438,7 +438,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         perc = ((float)(i % spc)) / spc;
 
         /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pNote->pVol, perc * 1024);
+        rv = synthVolume_getAmplitude(&amp, pNote->pVol, i / (float)pNote->len *
+                1024);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
         /* Retrieve the note panning (in case it uses 2 channels) */
@@ -523,18 +524,16 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         switch (mode) {
             case SYNTH_1CHAN_U8BITS:
             case SYNTH_1CHAN_8BITS: {
-                /* Simply store the calculated value; The amplitude is halved to
-                 * avoid overflows */
-                pBuf[j] = (amp >> 1) * waveAmp;
+                /* Simply store the calculated value; The amplitude is
+                 * lessened to only 8 bits */
+                pBuf[j] = (amp >> 8) * waveAmp;
             } break;
             case SYNTH_1CHAN_U16BITS:
             case SYNTH_1CHAN_16BITS: {
                 int amp16;
 
-                /* Simply calculate the 16 bits amplitude by 'converting' the
-                 * 8 bits one to the 16 bits range; The amplitude is halved to
-                 * avoid overflows */
-                amp16 = (amp << 7) * waveAmp;
+                /* Simply store the calculated value */
+                amp16 = amp  * waveAmp;
 
                 /* Simply store the calculated value; Storing the lower bits on
                  * byte 0 and the higher ones on bit 1 */
@@ -547,8 +546,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
 
                 /* Calculate the amplitude on both channels, 0 means left only
                  * and 100 means right only */
-                lAmp8 = amp * waveAmp * ((100 - pan) / 100.0f);
-                rAmp8 = amp * waveAmp * (pan / 100.0f);
+                lAmp8 = (amp >> 8) * waveAmp * ((100 - pan) / 100.0f);
+                rAmp8 = (amp >> 8) * waveAmp * (pan / 100.0f);
 
                 pBuf[j] = lAmp8 & 0xff;
                 pBuf[j + 1] = rAmp8 & 0xff;
@@ -557,10 +556,10 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             case SYNTH_2CHAN_16BITS: {
                 int lAmp16, rAmp16;
 
-                /* Calculate the panning between channels as having double the
-                 * bits */
-                lAmp16 = (amp << 8) * waveAmp * ((100 - pan) / 100.0f);
-                rAmp16 = (amp << 8) * waveAmp * (pan / 100.0f);
+                /* Calculate the amplitude on both channels, 0 means left only
+                 * and 100 means right only */
+                lAmp16 = amp  * waveAmp * ((100 - pan) / 100.0f);
+                rAmp16 = amp  * waveAmp * (pan / 100.0f);
 
                 /* Store the left channel on bytes 0 (low) and 1 (high) and the
                  * right one on 2 (low) and 3 (high) */
@@ -577,8 +576,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         i++;
 #if 0
 
-        char amp, pan;
-        int j, perc, waveAmp;
+        char pan;
+        int amp, j, perc, waveAmp;
 
 
         /* Calculate the percentage into the current cycle in the range

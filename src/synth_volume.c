@@ -65,16 +65,27 @@ __err:
  * 
  * @param  [out]ppVol The volume
  * @param  [ in]pCtx  The synthesizer context
- * @param  [ in]amp   The requested amplitude (in the range [0, 255])
+ * @param  [ in]amp   The requested amplitude (in the range [0, 128])
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, char amp) {
+synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp) {
     int i;
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(ppVol, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+
+    /* Clamp the note to the valid range */
+    if (amp < 0) {
+        amp = 0;
+    }
+    else if (amp > 128) {
+        amp = 128;
+    }
+
+    /* Increase the amplitude to a 16 bits value */
+    amp <<= 8;
 
     /* Clean the return, so we now if anything was found */
     *ppVol = 0;
@@ -118,8 +129,8 @@ __err:
  * @param  [ in]fin   The final amplitude (in the range [0, 255])
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
-        char fin) {
+synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
+        int fin) {
     int i;
     synth_err rv;
 
@@ -127,8 +138,26 @@ synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, char ini,
     SYNTH_ASSERT_ERR(ppVol, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
+    /* Clamp the note to the valid range */
+    if (ini < 0) {
+        ini = 0;
+    }
+    else if (ini > 128) {
+        ini = 128;
+    }
+    if (fin < 0) {
+        fin = 0;
+    }
+    else if (fin > 128) {
+        fin = 128;
+    }
+
     /* Clean the return, so we now if anything was found */
     *ppVol = 0;
+
+    /* Increase the amplitude to a 16 bits value */
+    ini <<= 8;
+    fin <<= 8;
 
     /* Search for the requested volume through the existing ones */
     i = 0;
@@ -165,7 +194,7 @@ __err:
  * @param  [ in]perc Percentage into the note (in the range [0, 1024))
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthVolume_getAmplitude(char *pAmp, synthVolume *pVol, int perc) {
+synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc) {
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -173,7 +202,7 @@ synth_err synthVolume_getAmplitude(char *pAmp, synthVolume *pVol, int perc) {
     SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
 
     /* Calculate the current amplitude */
-    *pAmp = (((pVol->ini * (1024 - perc)) + (pVol->fin * perc)) >> 10) & 0xff;
+    *pAmp = (((pVol->ini * (1024 - perc)) + (pVol->fin * perc)) >> 10) & 0xffff;
     /* If the previous didn't work out (because of integer division), use the
      * following */
     /* *pAmp = (pVol->ini + (pVol->fin - pVol->ini) * (perc / 1024.0f)) &

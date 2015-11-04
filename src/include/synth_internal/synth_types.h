@@ -313,9 +313,9 @@ struct stSynthNote {
 /** Define a simple note envelop */
 struct stSynthVolume {
     /** Initial volume */
-    char ini;
+    int ini;
     /** Final volume */
-    char fin;
+    int fin;
 };
 
 #endif /* __SYNTH_INTERNAL_TYPES_H__ */
