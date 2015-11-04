@@ -460,7 +460,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                     waveAmp = 1.0f;
                 }
                 else {
-                    waveAmp = -1.0f;
+                    if (mode & SYNTH_SIGNED) {
+                        waveAmp = -1.0f;
+                    }
+                    else {
+                        waveAmp = 0.0f;
+                    }
                 }
             } break;
             case W_PULSE_12_5: {
@@ -469,7 +474,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                     waveAmp = 1.0f;
                 }
                 else {
-                    waveAmp = -1.0f;
+                    if (mode & SYNTH_SIGNED) {
+                        waveAmp = -1.0f;
+                    }
+                    else {
+                        waveAmp = 0.0f;
+                    }
                 }
             } break;
             case W_PULSE_25: {
@@ -478,7 +488,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                     waveAmp = 1.0f;
                 }
                 else {
-                    waveAmp = -1.0f;
+                    if (mode & SYNTH_SIGNED) {
+                        waveAmp = -1.0f;
+                    }
+                    else {
+                        waveAmp = 0.0f;
+                    }
                 }
             } break;
             case W_PULSE_75: {
@@ -487,24 +502,39 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                     waveAmp = 1.0f;
                 }
                 else {
-                    waveAmp = -1.0f;
+                    if (mode & SYNTH_SIGNED) {
+                        waveAmp = -1.0f;
+                    }
+                    else {
+                        waveAmp = 0.0f;
+                    }
                 }
             } break;
             case W_TRIANGLE: {
                 /* Convert the percentage into a triangular wave with its
                  * positive peak at 0.25% samples and its negative peak at 0.75%
                  * samples */
-                if (perc < 0.25f) {
-                    waveAmp = 4.0f * perc;
-                }
-                else if (perc < 0.5f) {
-                    waveAmp = 4.0f * (0.5f - perc);
-                }
-                else if (perc < 0.75f) {
-                    waveAmp = -4.0f * (perc - 0.5f);
+                if (mode & SYNTH_SIGNED) {
+                    if (perc < 0.25f) {
+                        waveAmp = 4.0f * perc;
+                    }
+                    else if (perc < 0.5f) {
+                        waveAmp = 4.0f * (0.5f - perc);
+                    }
+                    else if (perc < 0.75f) {
+                        waveAmp = -4.0f * (perc - 0.5f);
+                    }
+                    else {
+                        waveAmp = -4.0f * (1.0f - perc);
+                    }
                 }
                 else {
-                    waveAmp = -4.0f * (1.0f - perc);
+                    if (perc < 0.5f) {
+                        waveAmp = 2.0f * perc;
+                    }
+                    else {
+                        waveAmp = 2.0f * (1.0f - perc);
+                    }
                 }
             } break;
             case W_NOISE: {
@@ -512,11 +542,6 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                 SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
             } break;
             default: { /* Avoids warnings */ }
-        }
-
-        /* If it's unsigned, convert it to the range [0.0f, 1.0f] */
-        if (mode & SYNTH_UNSIGNED) {
-            waveAmp = (waveAmp + 1.0f) * 0.5f;
         }
 
         /* Convert the amplitude to the desired format and store it at the
