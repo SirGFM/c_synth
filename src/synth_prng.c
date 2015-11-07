@@ -50,6 +50,8 @@ synth_err synthPRNG_init(synthPRNGCtx *pCtx, unsigned int seed) {
     /* Advance the internal state because... why not? */
     synthPRNG_iterate(pCtx);
 
+    pCtx->isInit = 1;
+
     rv = SYNTH_OK;
 __err:
     return rv;
@@ -151,14 +153,14 @@ synth_err synthPRNG_getGaussianNoise(double *pVal, synthPRNGCtx *pCtx) {
             } while (u1 <= DBL_MIN);
 
             pParams->z0 = sqrt(-2.0 * log(u1)) * cos(TAU * u2);
-            pParams->z1 = sqrt(-2.0 * log(u1)) * cos(TAU * u2);
+            pParams->z1 = sqrt(-2.0 * log(u1)) * sin(TAU * u2);
 
             *pVal = pParams->z0;
             pParams->didGenerate = 1;
         }
 
         /* Convert it to the desired range */
-        *pVal = (*pVal) * 2.0f - 1.0f;
+        *pVal = (*pVal) / 6.7;
     }
     else {
         SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);

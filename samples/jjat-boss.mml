@@ -1,11 +1,9 @@
-//============================================================================//
+MML//=========================================================================//
 // Song originally written for 'JJAT'                                         //
 //     a game by GFM (made for BIG Festival 2015)                             //
 // Original version:                                                          //
 //   https://github.com/SirGFM/big-15/blob/v1.0.0/assets/vmml/boss-battle.mml //
 //============================================================================//
-
-MML
 
 t180
 
@@ -91,8 +89,23 @@ g+1
 g+1
 a+2. r
 
-//==============================================================================
+; //============================================================================
 
-// NOTE: The drums were temporarily removed as the 'noise wave' hasn't been
-// implemented yet
+
+//==============================================================================
+// Hi-hat/Crash cymbal
+//------------------------------------------------------------------------------
+
+w5 l16 v64
+
+// H = o8k3q10h35 g 
+// C = o7k3q12h80 b 
+
+r1
+[o7k3q12h80 b4  o8k3q10h35 g rrr o8k3q10h35 g rrr o8k3q10h35 g rrr]7
+o7k3q12h80 b4  o8k3q10h35 g rrr o8k3q10h35 g rrr o8k3q10h35 g r o8k3q10h35 g r
+
+[o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r
+ o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r]7
+o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g rrr o8k3q10h35 g rrr o7k3q12h80 b4 r
 

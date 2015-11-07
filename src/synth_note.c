@@ -575,7 +575,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                 rv = synthPRNG_getGaussianNoise(&noise, &(pCtx->prngCtx));
                 SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-                waveAmp = (float)noise;
+                if (perc > 0.75f) {
+                    waveAmp = (float)(noise * 0.25);
+                }
+                else {
+                    waveAmp = (float)(noise * 4.0);
+                }
             } break;
             default: { /* Avoids warnings */ }
         }

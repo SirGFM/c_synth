@@ -1,0 +1,49 @@
+MML//=========================================================================//
+// Simple drum test                                                           //
+//============================================================================//
+
+t140
+
+//==============================================================================
+// Hi-hat/Crash cymbal
+//------------------------------------------------------------------------------
+
+w5 l16 v64
+
+// Hi-hat
+k3 q12 h80
+
+o4 gr r1
+
+o1 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr r1
+
+o2 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr gr r1
+
+o3 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr grgr r1
+
+o4 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr grgr gr r1
+
+o5 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr grgr grgr r1
+
+o6 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr grgr grgr gr r1
+
+o7 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b r1
+
+o4 grgr grgr grgr grgr r1
+
+o8 c r4 c+ r4 d r4 d+ r4 e r4 f r4 f+ r4 g r4 g+ r4 a r4 a+ r4 b
+
+//==============================================================================
+
