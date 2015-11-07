@@ -19,7 +19,9 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "set loop point",
     "set end of track",
     "set volume",
+    "set attack time",
     "set keyoff",
+    "set release",
     "set pan",
     "set loop start",
     "set loop end",
@@ -442,7 +444,9 @@ SYNTHLEXER_ISTOKEN(synthLexer_isEndOfTrack,   ';', T_END_OF_TRACK)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetVolume,    'v', T_SET_VOLUME)
 SYNTHLEXER_ISTOKEN(synthLexer_isOpenBracket,  '(', T_OPEN_BRACKET)
 SYNTHLEXER_ISTOKEN(synthLexer_isCloseBracket, ')', T_CLOSE_BRACKET)
+SYNTHLEXER_ISTOKEN(synthLexer_isSetAttack,    'k', T_SET_ATTACK)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetKeyoff,    'q', T_SET_KEYOFF)
+SYNTHLEXER_ISTOKEN(synthLexer_isSetRelease,   'h', T_SET_RELEASE)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetPan,       'p', T_SET_PAN)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopStart, '[', T_SET_LOOP_START)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopEnd,   ']', T_SET_LOOP_END)
@@ -815,7 +819,9 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isSetVolume(pCtx) == SYNTH_TRUE ||
             synthLexer_isOpenBracket(pCtx) == SYNTH_TRUE ||
             synthLexer_isCloseBracket(pCtx) == SYNTH_TRUE ||
+            synthLexer_isSetAttack(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetKeyoff(pCtx) == SYNTH_TRUE ||
+            synthLexer_isSetRelease(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetPan(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetLoopStart(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetLoopEnd(pCtx) == SYNTH_TRUE ||

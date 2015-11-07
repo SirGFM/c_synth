@@ -122,7 +122,9 @@ enum enSynthToken {
     T_SET_LOOPPOINT,
     T_END_OF_TRACK,
     T_SET_VOLUME,
+    T_SET_ATTACK,
     T_SET_KEYOFF,
+    T_SET_RELEASE,
     T_SET_PAN,
     T_SET_LOOP_START,
     T_SET_LOOP_END,
@@ -196,8 +198,12 @@ struct stSynthParserCtx {
     int duration;
     /** Default volume */
     synthVolume *pVolume;
+    /** Current attack */
+    int attack;
     /** Current keyoff */
     int keyoff;
+    /** Current release */
+    int release;
     /** Current pan */
     int pan;
     /** Current wave */
@@ -298,8 +304,12 @@ struct stSynthNote {
     int len;
     /** Only used if type is N_loop; Represents note to which should jump. */
     int jumpPosition;
+    /** Time, in samples, until the note reaches its maximum amplitude */
+    int attack;
     /** After how many samples should the note be muted */
     int keyoff;
+    /** Time, in samples, until the note halts completely */
+    int release;
     /** Only used if type is N_loop; how many times has already looped */
     int numIterations;
     /** Wave type to be synthesized */

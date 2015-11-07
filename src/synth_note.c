@@ -73,7 +73,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setWave(*ppNote, W_SQUARE);
     synthNote_setNote(*ppNote, N_A);
     synthNote_setDuration(*ppNote, pCtx, 60, 4);
-    synthNote_setKeyoff(*ppNote, 75);
+    synthNote_setKeyoff(*ppNote, 0, 75, 0);
     synthNote_setVolume(*ppNote, 0);
 
     (*ppNote)->numIterations = 0;
@@ -248,34 +248,50 @@ __err:
 }
 
 /**
- * Set the note's keyoff time
+ * Set the characteristics of the note's duration
  * 
  * NOTE: This parameter must be set after the duration
  * 
- * Calculate (and store) after how many samples this note should be released;
- * The value must be a number in the range [0, 100], represeting the percentage
- * of the note that it must keep playing
+ * All values must be in the range [0, 100]. The attack is campled to the range
+ * [0, keyoff] and the release is campled to the range [keyoff, 100]. Although
+ * the parameter express the percentage of the note's duration, the value is
+ * stored in samples.
  * 
  * @param  [ in]pNote  The note
- * @param  [ in]keyoff The percentage of the note duration before it's released
+ * @param  [ in]attack  The percentage of the note duration before it reaches
+ *                      its full amplitude
+ * @param  [ in]keyoff  The percentage of the note duration before it's released
+ * @param  [ in]release The percentage of the note duration before it halts
+ *                      completely
  * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff) {
+synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
+        int release) {
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
 
-    /* Clamp the value to the valid range */
-    if (keyoff < 0) {
-        keyoff = 0;
-    }
-    else if (keyoff > 100) {
-        keyoff = 100;
-    }
+    /* Defines a macro to clamp a variable */
+#define CLAMP(VAR, MIN, MAX) \
+  if (VAR < MIN) { \
+    VAR = MIN; \
+  } \
+  else if (VAR > MAX) { \
+    VAR = MAX; \
+  }
+
+    /* Clamp the values to their valid ranges */
+    CLAMP(keyoff, 0, 100);
+    CLAMP(attack, 0, keyoff);
+    CLAMP(release, keyoff, 100);
+
+#undef CLAMP
 
     /* Calculate (and store) the keyoff in samples */
+    pNote->attack = pNote->len * attack / 100;
     pNote->keyoff = pNote->len * keyoff / 100;
+    pNote->release = pNote->len * release / 100;
 
     rv = SYNTH_OK;
 __err:
@@ -427,10 +443,10 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
 
     /* Synthesize the note audio */
     i = 0;
-    while (i < pNote->keyoff) {
+    while (i < pNote->release) {
         char pan;
         int amp, j;
-        float perc, waveAmp;
+        float clampAmp, perc, waveAmp;
 
         /* TODO Rewrite this loop without using floats */
 
@@ -441,6 +457,20 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
         rv = synthVolume_getAmplitude(&amp, pNote->pVol, i / (float)pNote->len *
                 1024);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Defines the value that encapsulates the note */
+        if (i < pNote->attack) {
+            /* Varies the value from 0.0f -> 1.0f */
+            clampAmp = i / (float)pNote->attack;
+        }
+        else if (i > pNote->keyoff) {
+            /* Varies the value from 1.0f -> 0.0f */
+            clampAmp = 1.0f - (i - pNote->keyoff) /
+                    (float)(pNote->release - pNote->keyoff);
+        }
+        else {
+            clampAmp = 1.0f;
+        }
 
         /* Retrieve the note panning (in case it uses 2 channels) */
         rv = synthNote_getPan(&pan, pNote);
@@ -543,6 +573,9 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
             } break;
             default: { /* Avoids warnings */ }
         }
+
+        /* "Fix" the note amplitude */
+        waveAmp *= clampAmp;
 
         /* Convert the amplitude to the desired format and store it at the
          * buffer */

@@ -94,19 +94,25 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
         int duration);
 
 /**
- * Set the note's keyoff time
+ * Set the characteristics of the note's duration
  * 
  * NOTE: This parameter must be set after the duration
  * 
- * Calculate (and store) after how many samples this note should be released;
- * The value must be a number in the range [0, 100], represeting the percentage
- * of the note that it must keep playing
+ * All values must be in the range [0, 100]. The attack is campled to the range
+ * [0, keyoff] and the release is campled to the range [keyoff, 100]. Although
+ * the parameter express the percentage of the note's duration, the value is
+ * stored in samples.
  * 
- * @param  [ in]pNote  The note
- * @param  [ in]keyoff The percentage of the note duration before it's released
- * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * @param  [ in]pNote   The note
+ * @param  [ in]attack  The percentage of the note duration before it reaches
+ *                      its full amplitude
+ * @param  [ in]keyoff  The percentage of the note duration before it's released
+ * @param  [ in]release The percentage of the note duration before it halts
+ *                      completely
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setKeyoff(synthNote *pNote, int keyoff);
+synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
+        int release);
 
 /**
  * Set the volume envelop

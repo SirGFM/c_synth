@@ -85,7 +85,9 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
     pParser->bpm = 60;
     pParser->octave = 4;
     pParser->duration = 4;
+    pParser->attack = 0;
     pParser->keyoff = 75;
+    pParser->release = 0;
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
 
@@ -279,7 +281,9 @@ static synth_bool synthParser_isSequence(synthCtx *pCtx) {
         case T_SET_VOLUME:
         case T_OPEN_BRACKET:
         case T_CLOSE_BRACKET:
+        case T_SET_ATTACK:
         case T_SET_KEYOFF:
+        case T_SET_RELEASE:
         case T_SET_PAN:
         case T_SET_WAVE:
         case T_NOTE:
@@ -387,7 +391,8 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setDuration(pNote, pCtx, pParser->bpm, duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setKeyoff(pNote, pParser->keyoff);
+    rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
+            pParser->release);
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setVolume(pNote, pParser->pVolume);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -412,7 +417,9 @@ __err:
  *                             T_CLOSE_BRACKETS |
  *                     T_OPEN_BRACKETS |      // for relative volume
  *                     T_CLOSE_BRACKETS |     // for relative volume
+ *                     T_SET_ATTACK T_NUMBER |
  *                     T_SET_KEYOFF T_NUMBER |
+ *                     T_SET_RELEASE T_NUMBER |
  *                     T_SET_PAN T_NUMBER |
  *                     T_SET_WAVE T_NUMBER
  * 
@@ -532,6 +539,16 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
+        case T_SET_ATTACK: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the keyoff value */
+            rv = synthLexer_getValuei(&(pParser->attack), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
         case T_SET_KEYOFF: {
             /* Read the following number */
             rv = synthLexer_getToken(&(pCtx->lexCtx));
@@ -540,6 +557,16 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
 
             /* Set the keyoff value */
             rv = synthLexer_getValuei(&(pParser->keyoff), &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+        } break;
+        case T_SET_RELEASE: {
+            /* Read the following number */
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            /* Set the keyoff value */
+            rv = synthLexer_getValuei(&(pParser->release), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_PAN: {
