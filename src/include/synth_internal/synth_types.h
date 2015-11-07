@@ -40,6 +40,10 @@
 #  define __SYNTHPARSERCTX_STRUCT__
      typedef struct stSynthParserCtx synthParserCtx;
 #  endif /* __SYNTHPARSERCTX_STRUCT__ */
+#  ifndef __SYNTHPRNG_STRUCT__
+#  define __SYNTHPRNG_STRUCT__
+     typedef struct stSynthPRNGCtx synthPRNGCtx;
+#  endif /* __SYNTHPRNG_STRUCTRUCT__ */
 #  ifndef __SYNTHSOURCE_UNION__
 #  define __SYNTHSOURCE_UNION__
      typedef union unSynthSource synthSource;
@@ -210,6 +214,50 @@ struct stSynthParserCtx {
     synth_wave wave;
 };
 
+/** Defines the types of noise wave generators */
+enum enNoiseWaveType {
+    NW_NONE = 0,
+    NW_BOXMULLER,
+    NW_ZIGGURAT
+};
+
+/** Struct with the static parameters required by the Box-Muller algorithm */
+struct stBoxMullerParams {
+    /** A point, generated on the previous iteration */
+    double z0;
+    /** The other point, generated on the previous iteration */
+    double z1;
+    /** Whether the points where generated on the previous iteration */
+    int didGenerate;
+};
+
+/** Struct with the static parameters required by the ziggurat algorithm */
+struct stZigguratParams {
+    /* TODO */
+    int nil;
+};
+
+/** Parameter specific to algorithms used by the PRNG */
+union stPRNGParams {
+    struct stBoxMullerParams boxMuller;
+    struct stZigguratParams ziggurat;
+};
+
+/** Current context used by the pseudo random number generator */
+struct stSynthPRNGCtx {
+    /* Whether it was initialized */
+    int isInit;
+    /** Value used by the PRNG formula */
+    unsigned int a;
+    /** Value used by the PRNG formula */
+    unsigned int c;
+    /** Latest seed */
+    unsigned int seed;
+    /* The current noise wave generator */
+    enum enNoiseWaveType type;
+    /** Params used by the current generator algorithm */
+    union stPRNGParams noiseParams;
+};
 
 /** Union with all possible buffers (i.e., list of items) */
 union unSynthBuffer {
@@ -257,6 +305,8 @@ struct stSynthCtx {
     synthLexCtx lexCtx;
     /** Parser context */
     synthParserCtx parserCtx;
+    /** Pseudo-random number generator context */
+    synthPRNGCtx prngCtx;
 };
 
 /** Define an audio, which is simply an aggregation of tracks */

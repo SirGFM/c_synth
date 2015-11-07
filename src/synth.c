@@ -8,11 +8,13 @@
 #include <synth_internal/synth_audio.h>
 #include <synth_internal/synth_lexer.h>
 #include <synth_internal/synth_parser.h>
+#include <synth_internal/synth_prng.h>
 #include <synth_internal/synth_types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /**
  * Retrieve the total size for a context
@@ -134,6 +136,9 @@ synth_err synth_init(synthCtx **ppCtx, int freq) {
     pCtx->autoAlloced = 1;
     /* Set the synthesizer frequency */
     pCtx->frequency = freq;
+    /* Initialize the prng */
+    rv = synthPRNG_init(&(pCtx->prngCtx), (unsigned int)time(0));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     /* TODO Initialize anything else? */
 
     /* Set the return */

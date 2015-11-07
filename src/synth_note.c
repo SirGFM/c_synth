@@ -6,6 +6,7 @@
 #include <synth/synth_errors.h>
 
 #include <synth_internal/synth_note.h>
+#include <synth_internal/synth_prng.h>
 #include <synth_internal/synth_types.h>
 #include <synth_internal/synth_volume.h>
 
@@ -406,12 +407,13 @@ SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
  * 
  * @param  [ in]pBuf      Buffer that will be filled with the track
  * @param  [ in]pNote     The note
+ * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]mode      Desired mode for the wave
  * @param  [ in]synthFreq Synthesizer's frequency
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
-        int synthFreq) {
+synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
+        synthBufMode mode, int synthFreq) {
     int i, noteFreq, numBytes, spc;
     synth_err rv;
 
@@ -568,8 +570,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
                 }
             } break;
             case W_NOISE: {
-                /* TODO Implement a decent noise */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
+                double noise;
+
+                rv = synthPRNG_getGaussianNoise(&noise, &(pCtx->prngCtx));
+                SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+                waveAmp = (float)noise;
             } break;
             default: { /* Avoids warnings */ }
         }

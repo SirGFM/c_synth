@@ -176,12 +176,13 @@ synth_err synthNote_getJumpPosition(int *pVal, synthNote *pNote);
  * 
  * @param  [ in]pBuf      Buffer that will be filled with the track
  * @param  [ in]pNote     The note
+ * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]mode      Desired mode for the wave
  * @param  [ in]synthFreq Synthesizer's frequency
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_render(char *pBuf, synthNote *pNote, synthBufMode mode,
-        int synthFreq);
+synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
+        synthBufMode mode, int synthFreq);
 
 #if 0
 

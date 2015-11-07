@@ -537,9 +537,9 @@ int main(int argc, char *argv[]) {
     SDL_PauseAudioDevice(dev, 0);
 
     /* Wait long enough, until the audio is played */
-    printf("Sleeping for %ims, while the song plays...\n",
-            maxLen * 1000 / freq + 1);
-    SDL_Delay(maxLen * 1000 / freq + 1);
+    printf("Sleeping for %ums, while the song plays...\n",
+            (unsigned int)maxLen * 1000 / freq + 1);
+    SDL_Delay((unsigned int)maxLen * 1000 / freq + 1);
 
     rv = SYNTH_OK;
 __err:

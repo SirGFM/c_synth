@@ -311,7 +311,7 @@ static synth_err synthTrack_renderSequence(int *pBytes, char *pBuf,
             pBuf -= duration;
 
             /* Render the current note */
-            rv = synthNote_render(pBuf, pNote, mode, pCtx->frequency);
+            rv = synthNote_render(pBuf, pNote, pCtx, mode, pCtx->frequency);
             SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
             /* Update the amount of bytes rendered */
