@@ -208,7 +208,8 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
  */
 synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
         int duration) {
-    int freq, len, nSamples, time;
+    double nSamples;
+    int freq, len;
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -219,13 +220,11 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
 
     /* Store the synthesizer frequency */
     freq = pCtx->frequency;
-    /* Caculate the duration (in miliseconds) of a semibreve (i.e., "full")
-     * note (i.e., 1000ms  * 60 * 4 beats = 60s * 4 beats  = 1 min * 4 beats*/
-    time = 60 * 1000 * 4 / bpm;
-    /* Calculate the duration of a semibreve in samples; Note that freq is in
-     * hertz (i.e., samples-per-seconds), while time is in miliseconds; This is
-     * done so the time loses less accuracy, when being divide by the BPM */
-    nSamples = freq * time;
+    /* Caculate the duration (in samples) of a semibreve (i.e., "full") note:
+     * 4 beats / N beats per min = 4 beats / (N / 60) beats per second
+     * 4 * 60 / N = T s (duration of semibreve in seconds)
+     * T s * F Hz = number of samples in a semibreve */
+    nSamples = freq * 240.0 / (double)bpm;
 
     /* Accumulate the note's duration in samples */
     len = 0;
@@ -233,12 +232,12 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
         if ((duration & 1) == 1) {
             /* Accumulate this duration, remembering to transform from
              * samples-per-miliseconds back to hertz */
-            len += nSamples / 1000;
+            len += (int)nSamples;
         }
 
         /* Remove a bit and halve the number of samples */
         duration >>= 1;
-        nSamples >>= 1;
+        nSamples *= 0.5;
     }
 
     /* Store the calculated duration */
@@ -582,7 +581,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                  * the pseudo-random value later */
                 waveAmp = 1.0f;
             } break;
-            default: { /* Avoids warnings */ }
+            default: { waveAmp = 0.0f; }
         }
 
         if (pNote->wave >= W_NOISE && pNote->wave <= W_NOISE_TRIANGLE) {

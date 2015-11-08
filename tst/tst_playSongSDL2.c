@@ -565,6 +565,7 @@ __err:
     if (ppBufs) {
         int i;
 
+        i = 0;
         while (i < numTracks) {
             if (ppBufs[i]) {
                 free(ppBufs[i]);
