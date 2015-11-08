@@ -182,7 +182,8 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setOctave, char, octave, 1, 8);
  * @param [ in]wave  The wave
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE, W_NOISE);
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE,
+        SYNTH_MAX_WAVE - 1);
 
 /**
  * Set the musical note
@@ -486,6 +487,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
          * correctly be downsampled for 8 and 16 bits amplitudes (as well as
          * signed and unsigned) */
         switch (pNote->wave) {
+            case W_NOISE_SQUARE:
             case W_SQUARE: {
                 /* 50% duty cycle */
                 if (perc < 0.5f) {
@@ -500,6 +502,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                     }
                 }
             } break;
+            case W_NOISE_12_5:
             case W_PULSE_12_5: {
                 /* 12.5% duty cycle */
                 if (perc < 0.125f) {
@@ -514,6 +517,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                     }
                 }
             } break;
+            case W_NOISE_25:
             case W_PULSE_25: {
                 /* 25% duty cycle */
                 if (perc < 0.25f) {
@@ -528,6 +532,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                     }
                 }
             } break;
+            case W_NOISE_75:
             case W_PULSE_75: {
                 /* 75% duty cycle */
                 if (perc < 0.75f) {
@@ -542,6 +547,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                     }
                 }
             } break;
+            case W_NOISE_TRIANGLE:
             case W_TRIANGLE: {
                 /* Convert the percentage into a triangular wave with its
                  * positive peak at 0.25% samples and its negative peak at 0.75%
@@ -570,19 +576,37 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                 }
             } break;
             case W_NOISE: {
-                double noise;
-
-                rv = synthPRNG_getGaussianNoise(&noise, &(pCtx->prngCtx));
-                SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
-
-                if (perc > 0.75f) {
-                    waveAmp = (float)(noise * 0.25);
-                }
-                else {
-                    waveAmp = (float)(noise * 4.0);
-                }
+                /* Simply set the amplitude to 1.0f, so it may be multiplied by
+                 * the pseudo-random value later */
+                waveAmp = 1.0f;
             } break;
             default: { /* Avoids warnings */ }
+        }
+
+        if (pNote->wave >= W_NOISE && pNote->wave <= W_NOISE_TRIANGLE) {
+            double noise;
+
+            rv = synthPRNG_getGaussianNoise(&noise, &(pCtx->prngCtx));
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            if (pNote->wave == W_NOISE) {
+                /* For simple noises, simply export random values */
+                waveAmp = (float)(noise * 2.0);
+            }
+            else if (pNote->wave == W_NOISE_TRIANGLE) {
+                /* Note so sure how triangles are to work... */
+                waveAmp = (float)(noise * 2.0 * waveAmp);
+            }
+            else {
+                /* If it's a simple rectangular wave, clamp the value to the
+                 * desired range */
+                if (waveAmp > 0.0f) {
+                    waveAmp = (float)(noise * 4.0);
+                }
+                else {
+                    waveAmp = (float)(noise * 0.25);
+                }
+            }
         }
 
         /* "Fix" the note amplitude */

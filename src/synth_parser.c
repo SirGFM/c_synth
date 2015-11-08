@@ -589,12 +589,17 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
             switch (tmp) {
-                case 0: pParser->wave = W_SQUARE; break;
-                case 1: pParser->wave = W_PULSE_12_5; break;
-                case 2: pParser->wave = W_PULSE_25; break;
-                case 3: pParser->wave = W_PULSE_75; break;
-                case 4: pParser->wave = W_TRIANGLE; break;
-                case 5: pParser->wave = W_NOISE; break;
+                case  0: pParser->wave = W_SQUARE; break;
+                case  1: pParser->wave = W_PULSE_12_5; break;
+                case  2: pParser->wave = W_PULSE_25; break;
+                case  3: pParser->wave = W_PULSE_75; break;
+                case  4: pParser->wave = W_TRIANGLE; break;
+                case  5: pParser->wave = W_NOISE; break;
+                case  6: pParser->wave = W_NOISE_SQUARE; break;
+                case  7: pParser->wave = W_NOISE_12_5; break;
+                case  8: pParser->wave = W_NOISE_25; break;
+                case  9: pParser->wave = W_NOISE_75; break;
+                case 10: pParser->wave = W_NOISE_TRIANGLE; break;
                 default: SYNTH_ASSERT_ERR(0, SYNTH_INVALID_WAVE);
             }
         } break;

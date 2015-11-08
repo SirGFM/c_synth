@@ -93,6 +93,11 @@ enum enSynthWave {
     W_PULSE_75,
     W_TRIANGLE,
     W_NOISE,
+    W_NOISE_SQUARE,
+    W_NOISE_12_5,
+    W_NOISE_25,
+    W_NOISE_75,
+    W_NOISE_TRIANGLE,
     SYNTH_MAX_WAVE
 };
 
