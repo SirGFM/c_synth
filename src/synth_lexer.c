@@ -283,6 +283,9 @@ static synth_err synthLexer_getRawChar(char *pChar, synthLexCtx *pCtx) {
     synth_err rv;
     int tmp;
 
+    /* Set the return to '\0', in case the end of the stream is reached */
+    *pChar = '\0';
+
     if (pCtx->isFile == SYNTH_TRUE) {
         /* Read a character from the file */
         tmp = fgetc(pCtx->source.file);
@@ -492,7 +495,7 @@ static synth_bool synthLexer_isMML(synthLexCtx *pCtx) {
     pCtx->lastToken = T_MML;
     rv = SYNTH_TRUE;
 __err:
-    if (rv != SYNTH_TRUE) {
+    if (rv != SYNTH_TRUE && ((srv != SYNTH_EOF && srv != SYNTH_EOS) || i > 0)) {
         /* On error, return the last char (that didn't belong to the pattern */
         synthLexer_ungetChar(pCtx, c);
 
@@ -598,7 +601,7 @@ static synth_bool synthLexer_isNote(synthLexCtx *pCtx) {
         SYNTH_ASSERT_ERR(pCtx->ivalue != N_REST, SYNTH_FALSE);
         pCtx->ivalue--;
     }
-    else if (mod != 0) {
+    else if (srv != SYNTH_EOF && srv != SYNTH_EOS) {
         /* A note is valid even without the modifier, so simply return the char,
          * but if it's 0, the the end of the stream was reached, and there's
          * nothing to 'unread' */
@@ -670,10 +673,12 @@ static synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
     pCtx->lastToken = T_DURATION;
     rv = SYNTH_TRUE;
     /* Return that last non-dot char */
-    synthLexer_ungetChar(pCtx, c);
+    if (srv != SYNTH_EOF && srv != SYNTH_EOS) {
+        synthLexer_ungetChar(pCtx, c);
+    }
 __err:
     /* If the funtion failed, return every invalid char */
-    if (rv != SYNTH_TRUE) {
+    if (rv != SYNTH_TRUE && srv != SYNTH_EOF && srv != SYNTH_EOS) {
         /* Return the last invalid char read */
         synthLexer_ungetChar(pCtx, c);
         /* Now, return any '.' that was read */
@@ -734,10 +739,12 @@ static synth_bool synthLexer_isNumber(synthLexCtx *pCtx) {
     pCtx->lastToken = T_NUMBER;
     rv = SYNTH_TRUE;
     /* Return that last non-digit char */
-    synthLexer_ungetChar(pCtx, c);
+    if (srv != SYNTH_EOF && srv != SYNTH_EOS) {
+        synthLexer_ungetChar(pCtx, c);
+    }
 __err:
     /* If the funtion failed, return every invalid char */
-    if (rv != SYNTH_TRUE) {
+    if (rv != SYNTH_TRUE && srv != SYNTH_EOF && srv != SYNTH_EOS) {
         /* Return the last invalid char read */
         synthLexer_ungetChar(pCtx, c);
         /* Now, return any digit that was read */

@@ -115,15 +115,15 @@ o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g rrr o8k3q10h35
 // Snare/Kick-pedal
 //------------------------------------------------------------------------------
 
-w8 l16 v64
+w8 l16 v128
 
-// K = o7k3q12h80 b a
-// S = o8k3q15h0 g a
+// K = w10o3k3q20h80 c ;
+// S = w8o6k3q20h0 d ;
 
 [r1]9
 
-[rr o8k3q15h0 g r rr o8k3q15h0 g r  o7k3q12h80 b r o7k3q12h80 b r  o7k3q12h80 b rrr]7
-rrrr rrrr rr o7k3q12h80 b  
+[rr w8o6k3q20h0 d r rr w8o6k3q20h0 d r  w10o3k3q20h80 c r w10o3k3q20h80 c r  w10o3k3q20h80 c rrr]7
+rrrr rrrr rr w10o3k3q20h80 c  
 
 //==============================================================================
 

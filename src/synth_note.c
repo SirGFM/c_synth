@@ -574,6 +574,8 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                         waveAmp = 2.0f * (1.0f - perc);
                     }
                 }
+                /* Make triangle waves a little louder */
+                waveAmp *= 1.125;
             } break;
             case W_NOISE: {
                 /* Simply set the amplitude to 1.0f, so it may be multiplied by
@@ -594,8 +596,15 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                 waveAmp = (float)(noise * 2.0);
             }
             else if (pNote->wave == W_NOISE_TRIANGLE) {
-                /* Note so sure how triangles are to work... */
-                waveAmp = (float)(noise * 2.0 * waveAmp);
+                waveAmp = (float)(waveAmp * 0.75 + noise * waveAmp * 4.0 * 0.25);
+            }
+            else if (pNote->wave == W_NOISE_25) {
+                if (waveAmp > 0.0f) {
+                    waveAmp = (float)(noise * 6.0);
+                }
+                else {
+                    waveAmp = (float)(noise * 1.5);
+                }
             }
             else {
                 /* If it's a simple rectangular wave, clamp the value to the
