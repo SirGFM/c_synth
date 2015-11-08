@@ -11,7 +11,7 @@ t180
 // Bass-line-1: 25% square wave, play notes for 60% of its duration
 //------------------------------------------------------------------------------
 
-w2 o3 l4 k5 q60 h65 v(25, 10)
+w2 o3 l4 k5 q60 h65 v(35, 20)
 
 >
 
@@ -27,7 +27,7 @@ w2 o3 l4 k5 q60 h65 v(25, 10)
 // Bass-line-2: 25% square wave, play notes for 60% of its duration
 //------------------------------------------------------------------------------
 
-w2 o3 l4 k5 q60 h65 v(20, 10)
+w2 o3 l4 k5 q60 h65 v(30, 15)
 
 [f]4 
 [f]4 [d+]4 [c+]4 [d+]4
@@ -115,15 +115,15 @@ o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g rrr o8k3q10h35
 // Snare/Kick-pedal
 //------------------------------------------------------------------------------
 
-w8 l16 v128
+l16 v128 k3 q20
 
-// K = w10o3k3q20h80 c ;
-// S = w8o6k3q20h0 d ;
+// K = w10o3h80c
+// S = w8o6h0d
 
 [r1]9
 
-[rr w8o6k3q20h0 d r rr w8o6k3q20h0 d r  w10o3k3q20h80 c r w10o3k3q20h80 c r  w10o3k3q20h80 c rrr]7
-rrrr rrrr rr w10o3k3q20h80 c  
+[rr w8o6h0d r rr w8o6h0d r  w10o3h80c r w10o3h80c r  w10o3h80c rrr]7
+rrrr rrrr rr w10o3h80c  
 
 //==============================================================================
 

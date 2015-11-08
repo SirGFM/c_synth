@@ -56,6 +56,30 @@ static char __synthParser_errorMsg[TOKEN_MAX_STR * 2 +
     } \
   } while (0)
 
+/**
+ * Revert the parser back to its default configuration
+ * 
+ * @param  [ in]pParser The parser context to be initialized
+ * @param  [ in]pCtx    The synthesizer context
+ * @return              SYNTH_OK, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx) {
+    synth_err rv;
+
+    pParser->octave = 4;
+    pParser->duration = 4;
+    pParser->attack = 0;
+    pParser->keyoff = 75;
+    pParser->release = 0;
+    pParser->pan = 50;
+    pParser->wave = W_SQUARE;
+    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 64);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
 
 /**
  * Initialize the parser
@@ -82,17 +106,7 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
 
     /* Remove any error flag */
     pParser->errorFlag = SYNTH_FALSE;
-    pParser->bpm = 60;
-    pParser->octave = 4;
-    pParser->duration = 4;
-    pParser->attack = 0;
-    pParser->keyoff = 75;
-    pParser->release = 0;
-    pParser->pan = 50;
-    pParser->wave = W_SQUARE;
-
-    /* Set the volume to half the maximum possible */
-    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 64);
+    rv = synthParser_setDefault(pParser, pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     
     rv = SYNTH_OK;
@@ -775,6 +789,10 @@ static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
     rv = synthTrack_init(&pTrack, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
     curTrack = pCtx->tracks.used - 1;
+
+    /* Revert the parser to its initial state */
+    rv = synthParser_setDefault(pParser, pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     numNotes = 0;
 
