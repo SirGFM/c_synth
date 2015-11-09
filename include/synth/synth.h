@@ -268,7 +268,7 @@ synth_err synth_getSongIntroLength(int *pLen, synthCtx *pCtx, int handle);
  * @param  [ in]pBuf   Buffer that will be filled with the song
  * @param  [ in]pCtx   The synthesizer context
  * @param  [ in]handle Handle of the audio
- * @param  [ in]mode   Desired mode for the wave
+ * @param  [ in]mode   Desired mode for the song
  * @param  [ in]pTmp   Temporary buffer that will be filled with each track
  * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
  *                     SYNTH_COMPLEX_LOOPPOINT

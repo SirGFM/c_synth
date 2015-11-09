@@ -695,7 +695,26 @@ __err:
 }
 
 /**
+ * Accumulate a temporary buffer into another buffer
+ * 
+ * If, at any point, a sample overflow its bit-per-sample, it will drop the
+ * least significant bits
+ * 
+ * @param  [ in]pBuf Buffer that will be joined by the other track
+ * @param  [ in]pTmp Temporary buffer with the last track
+ * @param  [ in]mode Desired mode for the song
+ * @oaram  [ in]len  The number of samples to be accumulated
+ * @return           Whether any overflow happened
+ */
+static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
+        synthBufMode mode, int len);
+/* TODO */
+
+/**
  * Render all of a song's tracks and accumulate 'em in a single buffer
+ * 
+ * The buffer must be prepared by the caller, and it must have
+ * 'synth_getSongLength' bytes times the number of bytes per samples
  * 
  * A temporary buffer is necessary in order to render each track; If the same
  * buffer were to be used, the previously rendered data would be lost (when
@@ -705,11 +724,108 @@ __err:
  * @param  [ in]pBuf   Buffer that will be filled with the song
  * @param  [ in]pCtx   The synthesizer context
  * @param  [ in]handle Handle of the audio
- * @param  [ in]mode   Desired mode for the wave
+ * @param  [ in]mode   Desired mode for the song
  * @param  [ in]pTmp   Temporary buffer that will be filled with each track
  * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
  *                     SYNTH_COMPLEX_LOOPPOINT
  */
 synth_err synth_renderSong(char *pBuf, synthCtx *pCtx, int handle,
-        synthBufMode mode, char *pTmp);
+        synthBufMode mode, char *pTmp) {
+    int i, numBytes, numTracks, maxLen;
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(handle >= 0, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR((mode & SYNTH_VALID_MODE_MASK) != 0, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pTmp, SYNTH_BAD_PARAM_ERR);
+    /* Check that the handle is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    /* Check that the song either doesn't loop or can loop nicely */
+    rv = synth_canSongLoop(pCtx, handle);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK || rv == SYNTH_NOT_LOOPABLE, rv);
+
+    /* Retrieve the audio */
+    pAudio = &(pCtx->songs.buf.pAudios[handle]);
+
+    /* Calculate the number of bytes per samples */
+    numBytes = 1;
+    if (mode & SYNTH_16BITS) {
+        numBytes = 2;
+    }
+    if (mode & SYNTH_2CHAN) {
+        numBytes *= 2;
+    }
+
+    rv = synth_getSongLength(&maxLen, pCtx, handle);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Clear the output buffer so every track can be accumulated into it */
+    memset(pBuf, 0x0, maxLen * numBytes);
+
+    /* Count how many tracks there are */
+    rv = synthAudio_getTrackCount(&numTracks, pAudio);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Render each track and accumulated it into the output */
+    i = 0;
+    while (i < numTracks) {
+        int didOverflow, len;
+
+        didOverflow = 0;
+
+        /* Render the track into the temporary buffer */
+        rv = synthAudio_renderTrack(pTmp, pAudio, pCtx, i, mode);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Accumulate the track into the buffers start */
+        rv = synthAudio_getTrackLength(&len, pAudio, pCtx, i);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+        if (synth_accumulateSongTrack(pBuf, pTmp, mode, len) == SYNTH_TRUE) {
+            didOverflow = 1;
+        }
+
+        /* Check whether the track loops */
+        if (synthAudio_isTrackLoopable(pAudio, pCtx, i) == SYNTH_TRUE) {
+            char *pDst, *pSrc;
+            int loopPoint, tmpLen;
+
+            /* Retrieve the current track length and loop point */
+            rv = synthAudio_getTrackIntroLength(&loopPoint, pAudio, pCtx, i);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Advance the buffer the number of bytes that were accumulated */
+            pDst = pBuf + len * numBytes;
+
+            /* Update the source to place it at the start of the loop */
+            pSrc = pTmp + loopPoint * numBytes;
+
+            /* Loop until the new track accumulated over the complete track */
+            tmpLen = maxLen - len;
+            len -= loopPoint;
+            while (tmpLen > 0) {
+                if (synth_accumulateSongTrack(pDst, pSrc, mode, len) ==
+                        SYNTH_TRUE) {
+                    didOverflow = 1;
+                }
+
+                pDst += len * numBytes;
+                tmpLen -= len;
+            }
+        }
+
+        /* TODO If the track did overflow at any point, halve all of it */
+        if (didOverflow) {
+        }
+
+        i++;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
 
