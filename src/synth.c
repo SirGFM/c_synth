@@ -707,7 +707,190 @@ __err:
  * @return           Whether any overflow happened
  */
 static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
-        synthBufMode mode, int len);
+        synthBufMode mode, int len) {
+    synth_bool rv;
+    int i, j;
+
+    rv = SYNTH_FALSE;
+
+    i = 0;
+    j = 0;
+    while (i < len) {
+        switch (mode) {
+            case SYNTH_1CHAN_U8BITS: {
+                unsigned int dst, src;
+
+                src = pBuf[j] & 0xff;
+                dst = pTmp[j] & 0xff;
+
+                dst += src;
+                while (dst > 0xff) {
+                    dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = dst;
+
+                j++;
+            } break;
+            case SYNTH_1CHAN_8BITS: {
+                int dst, src;
+
+                src = pBuf[j] & 0xff;
+                dst = pTmp[j] & 0xff;
+
+                dst += src;
+                while (dst > 0xff) {
+                    dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = dst;
+
+                j++;
+            } break;
+            case SYNTH_1CHAN_U16BITS: {
+                unsigned int dst, src;
+
+                src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+
+                dst += src;
+                while (dst > 0xffff) {
+                    dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = dst & 0xff;
+                pBuf[j + 1] = (dst >> 8) & 0xff;
+
+                j++;
+            } break;
+            case SYNTH_1CHAN_16BITS: {
+                int dst, src;
+
+                src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+
+                dst += src;
+                while (dst > 0xffff) {
+                    dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = dst & 0xff;
+                pBuf[j + 1] = (dst >> 8) & 0xff;
+
+                j += 2;
+            } break;
+            case SYNTH_2CHAN_U8BITS: {
+                unsigned int l_dst, l_src, r_dst, r_src;
+
+                l_src = pBuf[j] & 0xff;
+                r_src = pBuf[j + 1] & 0xff;
+                l_dst = pTmp[j] & 0xff;
+                r_dst = pTmp[j + 1] & 0xff;
+
+                l_dst += l_src;
+                r_dst += r_src;
+                while (l_dst > 0xff) {
+                    l_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+                while (r_dst > 0xff) {
+                    r_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = l_dst;
+                pBuf[j + 1] = r_dst;
+
+                j += 2;
+            } break;
+            case SYNTH_2CHAN_8BITS: {
+                int l_dst, l_src, r_dst, r_src;
+
+                l_src = pBuf[j] & 0xff;
+                r_src = pBuf[j + 1] & 0xff;
+                l_dst = pTmp[j] & 0xff;
+                r_dst = pTmp[j + 1] & 0xff;
+
+                l_dst += l_src;
+                r_dst += r_src;
+                while (l_dst > 0xff) {
+                    l_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+                while (r_dst > 0xff) {
+                    r_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = l_dst;
+                pBuf[j + 1] = r_dst;
+
+                j += 2;
+            } break;
+            case SYNTH_2CHAN_U16BITS: {
+                unsigned int l_dst, l_src, r_dst, r_src;
+
+                l_src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                r_src = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
+                l_dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                r_dst = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+
+                l_dst += l_src;
+                r_dst += r_src;
+                while (l_dst > 0xffff) {
+                    l_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+                while (r_dst > 0xffff) {
+                    r_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = l_dst & 0xff;
+                pBuf[j + 1] = (l_dst >> 8) & 0xff;
+                pBuf[j + 2] = r_dst & 0xff;
+                pBuf[j + 3] = (r_dst >> 8) & 0xff;
+
+                j += 4;
+            } break;
+            case SYNTH_2CHAN_16BITS: {
+                int l_dst, l_src, r_dst, r_src;
+
+                l_src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                r_src = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
+                l_dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                r_dst = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+
+                l_dst += l_src;
+                r_dst += r_src;
+                while (l_dst > 0xffff) {
+                    l_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+                while (r_dst > 0xffff) {
+                    r_dst >>= 1;
+                    rv = SYNTH_TRUE;
+                }
+
+                pBuf[j] = l_dst & 0xff;
+                pBuf[j + 1] = (l_dst >> 8) & 0xff;
+                pBuf[j + 2] = r_dst & 0xff;
+                pBuf[j + 3] = (r_dst >> 8) & 0xff;
+
+                j += 4;
+            } break;
+            default : { /* Avoids warnings */ }
+        }
+
+        i++;
+    }
+
+    return rv;
+}
 /* TODO */
 
 /**
