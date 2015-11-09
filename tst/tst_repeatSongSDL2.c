@@ -52,6 +52,13 @@ static void audioCallback(void *pArg, Uint8 *pStream, int len) {
     if (pData->pos >= pData->bufLen) {
         if (pData->doLoop) {
             pData->pos = pData->loopPos;
+            pData->posBytes = pData->pos;
+            if (mode & SYNTH_2CHAN) {
+                pData->posBytes *= 2;
+            }
+            if (mode & SYNTH_16BITS) {
+                pData->posBytes *= 2;
+            }
         }
         else {
             if (!pData->didFinish) {
@@ -87,6 +94,7 @@ static void audioCallback(void *pArg, Uint8 *pStream, int len) {
                         pData->posBytes *= 2;
                     }
                     len -= j;
+                    pStream += j;
                     j = 0;
                     i = 0;
                 }
