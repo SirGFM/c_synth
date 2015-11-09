@@ -187,9 +187,21 @@ synth_err synthTrack_getLength(int *pLen, synthTrack *pTrack, synthCtx *pCtx) {
     SYNTH_ASSERT_ERR(pTrack, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
-    /* Count from the last note so we can recursivelly calculate all loops lengths */
-    rv = synthTrack_countSample(pLen, pTrack, pCtx, pTrack->num - 1, 0);
-    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Check if the value has already been calculated */
+    if (pTrack->cachedLength == 0) {
+        int len;
+
+        /* Count from the last note so we can recursivelly calculate all loops
+         * lengths */
+        rv = synthTrack_countSample(&len, pTrack, pCtx, pTrack->num - 1, 0);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Cached the length so it can be used later */
+        pTrack->cachedLength = len;
+    }
+
+    /* Retrieve the cached length */
+    *pLen = pTrack->cachedLength;
 
     rv = SYNTH_OK;
 __err:
@@ -213,19 +225,44 @@ synth_err synthTrack_getIntroLength(int *pLen, synthTrack *pTrack,
     SYNTH_ASSERT_ERR(pTrack, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
-    /* Count how many samples there are from the loop point to the song start */
-    if (pTrack->loopPoint != -1) {
-        rv = synthTrack_countSample(pLen, pTrack, pCtx, pTrack->loopPoint - 1,
-                0);
-        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Check if the value needs to be calculated */
+    if (pTrack->cachedLoopPoint == 0) {
+        int len;
+
+        /* Count how many samples there are from the loop point to the song
+         * start */
+        if (pTrack->loopPoint != -1) {
+            rv = synthTrack_countSample(&len, pTrack, pCtx,
+                    pTrack->loopPoint - 1, 0);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+        }
+        else {
+            len = 0;
+        }
+
+        /* Cache the value so it can be used later */
+        pTrack->cachedLoopPoint = len;
     }
-    else {
-        *pLen = 0;
-    }
+
+    /* Retrieve the cached value */
+    *pLen = pTrack->cachedLoopPoint;
 
     rv = SYNTH_OK;
 __err:
     return rv;
+}
+
+/**
+ * Retrieve whether a track is loopable or not
+ * 
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_TRUE, SYNTH_FALSE
+ */
+synth_bool synthTrack_isLoopable(synthTrack *pTrack) {
+    if (pTrack && pTrack->loopPoint != -1) {
+        return SYNTH_TRUE;
+    }
+    return SYNTH_FALSE;
 }
 
 /**

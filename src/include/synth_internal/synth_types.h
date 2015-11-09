@@ -330,6 +330,10 @@ struct stSynthAudio {
 
 /** Define a track, which is almost simply a sequence of notes */
 struct stSynthTrack {
+    /** Cached length of the track, in samples */
+    int cachedLength;
+    /** Cached loop of the track, in samples */
+    int cachedLoopPoint;
     /** Start point for repeating or -1, if shouldn't loop */
     int loopPoint;
     /**

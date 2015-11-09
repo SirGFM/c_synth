@@ -42,6 +42,14 @@ synth_err synthTrack_getIntroLength(int *pLen, synthTrack *pTrack,
         synthCtx *pCtx);
 
 /**
+ * Retrieve whether a track is loopable or not
+ * 
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_TRUE, SYNTH_FALSE
+ */
+synth_bool synthTrack_isLoopable(synthTrack *pTrack);
+
+/**
  * Render a track into a buffer
  * 
  * The buffer must be prepared by the caller, and it must have

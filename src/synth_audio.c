@@ -205,6 +205,22 @@ __err:
 }
 
 /**
+ * Retrieve whether a track is loopable or not
+ * 
+ * @param  [ in]pAudio The audio
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]track  The track
+ * @return             SYNTH_TRUE, SYNTH_FALSE
+ */
+synth_bool synthAudio_isTrackLoopable(synthAudio *pAudio, synthCtx *pCtx,
+        int track) {
+    if (pAudio && track < pAudio->num) {
+        return synthTrack_isLoopable(&(pCtx->tracks.buf.pTracks[track]));
+    }
+    return SYNTH_FALSE;
+}
+
+/**
  * Render a track into a buffer
  * 
  * The buffer must be prepared by the caller, and it must have

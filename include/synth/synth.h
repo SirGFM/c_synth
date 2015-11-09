@@ -184,10 +184,22 @@ synth_err synth_getTrackLength(int *pLen, synthCtx *pCtx, int handle,
  * @param  [out]pLen   The length of the track's intro
  * @param  [ in]pCtx   The synthesizer context
  * @param  [ in]handle Handle of the audio
- * @param  [ in]pTrack The track
+ * @param  [ in]track  The track
  * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
+        int track);
+
+/**
+ * Check whether a track is loopable
+ * 
+ * @param  [out]pVal   1 if it does loop, 0 otherwise
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
+ */
+synth_err synth_isTrackLoopable(int *pVal, synthCtx *pCtx, int handle,
         int track);
 
 /**
@@ -205,6 +217,64 @@ synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
  */
 synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
         synthBufMode mode);
+
+/**
+ * Check whether a song can loop nicely in a single iteration
+ * 
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT, SYNTH_NOT_LOOPABLE
+ */
+synth_err synth_canSongLoop(synthCtx *pCtx, int handle);
+
+/**
+ * Retrieve the length, in samples, of the longest track in a song
+ * 
+ * The song is checked for a single iteration loop. If that's impossible, the
+ * function will exit with an error
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT
+ */
+synth_err synth_getSongLength(int *pLen, synthCtx *pCtx, int handle);
+
+/**
+ * Retrieve the number of samples until a song's loop point
+ * 
+ * This functions expect all tracks to loop at the same point, so it will fail
+ * if this isn't possible in a single iteration of the longest track
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT, SYNTH_NOT_LOOPABLE
+ */
+synth_err synth_getSongIntroLength(int *pLen, synthCtx *pCtx, int handle);
+
+/**
+ * Render all of a song's tracks and accumulate 'em in a single buffer
+ * 
+ * A temporary buffer is necessary in order to render each track; If the same
+ * buffer were to be used, the previously rendered data would be lost (when
+ * accumulating the tracks on the destination buffer), so this situation is
+ * checked and is actually an error
+ * 
+ * @param  [ in]pBuf   Buffer that will be filled with the song
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]mode   Desired mode for the wave
+ * @param  [ in]pTmp   Temporary buffer that will be filled with each track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT
+ */
+synth_err synth_renderSong(char *pBuf, synthCtx *pCtx, int handle,
+        synthBufMode mode, char *pTmp);
 
 #endif /* __SYNTH_H__ */
 

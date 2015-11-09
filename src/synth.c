@@ -386,7 +386,7 @@ __err:
  * @param  [out]pLen   The length of the track's intro
  * @param  [ in]pCtx   The synthesizer context
  * @param  [ in]handle Handle of the audio
- * @param  [ in]pTrack The track
+ * @param  [ in]track  The track
  * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
@@ -402,6 +402,35 @@ synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
     rv = synthAudio_getTrackIntroLength(pLen,
             &(pCtx->songs.buf.pAudios[handle]), pCtx, track);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Check whether a track is loopable
+ * 
+ * @param  [out]pVal   1 if it does loop, 0 otherwise
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX
+ */
+synth_err synth_isTrackLoopable(int *pVal, synthCtx *pCtx, int handle,
+        int track) {
+    synth_bool brv;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pVal, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    /* Check that the handle is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    brv = synthAudio_isTrackLoopable(&(pCtx->songs.buf.pAudios[handle]), pCtx,
+            track);
+    *pVal = (brv == SYNTH_TRUE);
 
     rv = SYNTH_OK;
 __err:
@@ -440,4 +469,247 @@ synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
 __err:
     return rv;
 }
+
+/**
+ * Check whether a song can loop nicely in a single iteration
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT, SYNTH_NOT_LOOPABLE
+ */
+synth_err synth_canSongLoop(synthCtx *pCtx, int handle) {
+    int i, maxLen, maxLoopPoint, numTracks;
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(handle >= 0, SYNTH_BAD_PARAM_ERR);
+    /* Check if the song is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    /* Retrieve the audio */
+    pAudio = &(pCtx->songs.buf.pAudios[handle]);
+
+    /* Count how many tracks there are */
+    rv = synthAudio_getTrackCount(&numTracks, pAudio);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Check if at least one of the tracks are loopable */
+    i = 0;
+    while (i < numTracks) {
+        if (synthAudio_isTrackLoopable(pAudio, pCtx, i) == SYNTH_TRUE) {
+            break;
+        }
+
+        i++;
+    }
+    SYNTH_ASSERT_ERR(i < numTracks, SYNTH_NOT_LOOPABLE);
+
+    /* Search the longest length and loop point */
+    i = 0;
+    maxLen = 0;
+    maxLoopPoint = 0;
+    while (i < numTracks) {
+        int len, loopPoint, track;
+
+        track = i;
+        i++;
+
+        /* Move on to the next track if it isn't loop-able */
+        if (synthAudio_isTrackLoopable(pAudio, pCtx, track) == SYNTH_FALSE) {
+            continue;
+        }
+
+        /* Retrieve the current track length and loop point */
+        rv = synthAudio_getTrackLength(&len, pAudio, pCtx, track);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+        rv = synthAudio_getTrackIntroLength(&loopPoint, pAudio, pCtx, track);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Check if this new one is greater than the previous */
+        if (len > maxLen) {
+            maxLen = len;
+        }
+        if (loopPoint > maxLoopPoint) {
+            maxLoopPoint = loopPoint;
+        }
+    }
+
+    /* Iterate, again, over every track and check if their limits overlaps
+     * nicelly */
+    i = 0;
+    while (i < numTracks) {
+        int len, loopPoint, track;
+
+        track = i;
+        i++;
+
+        /* Move on to the next track if it isn't loop-able */
+        if (synthAudio_isTrackLoopable(pAudio, pCtx, track) == SYNTH_FALSE) {
+            continue;
+        }
+
+        /* Retrieve the current track length and loop point */
+        rv = synthAudio_getTrackLength(&len, pAudio, pCtx, track);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+        rv = synthAudio_getTrackIntroLength(&loopPoint, pAudio, pCtx, track);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Check that this track's lengths are compatible with the song's
+         * lengths */
+        SYNTH_ASSERT_ERR((maxLoopPoint + maxLen - loopPoint) % len == 0,
+                SYNTH_COMPLEX_LOOPPOINT);
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the length, in samples, of the longest track in a song
+ * 
+ * The song is checked for a single iteration loop. If that's impossible, the
+ * function will exit with an error
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT
+ */
+synth_err synth_getSongLength(int *pLen, synthCtx *pCtx, int handle) {
+    int i, maxLen, numTracks;
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(handle >= 0, SYNTH_BAD_PARAM_ERR);
+    /* Check if the song is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+    rv = SYNTH_OK;
+
+    /* Check that either the song doesn't loop or that it's loopable */
+    rv = synth_canSongLoop(pCtx, handle);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK || rv == SYNTH_NOT_LOOPABLE, rv);
+
+    /* Retrieve the audio */
+    pAudio = &(pCtx->songs.buf.pAudios[handle]);
+
+    /* Count how many tracks there are */
+    rv = synthAudio_getTrackCount(&numTracks, pAudio);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Retrieve the longets length */
+    i = 0;
+    maxLen = 0;
+    while (i < numTracks) {
+        int len;
+
+        rv = synthAudio_getTrackLength(&len, pAudio, pCtx, i);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        if (len > maxLen) {
+            maxLen = len;
+        }
+
+        i++;
+    }
+
+    *pLen = maxLen;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the number of samples until a song's loop point
+ * 
+ * This functions expect all tracks to loop at the same point, so it will fail
+ * if this isn't possible in a single iteration of the longest track
+ * 
+ * @param  [out]pLen   The length of the track's intro
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]pTrack The track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT, SYNTH_NOT_LOOPABLE
+ */
+synth_err synth_getSongIntroLength(int *pLen, synthCtx *pCtx, int handle) {
+    int i, maxLoopPoint, numTracks;
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pLen, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(handle >= 0, SYNTH_BAD_PARAM_ERR);
+    /* Check if the song is valid */
+    SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+    rv = SYNTH_OK;
+
+    /* Check that either the song doesn't loop or that it's loopable */
+    rv = synth_canSongLoop(pCtx, handle);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Retrieve the audio */
+    pAudio = &(pCtx->songs.buf.pAudios[handle]);
+
+    /* Count how many tracks there are */
+    rv = synthAudio_getTrackCount(&numTracks, pAudio);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Retrieve the longets length */
+    i = 0;
+    maxLoopPoint = 0;
+    while (i < numTracks) {
+        int loopPoint, track;
+
+        track = i;
+        i++;
+
+        /* Move on to the next track if it isn't loop-able */
+        if (synthAudio_isTrackLoopable(pAudio, pCtx, track) == SYNTH_FALSE) {
+            continue;
+        }
+
+        /* Retrieve the current track length and loop point */
+        rv = synthAudio_getTrackIntroLength(&loopPoint, pAudio, pCtx, track);
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        if (loopPoint > maxLoopPoint) {
+            maxLoopPoint = loopPoint;
+        }
+    }
+
+    *pLen = maxLoopPoint;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Render all of a song's tracks and accumulate 'em in a single buffer
+ * 
+ * A temporary buffer is necessary in order to render each track; If the same
+ * buffer were to be used, the previously rendered data would be lost (when
+ * accumulating the tracks on the destination buffer), so this situation is
+ * checked and is actually an error
+ * 
+ * @param  [ in]pBuf   Buffer that will be filled with the song
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]handle Handle of the audio
+ * @param  [ in]mode   Desired mode for the wave
+ * @param  [ in]pTmp   Temporary buffer that will be filled with each track
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_INVALID_INDEX,
+ *                     SYNTH_COMPLEX_LOOPPOINT
+ */
+synth_err synth_renderSong(char *pBuf, synthCtx *pCtx, int handle,
+        synthBufMode mode, char *pTmp);
 
