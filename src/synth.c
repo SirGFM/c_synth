@@ -720,8 +720,8 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_1CHAN_U8BITS: {
                 unsigned int dst, src;
 
-                src = pBuf[j] & 0xff;
-                dst = pTmp[j] & 0xff;
+                src = pTmp[j] & 0xff;
+                dst = pBuf[j] & 0xff;
 
                 dst += src;
                 while (dst > 0xff) {
@@ -736,8 +736,15 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_1CHAN_8BITS: {
                 int dst, src;
 
-                src = pBuf[j] & 0xff;
-                dst = pTmp[j] & 0xff;
+                src = pTmp[j] & 0xff;
+                dst = pBuf[j] & 0xff;
+
+                if (src & 0x80) {
+                    src |= (0xffffffff << 32) | (0xffffff00);
+                }
+                if (dst & 0x80) {
+                    dst |= (0xffffffff << 32) | (0xffffff00);
+                }
 
                 dst += src;
                 while (dst > 0xff) {
@@ -752,8 +759,8 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_1CHAN_U16BITS: {
                 unsigned int dst, src;
 
-                src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
-                dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                src = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                dst = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
 
                 dst += src;
                 while (dst > 0xffff) {
@@ -764,13 +771,20 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
                 pBuf[j] = dst & 0xff;
                 pBuf[j + 1] = (dst >> 8) & 0xff;
 
-                j++;
+                j += 2;
             } break;
             case SYNTH_1CHAN_16BITS: {
                 int dst, src;
 
-                src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
-                dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                src = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                dst = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+
+                if (src & 0x8000) {
+                    src |= (0xffffffff << 32) | (0xffff0000);
+                }
+                if (dst & 0x8000) {
+                    dst |= (0xffffffff << 32) | (0xffff0000);
+                }
 
                 dst += src;
                 while (dst > 0xffff) {
@@ -786,10 +800,10 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_2CHAN_U8BITS: {
                 unsigned int l_dst, l_src, r_dst, r_src;
 
-                l_src = pBuf[j] & 0xff;
-                r_src = pBuf[j + 1] & 0xff;
-                l_dst = pTmp[j] & 0xff;
-                r_dst = pTmp[j + 1] & 0xff;
+                l_src = pTmp[j] & 0xff;
+                r_src = pTmp[j + 1] & 0xff;
+                l_dst = pBuf[j] & 0xff;
+                r_dst = pBuf[j + 1] & 0xff;
 
                 l_dst += l_src;
                 r_dst += r_src;
@@ -810,10 +824,23 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_2CHAN_8BITS: {
                 int l_dst, l_src, r_dst, r_src;
 
-                l_src = pBuf[j] & 0xff;
-                r_src = pBuf[j + 1] & 0xff;
-                l_dst = pTmp[j] & 0xff;
-                r_dst = pTmp[j + 1] & 0xff;
+                l_src = pTmp[j] & 0xff;
+                r_src = pTmp[j + 1] & 0xff;
+                l_dst = pBuf[j] & 0xff;
+                r_dst = pBuf[j + 1] & 0xff;
+
+                if (l_src & 0x80) {
+                    l_src |= (0xffffffff << 32) | (0xffffff00);
+                }
+                if (r_src & 0x80) {
+                    r_src |= (0xffffffff << 32) | (0xffffff00);
+                }
+                if (l_dst & 0x80) {
+                    l_dst |= (0xffffffff << 32) | (0xffffff00);
+                }
+                if (r_dst & 0x80) {
+                    r_dst |= (0xffffffff << 32) | (0xffffff00);
+                }
 
                 l_dst += l_src;
                 r_dst += r_src;
@@ -834,10 +861,10 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_2CHAN_U16BITS: {
                 unsigned int l_dst, l_src, r_dst, r_src;
 
-                l_src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
-                r_src = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
-                l_dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
-                r_dst = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+                l_src = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                r_src = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+                l_dst = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                r_dst = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
 
                 l_dst += l_src;
                 r_dst += r_src;
@@ -860,10 +887,23 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
             case SYNTH_2CHAN_16BITS: {
                 int l_dst, l_src, r_dst, r_src;
 
-                l_src = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
-                r_src = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
-                l_dst = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
-                r_dst = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+                l_src = (pTmp[j] & 0xff) | ((pTmp[j + 1] << 8) & 0xff00);
+                r_src = (pTmp[j + 2] & 0xff) | ((pTmp[j + 3] << 8) & 0xff00);
+                l_dst = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
+                r_dst = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
+
+                if (l_src & 0x8000) {
+                    l_src |= (0xffffffff << 32) | (0xffff0000);
+                }
+                if (r_src & 0x8000) {
+                    r_src |= (0xffffffff << 32) | (0xffff0000);
+                }
+                if (l_dst & 0x8000) {
+                    l_dst |= (0xffffffff << 32) | (0xffff0000);
+                }
+                if (r_dst & 0x8000) {
+                    r_dst |= (0xffffffff << 32) | (0xffff0000);
+                }
 
                 l_dst += l_src;
                 r_dst += r_src;
