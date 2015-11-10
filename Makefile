@@ -167,6 +167,25 @@ all: static shared tests
 #===============================================================================
 
 #==============================================================================
+# Define the release rule, to compile everything on RELEASE mode (it's done in
+# quite an ugly way.... =/)
+#==============================================================================
+release: MKDIRS
+	# Remove all old binaries
+	make clean
+	# Compile everything in release mode
+	make RELEASE=yes fast
+	# Remove all debug info from the binaries
+	strip $(BINDIR)/$(TARGET).a
+	strip $(BINDIR)/$(TARGET).$(MNV)
+	# Delete all .o to recompile as debug
+	rm -f $(OBJS)
+	# Recompile the lib with debug info
+	make DEBUG=yes fast
+	date
+#==============================================================================
+
+#==============================================================================
 # Rule for building the static lib
 #==============================================================================
 static: MKDIRS $(BINDIR)/$(TARGET).a
@@ -182,6 +201,83 @@ shared: MKDIRS $(BINDIR)/$(TARGET).$(MNV)
 # Rule for building tests
 #==============================================================================
 tests: MKDIRS shared $(TEST_BIN)
+#==============================================================================
+
+#==============================================================================
+# Rule for installing the library
+#==============================================================================
+ifeq ($(OS), Win)
+  install: release
+	# Create destiny directories
+	mkdir -p /c/c_synth/lib/
+	mkdir -p /c/c_synth/include/c_synth
+	# Copy every shared lib (normal, optmized and debug)
+	cp -f $(BINDIR)/$(TARGET)*.$(MNV) /c/c_synth/lib
+	# -P = don't follow sym-link
+	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) /c/c_synth/lib
+	cp -fP $(BINDIR)/$(TARGET)*.$(SO) /c/c_synth/lib
+	# Copy the headers
+	cp -rf ./include/c_synth/* /c/c_synth/include/c_synth
+else
+  install: release
+	# Create destiny directories
+	mkdir -p $(LIBPATH)/c_synth
+	mkdir -p $(HEADERPATH)/c_synth
+	# Copy every shared lib (normal, optmized and debug)
+	cp -f $(BINDIR)/$(TARGET)*.$(MNV) $(LIBPATH)/c_synth
+	# -P = don't follow sym-link
+	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) $(LIBPATH)/c_synth
+	cp -fP $(BINDIR)/$(TARGET)*.$(SO) $(LIBPATH)/c_synth
+	# Copy the static lib
+	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)/c_synth
+	# Copy the headers
+	cp -rf ./include/c_synth/* $(HEADERPATH)/c_synth
+	# Make the lib be automatically found
+	echo "$(LIBPATH)/c_synth" > /etc/ld.so.conf.d/c_synth.conf
+	# Update the paths
+	ldconfig
+endif
+#==============================================================================
+
+#==============================================================================
+# Rule for uninstalling the library
+#==============================================================================
+ifeq ($(OS), Win)
+  uninstall:
+	# Remove the libraries
+	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(MNV)
+	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(MJV)
+	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(SO)
+	rm -f /c/c_synth/lib/$(TARGET).$(MNV)
+	rm -f /c/c_synth/lib/$(TARGET).$(MJV)
+	rm -f /c/c_synth/lib/$(TARGET).$(SO)
+	# Remove the headers
+	rm -rf /c/c_synth/include/*
+	# Remove its directories
+	rmdir /c/c_synth/lib/
+	rmdir /c/c_synth/include/
+	rmdir /c/c_synth/
+else
+  uninstall:
+	# Remove the libraries
+	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(MNV)
+	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(MJV)
+	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(SO)
+	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.a
+	rm -f $(LIBPATH)/c_synth/$(TARGET).$(MNV)
+	rm -f $(LIBPATH)/c_synth/$(TARGET).$(MJV)
+	rm -f $(LIBPATH)/c_synth/$(TARGET).$(SO)
+	rm -f $(LIBPATH)/c_synth/$(TARGET).a
+	# Remove the headers
+	rm -rf $(HEADERPATH)/c_synth/*
+	# Remove its directories
+	rmdir $(LIBPATH)/c_synth
+	rmdir $(HEADERPATH)/c_synth
+	# Remove the lib from the default path
+	rm /etc/ld.so.conf.d/c_synth.conf
+	# Update the paths
+	ldconfig
+endif
 #==============================================================================
 
 #==============================================================================
@@ -243,6 +339,14 @@ MKDIRS: | $(OBJDIR)
 # possible)
 #==============================================================================
 fast:
+	make -j $(CORES) static shared
+#==============================================================================
+
+#==============================================================================
+# Build everything as fast as possible (and using as many cores/threads as
+# possible)
+#==============================================================================
+fast_all:
 	make -j $(CORES) static shared && make -j $(CORES)
 #==============================================================================
 
