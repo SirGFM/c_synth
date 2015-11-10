@@ -15,7 +15,7 @@ w2 o3 l4 k5 q60 h65 v(35, 20)
 
 >
 
-[a+]4 
+[a+]4 $
 [a+]4 [g+]4 [f+]4 [g+]4
 [a+]4 [g+]4 [f+]4 [g+]4
 [a+]3a+8a+8 [g+]3g+8g+8 [f+]3f+8f+8 [g+]3g+8g+8
@@ -29,7 +29,7 @@ w2 o3 l4 k5 q60 h65 v(35, 20)
 
 w2 o3 l4 k5 q60 h65 v(30, 15)
 
-[f]4 
+[f]4 $
 [f]4 [d+]4 [c+]4 [d+]4
 [f]4 [d+]4 [c+]4 [d+]4
 [f]3f8f8 [d+]3d+8d+8 [c+]3c+8c+8 [d+]3d+8d+8
@@ -43,7 +43,7 @@ w2 o3 l4 k5 q60 h65 v(30, 15)
 
 w0 k3 q70 h80 o5 l4 v(40, 10)
 
-r1
+r1 $
 
 l4
 a+1
@@ -77,7 +77,7 @@ l8
 
 w0 k3 q70 h80 o5 l4 v(40, 10)
 
-r1
+r1 $
 
 f1
 g+1
@@ -87,7 +87,9 @@ a+2. r
 f1
 g+1
 g+1
-a+2. r
+a+2.
+
+[r1]8 r
 
 ; //============================================================================
 
@@ -101,13 +103,13 @@ w6 l16 v64
 // H = o8k3q10h35 g 
 // C = o7k3q12h80 b 
 
-r1
+r1 $
 [o7k3q12h80 b4  o8k3q10h35 g rrr o8k3q10h35 g rrr o8k3q10h35 g rrr]7
 o7k3q12h80 b4  o8k3q10h35 g rrr o8k3q10h35 g rrr o8k3q10h35 g r o8k3q10h35 g r
 
 [o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r
  o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g r]7
-o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g rrr o8k3q10h35 g rrr o7k3q12h80 b4 r
+o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g o8k3q10h35 g  o8k3q10h35 g rrr o8k3q10h35 g rrr o7k3q12h80 b4
 
 ; //============================================================================
 
@@ -120,7 +122,9 @@ l16 v128 k3 q20
 // K = w10o3h80c
 // S = w8o6h0d
 
-[r1]9
+r1 $
+
+[r1]8
 
 [rr w8o6h0d r rr w8o6h0d r  w10o3h80c r w10o3h80c r  w10o3h80c rrr]7
 rrrr rrrr rr w10o3h80c r rrrr
