@@ -30,11 +30,6 @@ endif
          $(OBJDIR)/synth_prng.o      \
          $(OBJDIR)/synth_track.o     \
          $(OBJDIR)/synth_volume.o
-         #$(OBJDIR)/synth_audiolist.o \
-         #$(OBJDIR)/synth_buffer.o    \
-         #$(OBJDIR)/synth_cache.o     \
-         #$(OBJDIR)/synth_prng.o      \
-         #$(OBJDIR)/synth_thread.o    \
 #===============================================================================
 
 #===============================================================================
