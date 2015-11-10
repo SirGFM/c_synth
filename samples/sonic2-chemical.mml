@@ -7,24 +7,24 @@ MML//=========================================================================//
 
 t140
 
-w5 l16 q12 v64 // Hi-hat
+w6 l16 q12 v20 o7 k3 q12 h80 // Hi-hat
 $ g r g g g r g g g r g g g r g g
 g r g g g r g g g r g g g g g g;
 
-w5 l16 q12 v96 // Kick+snare
-[[<g> r r r b r <g> r r <g> r r b r <g> r]3
-<g> r r r b r <g> r r <g> b r b r b b]2
+l16 v20 k3 q20 // Kick(w10o3h80c) + snare(w8o6h0d)
+[[w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c r r w8o6h0d r w10o3h80c r]3
+w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c w8o6h0d r w8o6h0d r w8o6h0d w8o6h0d]2
 $
-[[<g> r r r b r <g> r r <g> r r b r <g> r]3
-<g> r r r b r <g> r r <g> b r b r b b]3
-[<g> r r r b r <g> r r <g> r r b r <g> r]3
-<g> r r r b r <g> r b b b b b b b b
-[[<g> r r r b r <g> r r <g> r r b r <g> r]3
-<g> r r r b r <g> r r <g> b r b r b b]2
-[<g> r r r b r <g> r r <g> r r b r <g> r]3
-<g> r r r b r <g> r b b b b b b b b;
+[[w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c r r w8o6h0d r w10o3h80c r]3
+w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c w8o6h0d r w8o6h0d r w8o6h0d w8o6h0d]3
+[w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c r r w8o6h0d r w10o3h80c r]3
+w10o3h80c r r r w8o6h0d r w10o3h80c r w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d
+[[w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c r r w8o6h0d r w10o3h80c r]3
+w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c w8o6h0d r w8o6h0d r w8o6h0d w8o6h0d]2
+[w10o3h80c r r r w8o6h0d r w10o3h80c r r w10o3h80c r r w8o6h0d r w10o3h80c r]3
+w10o3h80c r r r w8o6h0d r w10o3h80c r w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d;
 
-w3 l16 v64 o5 // Main chord 1
+w3 l16 v16 o5 // Main chord 1
 [f+ r r r f+8. f+ r4. f+ f+
 r r f+ f+ r r f+ q100 g+2 q75 r
 f+ r r r f+8. f+ r1.]
@@ -38,7 +38,7 @@ r1]4
 v64
 [a8 g+8 a8 g+ a8 a g+8 a8 g+8]4;
 
-w3 l16 v128 o5 // Main chord 2
+w3 l16 v18 o5 // Main chord 2
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
 a r r r a8. a r1.]
@@ -52,7 +52,7 @@ r1]4
 r1
 [c+8 b8 c+8 b c+8 c+ b8 c+8 b8]3;
 
-w3 l16v16o7 // Main chord 3
+w3 l16v10o7 // Main chord 3
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
 a r r r a8. a r1.]
@@ -68,13 +68,13 @@ r1
 v64
 >[f+8 e8 f+8 e f+8 f+ e8 f+8 e8];
 
-w3 l16v64o7 // Main chord 4
+w3 l16v16o7 // Main chord 4
 [r1]8
 $
 [r1]27
 c+8 b8 c+8 b c+8 c+ b8 c+8 b8;
 
-w2 l16v96o4q75 // Twiddles
+w2 l16v48o4q75 // Twiddles
 [r2 r r f+ c+ e f+ r r
 r1]3
 r2 r r f+ c+ e f+ r r
@@ -96,7 +96,7 @@ f+ r2...
   q75]
 [r1]12;
 
-w4 l8v64o3q75 // Distorted bass
+w4 l8v36o3q75 // Distorted bass
 [r1]3
 f+16 d+4.. e e e+ e+
 f+ f+4 f+ f+ f+4 f+
@@ -137,7 +137,7 @@ e4 f4 f+4 r4
 [r1]4
 r2 a16 <a16> a16 <a16> g+16 <g+16> g16 <g16>;
 
-w2 l16v128o5 // Melody
+w2 l16v48o5 // Melody
 [r1]7
 r2. r8 f+ a
 $
