@@ -5,9 +5,9 @@
  * 
  * @file tst/tst_compileSong.c
  */
-#include <synth/synth.h>
-#include <synth/synth_assert.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth.h>
+#include <c_synth/synth_assert.h>
+#include <c_synth/synth_errors.h>
 
 #include <stdio.h>
 #include <string.h>

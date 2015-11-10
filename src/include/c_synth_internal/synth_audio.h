@@ -1,13 +1,13 @@
 /**
- * @file src/include/synth_internal/synth_audio.h
+ * @file src/include/c_synth_internal/synth_audio.h
  */
 #ifndef __SYNTH_INTERNAL_AUDIO_H__
 #define __SYNTH_INTERNAL_AUDIO_H__
 
-#include <synth/synth.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_types.h>
+#include <c_synth_internal/synth_types.h>
 
 /**
  * Initialize a new audio, so a song can be compiled into it

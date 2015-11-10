@@ -4,7 +4,7 @@
 #ifndef __SYNTH_PARSER_H__
 #define __SYNTH_PARSER_H__
 
-#include <synth_internal/synth_types.h>
+#include <c_synth_internal/synth_types.h>
 
 /**
  * Initialize the parser

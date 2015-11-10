@@ -1,15 +1,15 @@
 /**
  * @file src/synth_audio.c
  */
-#include <synth/synth.h>
-#include <synth/synth_assert.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth.h>
+#include <c_synth/synth_assert.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_audio.h>
-#include <synth_internal/synth_lexer.h>
-#include <synth_internal/synth_parser.h>
-#include <synth_internal/synth_types.h>
-#include <synth_internal/synth_track.h>
+#include <c_synth_internal/synth_audio.h>
+#include <c_synth_internal/synth_lexer.h>
+#include <c_synth_internal/synth_parser.h>
+#include <c_synth_internal/synth_types.h>
+#include <c_synth_internal/synth_track.h>
 
 #include <stdlib.h>
 #include <string.h>

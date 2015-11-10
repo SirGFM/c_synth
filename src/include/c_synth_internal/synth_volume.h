@@ -14,9 +14,9 @@
 #ifndef __SYNTH_VOLUME_H__
 #define __SYNTH_VOLUME_H__
 
-#include <synth/synth_errors.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_types.h>
+#include <c_synth_internal/synth_types.h>
 
 /**
  * Retrieve a constant volume

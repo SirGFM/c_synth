@@ -6,11 +6,11 @@
 #ifndef __SYNTH_NOTE_H__
 #define __SYNTH_NOTE_H__
 
-#include <synth/synth.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_types.h>
-#include <synth_internal/synth_volume.h>
+#include <c_synth_internal/synth_types.h>
+#include <c_synth_internal/synth_volume.h>
 
 /**
  * Retrieve a new note pointer, so it can be later initialized

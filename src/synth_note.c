@@ -2,13 +2,13 @@
  * 
  * @file src/synth_note.c
  */
-#include <synth/synth_assert.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth_assert.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_note.h>
-#include <synth_internal/synth_prng.h>
-#include <synth_internal/synth_types.h>
-#include <synth_internal/synth_volume.h>
+#include <c_synth_internal/synth_note.h>
+#include <c_synth_internal/synth_prng.h>
+#include <c_synth_internal/synth_types.h>
+#include <c_synth_internal/synth_volume.h>
 
 #include <stdlib.h>
 #include <string.h>

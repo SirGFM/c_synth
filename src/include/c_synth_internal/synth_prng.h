@@ -7,8 +7,8 @@
 #ifndef __SYNTH_PRNG_H__
 #define __SYNTH_PRNG_H__
 
-#include <synth/synth_errors.h>
-#include <synth_internal/synth_types.h>
+#include <c_synth/synth_errors.h>
+#include <c_synth_internal/synth_types.h>
 
 /**
  * (Re)Initialize the Pseudo-random number generator with the desired seed

@@ -6,10 +6,10 @@
 #ifndef __SYNTH_TRACK_H__
 #define __SYNTH_TRACK_H__
 
-#include <synth/synth.h>
-#include <synth/synth_errors.h>
+#include <c_synth/synth.h>
+#include <c_synth/synth_errors.h>
 
-#include <synth_internal/synth_types.h>
+#include <c_synth_internal/synth_types.h>
 
 /**
  * Retrieve a new track (alloc it as possible and necessary)

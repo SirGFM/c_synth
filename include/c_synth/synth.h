@@ -43,7 +43,7 @@ typedef enum enSynthBufMode synthBufMode;
 #ifndef __SYNTH_H__
 #define __SYNTH_H__
 
-#include <synth/synth_errors.h>
+#include <c_synth/synth_errors.h>
 
 /**
  * Retrieve the total size for a context
