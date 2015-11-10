@@ -1040,8 +1040,36 @@ synth_err synth_renderSong(char *pBuf, synthCtx *pCtx, int handle,
             }
         }
 
-        /* TODO If the track did overflow at any point, halve all of it */
+        /* If the track did overflow at any point, halve all of it */
         if (didOverflow) {
+            int i;
+
+            i = 0;
+            while (i < maxLen * numBytes) {
+
+                /* Halve the lower byte */
+                pBuf[i] >>= 1;
+                /* Check if an underflow may happen */
+                if (mode & SYNTH_16BITS) {
+                    /* Set the highest bit, if an underflow will happen */
+                    pBuf[i] |= (pBuf[i + 1] & 1) << 8;
+                    /* Halve the higher byte */
+                    pBuf[i + 1] >>= 1;
+
+                    /* If the number was signed and negative, set its bit */
+                    if ((mode & SYNTH_SIGNED) && (pBuf[i + 1] & 0x40)) {
+                        pBuf[i + 1] |= 0x80;
+                    }
+                    i += 2;
+                }
+                else {
+                    /* If the number was signed and negative, set its bit */
+                    if ((mode & SYNTH_SIGNED) && (pBuf[i] & 0x40)) {
+                        pBuf[i] |= 0x80;
+                    }
+                    i++;
+                }
+            }
         }
 
         i++;
