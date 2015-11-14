@@ -505,6 +505,7 @@ int main(int argc, char *argv[]) {
 
     /* Set the audio specs according to the requested ones */
     wanted.freq = freq;
+    wanted.samples = 4096;
 
     if (mode & SYNTH_1CHAN) {
         wanted.channels = 1;
@@ -512,6 +513,8 @@ int main(int argc, char *argv[]) {
     else if (mode & SYNTH_2CHAN) {
         wanted.channels = 2;
     }
+
+    wanted.samples *= wanted.channels;
 
     if ((mode & SYNTH_8BITS) && (mode & SYNTH_UNSIGNED)) {
         wanted.format = AUDIO_U8;
@@ -574,6 +577,10 @@ __err:
             i++;
         }
         free(ppBufs);
+    }
+
+    if (pBufLens) {
+        free(pBufLens);
     }
 
     printf("Exiting...\n");

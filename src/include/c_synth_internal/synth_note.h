@@ -117,11 +117,11 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
 /**
  * Set the volume envelop
  * 
- * @param  [ in]pNote The note
- * @param  [ in]pVol  The volume
- * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * @param  [ in]pNote  The note
+ * @param  [ in]volume The volume
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setVolume(synthNote *pNote, synthVolume *pVol);
+synth_err synthNote_setVolume(synthNote *pNote, int volume);
 
 /**
  * Check if the note is a loop point

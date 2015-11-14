@@ -190,11 +190,13 @@ synth_err synth_free(synthCtx **ppCtx) {
     if ((*ppCtx)->notes.buf.pNotes) {
         free((*ppCtx)->notes.buf.pNotes);
     }
+    if ((*ppCtx)->volumes.buf.pVolumes) {
+        free((*ppCtx)->volumes.buf.pVolumes);
+    }
     (*ppCtx)->songs.buf.pAudios = 0;
     (*ppCtx)->tracks.buf.pTracks = 0;
     (*ppCtx)->notes.buf.pNotes = 0;
-
-    /* TODO Clean everything else */
+    (*ppCtx)->volumes.buf.pVolumes = 0;
 
     /* Finally, dealloc the struct itself */
     free(*ppCtx);
@@ -740,10 +742,10 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
                 dst = pBuf[j] & 0xff;
 
                 if (src & 0x80) {
-                    src |= (0xffffffff << 32) | (0xffffff00);
+                    src |= 0xffffff00;
                 }
                 if (dst & 0x80) {
-                    dst |= (0xffffffff << 32) | (0xffffff00);
+                    dst |= 0xffffff00;
                 }
 
                 dst += src;
@@ -780,10 +782,10 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
                 dst = (pBuf[j] & 0xff) | ((pBuf[j + 1] << 8) & 0xff00);
 
                 if (src & 0x8000) {
-                    src |= (0xffffffff << 32) | (0xffff0000);
+                    src |= 0xffff0000;
                 }
                 if (dst & 0x8000) {
-                    dst |= (0xffffffff << 32) | (0xffff0000);
+                    dst |= 0xffff0000;
                 }
 
                 dst += src;
@@ -830,16 +832,16 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
                 r_dst = pBuf[j + 1] & 0xff;
 
                 if (l_src & 0x80) {
-                    l_src |= (0xffffffff << 32) | (0xffffff00);
+                    l_src |= 0xffffff00;
                 }
                 if (r_src & 0x80) {
-                    r_src |= (0xffffffff << 32) | (0xffffff00);
+                    r_src |= 0xffffff00;
                 }
                 if (l_dst & 0x80) {
-                    l_dst |= (0xffffffff << 32) | (0xffffff00);
+                    l_dst |= 0xffffff00;
                 }
                 if (r_dst & 0x80) {
-                    r_dst |= (0xffffffff << 32) | (0xffffff00);
+                    r_dst |= 0xffffff00;
                 }
 
                 l_dst += l_src;
@@ -893,16 +895,16 @@ static synth_bool synth_accumulateSongTrack(char *pBuf, char *pTmp,
                 r_dst = (pBuf[j + 2] & 0xff) | ((pBuf[j + 3] << 8) & 0xff00);
 
                 if (l_src & 0x8000) {
-                    l_src |= (0xffffffff << 32) | (0xffff0000);
+                    l_src |= 0xffff0000;
                 }
                 if (r_src & 0x8000) {
-                    r_src |= (0xffffffff << 32) | (0xffff0000);
+                    r_src |= 0xffff0000;
                 }
                 if (l_dst & 0x8000) {
-                    l_dst |= (0xffffffff << 32) | (0xffff0000);
+                    l_dst |= 0xffff0000;
                 }
                 if (r_dst & 0x8000) {
-                    r_dst |= (0xffffffff << 32) | (0xffff0000);
+                    r_dst |= 0xffff0000;
                 }
 
                 l_dst += l_src;

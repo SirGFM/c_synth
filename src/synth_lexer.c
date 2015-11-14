@@ -640,12 +640,13 @@ static synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
     /* Clean the current value so we can return as many characters as were
      * read, on error */
     pCtx->ivalue = 0;
+    c = '\0'; /* Avoids valgrind warning */
 
     /* Get the current character */
     srv = synthLexer_getChar(&c, pCtx);
     /* It's OK to reach the end of the stream, if the '.' is the last char */
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
-        , SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS,
+        SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c == '.', SYNTH_FALSE);
 
     /* Read as many '.' as there are on the stream, adding half the duration
@@ -661,8 +662,8 @@ static synth_bool synthLexer_isDotDuration(synthLexCtx *pCtx) {
 
         /* Read the next character before looping */
         srv = synthLexer_getChar(&c, pCtx);
-        SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
-            , SYNTH_FALSE);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF ||
+            srv == SYNTH_EOS, SYNTH_FALSE);
 
         /* Also stop if the source finished */
         if (srv == SYNTH_EOF || srv == SYNTH_EOS) {
@@ -707,12 +708,13 @@ static synth_bool synthLexer_isNumber(synthLexCtx *pCtx) {
     /* Clean the current value so we can return as many characters as were
      * read, on error */
     pCtx->ivalue = 0;
+    c = '\0'; /* Avoids valgrind warning */
     
     /* Get the current character */
     srv = synthLexer_getChar(&c, pCtx);
     /* It's OK to reach the end of the stream, if a digit is the last char */
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS
-        , SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK || srv == SYNTH_EOF || srv == SYNTH_EOS,
+        SYNTH_FALSE);
     SYNTH_ASSERT_ERR(c >= '0' && c <= '9', SYNTH_FALSE);
     
     /* Get the integer part */

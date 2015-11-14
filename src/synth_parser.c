@@ -73,7 +73,7 @@ static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx)
     pParser->release = 0;
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
-    rv = synthVolume_getConst(&(pParser->pVolume), pCtx, 64);
+    rv = synthVolume_getConst(&(pParser->volume), pCtx, 64);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
@@ -408,7 +408,7 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
             pParser->release);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setVolume(pNote, pParser->pVolume);
+    rv = synthNote_setVolume(pNote, pParser->volume);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     rv = SYNTH_OK;
@@ -532,13 +532,13 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
                 SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
 
                 /* Initialize/Search the volume */
-                rv = synthVolume_getLinear(&(pParser->pVolume), pCtx, vol1,
+                rv = synthVolume_getLinear(&(pParser->volume), pCtx, vol1,
                         vol2);
                 SYNTH_ASSERT(rv == SYNTH_OK);
             }
             else {
                 /* Simply initialize/search the constant volume */
-                rv = synthVolume_getConst(&(pParser->pVolume), pCtx, vol1);
+                rv = synthVolume_getConst(&(pParser->volume), pCtx, vol1);
                 SYNTH_ASSERT(rv == SYNTH_OK);
             }
             SYNTH_ASSERT(rv == SYNTH_OK);
@@ -738,7 +738,7 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
     while (synthParser_isSequence(pCtx) == SYNTH_TRUE) {
         synth_token token;
 
-        synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Anything not a note or loop will be parsed as mod */

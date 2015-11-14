@@ -34,7 +34,7 @@
   LIBNAME := lCSynth
   MAJOR_VERSION := 1
   MINOR_VERSION := 0
-  REV_VERSION   := 0
+  REV_VERSION   := 1
 # If the DEBUG flag was set, generate another binary (so it doesn't collide
 # with the release one)
   ifeq ($(DEBUG), yes)
@@ -286,13 +286,9 @@ endif
 #==============================================================================
 ifeq ($(OS), Win)
   uninstall:
-	# Remove the libraries
-	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(MNV)
-	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(MJV)
-	rm -f /c/c_synth/lib/$(TARGET)_dbg.$(SO)
-	rm -f /c/c_synth/lib/$(TARGET).$(MNV)
-	rm -f /c/c_synth/lib/$(TARGET).$(MJV)
-	rm -f /c/c_synth/lib/$(TARGET).$(SO)
+	# Remove the libraries (account for different versions)
+	rm -f /c/c_synth/lib/$(TARGET)_dbg.*
+	rm -f /c/c_synth/lib/$(TARGET).*
 	# Remove the headers
 	rm -rf /c/c_synth/include/*
 	# Remove its directories
@@ -301,15 +297,9 @@ ifeq ($(OS), Win)
 	rmdir /c/c_synth/
 else
   uninstall:
-	# Remove the libraries
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(MNV)
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(MJV)
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.$(SO)
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.a
-	rm -f $(LIBPATH)/c_synth/$(TARGET).$(MNV)
-	rm -f $(LIBPATH)/c_synth/$(TARGET).$(MJV)
-	rm -f $(LIBPATH)/c_synth/$(TARGET).$(SO)
-	rm -f $(LIBPATH)/c_synth/$(TARGET).a
+	# Remove the libraries (account for different versions)
+	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.*
+	rm -f $(LIBPATH)/c_synth/$(TARGET).*
 	# Remove the headers
 	rm -rf $(HEADERPATH)/c_synth/*
 	# Remove its directories
@@ -353,14 +343,14 @@ endif
 # prefixed by 'tst_' and suffixed by 'SDL2')
 #==============================================================================
 $(BINDIR)/tst_%SDL2$(BIN_EXT): $(OBJDIR)/tst_%SDL2.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME) $(SDL_LFLAGS)
+	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg $(SDL_LFLAGS)
 #==============================================================================
 
 #==============================================================================
 # Rule for compiling a test binary (it's prefixed by 'tst_')
 #==============================================================================
 $(BINDIR)/tst_%$(BIN_EXT): $(OBJDIR)/tst_%.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)
+	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg
 #==============================================================================
 
 #==============================================================================

@@ -23,26 +23,25 @@
  * 
  * If the required volume isn't found, it will be instantiated and returned
  * 
- * @param  [out]ppVol The volume
- * @param  [ in]pCtx  The synthesizer context
- * @param  [ in]amp   The requested amplitude (in the range [0, 255])
- * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ * @param  [out]pVol The index of the volume
+ * @param  [ in]pCtx The synthesizer context
+ * @param  [ in]amp  The requested amplitude (in the range [0, 255])
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp);
+synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp);
 
 /**
  * Retrieve a linear volume
  * 
  * If the required volume isn't found, it will be instantiated and returned
  * 
- * @param  [out]ppVol The volume
+ * @param  [out]pVol The index of the volume
  * @param  [ in]pCtx  The synthesizer context
  * @param  [ in]ini   The initial amplitude (in the range [0, 255])
  * @param  [ in]fin   The final amplitude (in the range [0, 255])
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
-        int fin);
+synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin);
 
 /**
  * Retrieve the volume at a given percentage of a note

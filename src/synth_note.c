@@ -302,18 +302,18 @@ __err:
 /**
  * Set the volume envelop
  * 
- * @param  [ in]pNote The note
- * @param  [ in]pVol  The volume
- * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * @param  [ in]pNote  The note
+ * @param  [ in]volume The volume
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setVolume(synthNote *pNote, synthVolume *pVol) {
+synth_err synthNote_setVolume(synthNote *pNote, int volume) {
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
 
     /* Store the volume */
-    pNote->pVol = pVol;
+    pNote->volume = volume;
 
     rv = SYNTH_OK;
 __err:
@@ -415,11 +415,15 @@ SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
 synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         synthBufMode mode, int synthFreq) {
     int i, noteFreq, numBytes, spc;
+    synthVolume *pVolume;
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    /* Retrieve the note's volume */
+    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->volume]);
 
     /* Calculate the number of bytes per samples */
     numBytes = 1;
@@ -456,7 +460,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         perc = ((float)(i % spc)) / spc;
 
         /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pNote->pVol, i / (float)pNote->len *
+        rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)pNote->len *
                 1024);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 

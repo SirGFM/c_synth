@@ -63,17 +63,17 @@ __err:
  * 
  * If the required volume isn't found, it will be instantiated and returned
  * 
- * @param  [out]ppVol The volume
- * @param  [ in]pCtx  The synthesizer context
- * @param  [ in]amp   The requested amplitude (in the range [0, 128])
- * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ * @param  [out]pVol The index of the volume
+ * @param  [ in]pCtx The synthesizer context
+ * @param  [ in]amp  The requested amplitude (in the range [0, 128])
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp) {
+synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp) {
     int i;
     synth_err rv;
 
     /* Sanitize the arguments */
-    SYNTH_ASSERT_ERR(ppVol, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
     /* Clamp the note to the valid range */
@@ -88,7 +88,7 @@ synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp) {
     amp <<= 8;
 
     /* Clean the return, so we now if anything was found */
-    *ppVol = 0;
+    *pVol = 0;
 
     /* Search for the requested volume through the existing ones */
     i = 0;
@@ -97,20 +97,25 @@ synth_err synthVolume_getConst(synthVolume **ppVol, synthCtx *pCtx, int amp) {
                 pCtx->volumes.buf.pVolumes[i].fin) &&
                 (pCtx->volumes.buf.pVolumes[i].ini == amp)) {
             /* If a volume matched, simply return it */
-            *ppVol = &(pCtx->volumes.buf.pVolumes[i]);
+            *pVol = i;
             break;
         }
         i++;
     }
 
     /* If the volume wasn't found, create a new one */
-    if (*ppVol == 0) {
-        rv = synthVolume_init(ppVol, pCtx);
+    if (*pVol == 0) {
+        synthVolume *pVolume;
+
+        rv = synthVolume_init(&pVolume, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Set both values to the same, since this is a constant volume */
-        (*ppVol)->ini = amp;
-        (*ppVol)->fin = amp;
+        pVolume->ini = amp;
+        pVolume->fin = amp;
+
+        /* Retrieve the volume's index */
+        *pVol = pCtx->volumes.used - 1;
     }
 
     rv = SYNTH_OK;
@@ -123,19 +128,18 @@ __err:
  * 
  * If the required volume isn't found, it will be instantiated and returned
  * 
- * @param  [out]ppVol The volume
- * @param  [ in]pCtx  The synthesizer context
- * @param  [ in]ini   The initial amplitude (in the range [0, 255])
- * @param  [ in]fin   The final amplitude (in the range [0, 255])
- * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
+ * @param  [out]pVol The index of the volume
+ * @param  [ in]pCtx The synthesizer context
+ * @param  [ in]ini  The initial amplitude (in the range [0, 255])
+ * @param  [ in]fin  The final amplitude (in the range [0, 255])
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_MEM_ERR
  */
-synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
-        int fin) {
+synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin) {
     int i;
     synth_err rv;
 
     /* Sanitize the arguments */
-    SYNTH_ASSERT_ERR(ppVol, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
     /* Clamp the note to the valid range */
@@ -153,7 +157,7 @@ synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
     }
 
     /* Clean the return, so we now if anything was found */
-    *ppVol = 0;
+    *pVol = 0;
 
     /* Increase the amplitude to a 16 bits value */
     ini <<= 8;
@@ -165,20 +169,25 @@ synth_err synthVolume_getLinear(synthVolume **ppVol, synthCtx *pCtx, int ini,
         if (pCtx->volumes.buf.pVolumes[i].ini == ini &&
                 pCtx->volumes.buf.pVolumes[i].fin == fin) {
             /* If a volume matched, simply return it */
-            *ppVol = &(pCtx->volumes.buf.pVolumes[i]);
+            *pVol = i;
             break;
         }
         i++;
     }
 
     /* If the volume wasn't found, create a new one */
-    if (*ppVol == 0) {
-        rv = synthVolume_init(ppVol, pCtx);
+    if (*pVol == 0) {
+        synthVolume *pVolume;
+
+        rv = synthVolume_init(&pVolume, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Set both values to the same, since this is a constant volume */
-        (*ppVol)->ini = ini;
-        (*ppVol)->fin = fin;
+        pVolume->ini = ini;
+        pVolume->fin = fin;
+
+        /* Retrieve the volume's index */
+        *pVol = pCtx->volumes.used - 1;
     }
 
     rv = SYNTH_OK;
