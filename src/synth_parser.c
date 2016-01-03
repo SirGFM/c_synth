@@ -73,6 +73,10 @@ static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx)
     pParser->release = 0;
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
+    /* Set the time signature to a whole note ('brevissima'); This should work for any simple time signature (1/4, 2/4, 4/4
+     * etc) */
+    pParser->timeSignature = 1 << 6;
+    pParser->curCompassLength = 0;
     rv = synthVolume_getConst(&(pParser->volume), pCtx, 64);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
@@ -183,6 +187,9 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             case SYNTH_INVALID_WAVE: {
                 pError = "Invalid wave type";
             } break;
+            case SYNTH_COMPASS_OVERFLOW: {
+                pError = "Compass duration overflown";
+            } break;
             default: {
                 pError = "Unkown error";
             }
@@ -237,9 +244,11 @@ __err:
  * 
  * @param  [ in]pParser The parser context
  * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pAudio  The audio
  * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
  */
-static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
+static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
     synth_err rv;
     synth_token token;
 
@@ -255,7 +264,7 @@ static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT_TOKEN(T_NUMBER);
 
         /* Store the retrieved value */
-        rv = synthLexer_getValuei(&(pParser->bpm), &(pCtx->lexCtx));
+        rv = synthLexer_getValuei(&(pAudio->bpm), &(pCtx->lexCtx));
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Get the next token */
@@ -391,6 +400,15 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
+    /* Update the position within the compass */
+    pParser->curCompassLength += duration;
+    SYNTH_ASSERT_ERR(pParser->curCompassLength <= pParser->timeSignature,
+            SYNTH_COMPASS_OVERFLOW);
+    if (pParser->curCompassLength) {
+        /* Reset the compass if we just reached the next one */
+        pParser->curCompassLength = 0;
+    }
+
     /* Retrieve a new note */
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -403,7 +421,7 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setWave(pNote, pParser->wave);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setDuration(pNote, pCtx, pParser->bpm, duration);
+    rv = synthNote_setDuration(pNote, pCtx, duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
             pParser->release);
@@ -931,7 +949,7 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse the bpm (optional token) */
-    rv = synthParser_bpm(pParser, pCtx);
+    rv = synthParser_bpm(pParser, pCtx, pAudio);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse every track in this audio */

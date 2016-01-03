@@ -46,6 +46,9 @@ synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx) {
         pCtx->songs.len += 1 + pCtx->songs.len;
     }
 
+    /* Set the default BPM */
+    pCtx->songs.buf.pAudios[pCtx->songs.used].bpm = 60;
+
     *ppAudio = &(pCtx->songs.buf.pAudios[pCtx->songs.used]);
     pCtx->songs.used++;
     rv = SYNTH_OK;

@@ -73,7 +73,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setOctave(*ppNote, 4);
     synthNote_setWave(*ppNote, W_SQUARE);
     synthNote_setNote(*ppNote, N_A);
-    synthNote_setDuration(*ppNote, pCtx, 60, 4);
+    synthNote_setDuration(*ppNote, pCtx, 4);
     synthNote_setKeyoff(*ppNote, 0, 75, 0);
     synthNote_setVolume(*ppNote, 0);
 
@@ -194,29 +194,29 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE,
  */
 SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
 
+/* TODO Finish 'synthNote_getDurationSamples' */
+#if 0
 /**
- * Set the note duration
- * 
- * NOTE: The duration is stored in samples
- * 
- * @param [ in]pNote    The note
- * @param [ in]pCtx     The synthesizer context
- * @param [ in]bpm      The song's speed in beats-per-minute
- * @param [ in]duration Bitfield for the duration. Each bit represents a
- *                      fraction of the duration;
- * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ * Retrieve the duration of a note in samples
+ *
+ * NOTE: The number of samples may vary if this note completes a compass
+ *
+ * @param [out]pDuration The duration of the note, in samples
+ * @param [ in]pNote     The note
+ * @param [ in]pCtx      The synthesizer context
+ * @param [ in]bpm       The song's speed in beats-per-minute
  */
-synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
-        int duration) {
+static synth_err synthNote_getDurationSamples(int *pDuration, synthNote *pNote,
+        synthCtx *pCtx, int bpm) {
     double nSamples;
-    int freq, len;
+    int duration, freq, len;
     synth_err rv;
 
     /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pDuration, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(bpm > 0, SYNTH_BAD_PARAM_ERR);
-    SYNTH_ASSERT_ERR(duration > 0, SYNTH_BAD_PARAM_ERR);
 
     /* Store the synthesizer frequency */
     freq = pCtx->frequency;
@@ -228,6 +228,7 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
 
     /* Accumulate the note's duration in samples */
     len = 0;
+    duration = pNote->duration;
     while (duration > 0) {
         if ((duration & 1) == 1) {
             /* Accumulate this duration, remembering to transform from
@@ -240,8 +241,48 @@ synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
         nSamples *= 0.5;
     }
 
-    /* Store the calculated duration */
-    pNote->len = len;
+    /* TODO Check if this note would complete a compass and round the number of
+     * samples */
+
+    *pDuration = len;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+#endif
+
+/**
+ * Set the note duration
+ * 
+ * NOTE: The duration is stored in samples
+ * 
+ * @param [ in]pNote    The note
+ * @param [ in]pCtx     The synthesizer context
+ * @param [ in]duration Bitfield for the duration. Each bit represents a
+ *                      fraction of the duration;
+ * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx,
+        int duration) {
+    int bit;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(duration > 0, SYNTH_BAD_PARAM_ERR);
+
+    /* Invert the bits of the duration */
+    pNote->duration = 0;
+    bit = 6;
+    while (duration != 0) {
+        if (duration & 1) {
+            pNote->duration |= 1 << bit;
+        }
+
+        duration >>= 1;
+        bit--;
+    }
 
     rv = SYNTH_OK;
 __err:
@@ -363,13 +404,13 @@ __err: \
   }
 
 /**
- * Retrieve the note duration, in samples
+ * Retrieve the note duration, in binary fixed point notation
  * 
  * @param  [out]pVal  The duration
  * @param  [ in]pNote The note
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_GETTER(synthNote_getDuration, int, len, 0)
+SYNTHNOTE_GETTER(synthNote_getDuration, int, duration, 0)
 
 /**
  * Retrieve the panning of the note, where 0 means completely on the left
