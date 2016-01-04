@@ -190,6 +190,15 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             case SYNTH_COMPASS_OVERFLOW: {
                 pError = "Compass duration overflown";
             } break;
+            case SYNTH_BAD_LOOP_START: {
+                pError = "Loop start didn't sync with compass start";
+            } break;
+            case SYNTH_BAD_LOOP_END: {
+                pError = "Loop end didn't sync with compass end";
+            } break;
+            case SYNTH_BAD_LOOP_POINT: {
+                pError = "Loop point didn't sync with compass start";
+            } break;
             default: {
                 pError = "Unkown error";
             }
@@ -400,15 +409,6 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
-    /* Update the position within the compass */
-    pParser->curCompassLength += duration;
-    SYNTH_ASSERT_ERR(pParser->curCompassLength <= pParser->timeSignature,
-            SYNTH_COMPASS_OVERFLOW);
-    if (pParser->curCompassLength) {
-        /* Reset the compass if we just reached the next one */
-        pParser->curCompassLength = 0;
-    }
-
     /* Retrieve a new note */
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -428,6 +428,16 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setVolume(pNote, pParser->volume);
     SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Update the position within the compass */
+    rv = synthNote_getDuration(&duration, pNote);
+    pParser->curCompassLength += duration;
+    SYNTH_ASSERT_ERR(pParser->curCompassLength <= pParser->timeSignature,
+            SYNTH_COMPASS_OVERFLOW);
+    if (pParser->curCompassLength == pParser->timeSignature) {
+        /* Reset the compass if we just reached the next one */
+        pParser->curCompassLength = 0;
+    }
 
     rv = SYNTH_OK;
 __err:
@@ -678,6 +688,8 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     /* We're sure to have this token, but... */
     SYNTH_ASSERT_TOKEN(T_SET_LOOP_START);
+    /* As in music scores, loops must sync with the compass */
+    SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_START);
 
     /* Set basic loop count to 2 (default) */
     count = 2;
@@ -699,6 +711,8 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     /* Afterwards, a loop end must come */
     SYNTH_ASSERT_TOKEN(T_SET_LOOP_END);
+    /* Again, a compass must have just ended */
+    SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_END);
 
     /* Get the next token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
@@ -833,6 +847,8 @@ static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_SET_LOOPPOINT) {
+        /* Loop point must be found on compass start */
+        SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_POINT);
         /* Set the current position into the track as the looppoint */
         pTrack->loopPoint = numNotes;
 
