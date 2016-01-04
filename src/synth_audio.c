@@ -48,6 +48,9 @@ synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx) {
 
     /* Set the default BPM */
     pCtx->songs.buf.pAudios[pCtx->songs.used].bpm = 60;
+    /* Set the time signature to a whole note ('brevissima'); This should work
+     * for any simple time signature (1/4, 2/4, 4/4 etc) */
+    pCtx->songs.buf.pAudios[pCtx->songs.used].timeSignature = 1 << 6;
 
     *ppAudio = &(pCtx->songs.buf.pAudios[pCtx->songs.used]);
     pCtx->songs.used++;

@@ -73,8 +73,8 @@ static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx)
     pParser->release = 0;
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
-    /* Set the time signature to a whole note ('brevissima'); This should work for any simple time signature (1/4, 2/4, 4/4
-     * etc) */
+    /* Set the time signature to a whole note ('brevissima'); This should work
+     * for any simple time signature (1/4, 2/4, 4/4 etc) */
     pParser->timeSignature = 1 << 6;
     pParser->curCompassLength = 0;
     rv = synthVolume_getConst(&(pParser->volume), pCtx, 64);

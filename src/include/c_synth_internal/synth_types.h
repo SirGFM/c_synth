@@ -227,6 +227,9 @@ struct stSynthParserCtx {
 
 /** Struct with data about the currently rendering song/track */
 struct stSynthRendererCtx {
+    int samplesPerCompass;
+    synthAudio *pAudio;
+    synthTrack *pTrack;
 };
 
 /** Defines the types of noise wave generators */
@@ -340,6 +343,8 @@ struct stSynthAudio {
     int num;
     /** Song's 'speed' in beats-per-minute */
     int bpm;
+    /** Song's time signature */
+    int timeSignature;
 };
 
 /** Define a track, which is almost simply a sequence of notes */
