@@ -878,6 +878,8 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
                 /* Simply parse the current note */
                 rv = synthParser_note(&numNotes, pParser, pCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
                 *pNumNotes += numNotes;
             } break;
             case T_SET_LOOP_START:

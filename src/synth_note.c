@@ -399,7 +399,8 @@ SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
  */
 synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         synthBufMode mode, int synthFreq, int duration) {
-    int attack, i, keyoff, noteFreq, numBytes, release, spc;
+    float attack, keyoff, release;
+    int i, noteFreq, numBytes, spc;
     synthVolume *pVolume;
     synth_err rv;
 
@@ -433,9 +434,9 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     spc = synthFreq / noteFreq;
 
     /* Calculate the note asdasd in samples */
-    attack = duration * pNote->attack / 100;
-    keyoff = duration * pNote->keyoff / 100;
-    release = duration * pNote->release / 100;
+    attack = duration * pNote->attack / 100.0f;
+    keyoff = duration * pNote->keyoff / 100.0f;
+    release = duration * pNote->release / 100.0f;
 
     /* Synthesize the note audio */
     i = 0;
@@ -447,21 +448,21 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         /* TODO Rewrite this loop without using floats */
 
         /* Calculate the percentage of the note into the current cycle */
-        perc = ((i % spc) * 1000) / spc;
+        perc = ((float)(i % spc)) / spc;
 
         /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pVolume, (i * 1000) / duration *
-                1024 / 1000);
+        rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
+                1024);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
         /* Defines the value that encapsulates the note */
         if (i < attack) {
             /* Varies the value from 0.0f -> 1.0f */
-            clampAmp = i / (float)attack;
+            clampAmp = i / attack;
         }
         else if (i > keyoff) {
             /* Varies the value from 1.0f -> 0.0f */
-            clampAmp = 1.0f - (i - keyoff) / (float)(release - keyoff);
+            clampAmp = 1.0f - (i - keyoff) / (release - keyoff);
         }
         else {
             clampAmp = 1.0f;
@@ -482,7 +483,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
             case W_NOISE_SQUARE:
             case W_SQUARE: {
                 /* 50% duty cycle */
-                if (perc < 500) {
+                if (perc < 0.5f) {
                     waveAmp = 1.0f;
                 }
                 else {
@@ -497,7 +498,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
             case W_NOISE_12_5:
             case W_PULSE_12_5: {
                 /* 12.5% duty cycle */
-                if (perc < 125) {
+                if (perc < 0.125f) {
                     waveAmp = 1.0f;
                 }
                 else {
@@ -512,7 +513,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
             case W_NOISE_25:
             case W_PULSE_25: {
                 /* 25% duty cycle */
-                if (perc < 250) {
+                if (perc < 0.25f) {
                     waveAmp = 1.0f;
                 }
                 else {
@@ -527,7 +528,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
             case W_NOISE_75:
             case W_PULSE_75: {
                 /* 75% duty cycle */
-                if (perc < 750) {
+                if (perc < 0.75f) {
                     waveAmp = 1.0f;
                 }
                 else {
@@ -545,13 +546,13 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                  * positive peak at 0.25% samples and its negative peak at 0.75%
                  * samples */
                 if (mode & SYNTH_SIGNED) {
-                    if (perc < 250) {
+                    if (perc < 0.25f) {
                         waveAmp = 4.0f * perc;
                     }
-                    else if (perc < 500) {
+                    else if (perc < 0.5f) {
                         waveAmp = 4.0f * (0.5f - perc);
                     }
-                    else if (perc < 750) {
+                    else if (perc < 0.75f) {
                         waveAmp = -4.0f * (perc - 0.5f);
                     }
                     else {
@@ -559,7 +560,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
                     }
                 }
                 else {
-                    if (perc < 500) {
+                    if (perc < 0.5f) {
                         waveAmp = 2.0f * perc;
                     }
                     else {
