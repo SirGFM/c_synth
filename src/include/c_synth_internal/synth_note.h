@@ -177,10 +177,11 @@ synth_err synthNote_getJumpPosition(int *pVal, synthNote *pNote);
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]mode      Desired mode for the wave
  * @param  [ in]synthFreq Synthesizer's frequency
+ * @param  [ in]duration  The note's length in samples
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
-        synthBufMode mode, int synthFreq);
+        synthBufMode mode, int synthFreq, int duration);
 
 #endif /* __SYNTH_NOTE_H__ */
 

@@ -227,9 +227,14 @@ struct stSynthParserCtx {
 
 /** Struct with data about the currently rendering song/track */
 struct stSynthRendererCtx {
+    /** Number of samples per compass */
     int samplesPerCompass;
-    synthAudio *pAudio;
-    synthTrack *pTrack;
+    /** Current length of the compass in samples */
+    int curCompassLength;
+    /** Audio time signature */
+    int timeSignature;
+    /** Current position within the compass */
+    int curCompassPosition;
 };
 
 /** Defines the types of noise wave generators */

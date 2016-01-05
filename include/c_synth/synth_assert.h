@@ -14,8 +14,9 @@
  */
 #define SYNTH_ASSERT(stmt) \
   do { \
-    if (!(stmt)) \
+    if (!(stmt)) { \
       goto __err; \
+    } \
   } while(0)
 
 /**

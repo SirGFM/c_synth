@@ -9,6 +9,7 @@
 
 #include <c_synth_internal/synth_note.h>
 #include <c_synth_internal/synth_track.h>
+#include <c_synth_internal/synth_renderer.h>
 #include <c_synth_internal/synth_types.h>
 
 #include <stdlib.h>
@@ -120,7 +121,8 @@ static synth_err synthTrack_countSample(int *pLen, synthTrack *pTrack,
         }
         else {
             /* Accumulate the note duration */
-            rv = synthNote_getDuration(&tmp, pNote);
+            rv = synthRenderer_getNoteLengthAndUpdate(&tmp, &(pCtx->renderCtx),
+                    pNote);
             SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
             len += tmp;
@@ -330,12 +332,14 @@ static synth_err synthTrack_renderSequence(int *pBytes, char *pBuf,
             i = jumpPosition;
         }
         else {
-            int duration;
+            int duration, durationSamples;
 
             /* Get the note's duration in samples */
-            rv = synthNote_getDuration(&duration, pNote);
+            rv = synthRenderer_getNoteLengthAndUpdate(&durationSamples,
+                    &(pCtx->renderCtx), pNote);
             SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
+            duration = durationSamples;
             /* Convert the number of samples into bytes */
             if (mode & SYNTH_16BITS) {
                 duration *= 2;
@@ -348,7 +352,8 @@ static synth_err synthTrack_renderSequence(int *pBytes, char *pBuf,
             pBuf -= duration;
 
             /* Render the current note */
-            rv = synthNote_render(pBuf, pNote, pCtx, mode, pCtx->frequency);
+            rv = synthNote_render(pBuf, pNote, pCtx, mode, pCtx->frequency, 
+                    durationSamples);
             SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
             /* Update the amount of bytes rendered */

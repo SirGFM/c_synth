@@ -956,6 +956,9 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
+    /* Set the time signature */
+    pAudio->timeSignature = pParser->timeSignature;
+
     /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);

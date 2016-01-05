@@ -1,4 +1,18 @@
 
+#===============================================================================
+# Define every object required by compilation
+#===============================================================================
+  OBJS = $(OBJDIR)/synth.o          \
+         $(OBJDIR)/synth_audio.o    \
+         $(OBJDIR)/synth_lexer.o    \
+         $(OBJDIR)/synth_note.o     \
+         $(OBJDIR)/synth_parser.o   \
+         $(OBJDIR)/synth_prng.o     \
+         $(OBJDIR)/synth_renderer.o \
+         $(OBJDIR)/synth_track.o    \
+         $(OBJDIR)/synth_volume.o
+#===============================================================================
+
 #==============================================================================
 # Select which compiler to use (either gcc or emcc)
 #==============================================================================
@@ -41,19 +55,6 @@
     TARGET := $(TARGET)_dbg
   endif
 #==============================================================================
-
-#===============================================================================
-# Define every object required by compilation
-#===============================================================================
-  OBJS = $(OBJDIR)/synth.o           \
-         $(OBJDIR)/synth_audio.o     \
-         $(OBJDIR)/synth_lexer.o     \
-         $(OBJDIR)/synth_note.o      \
-         $(OBJDIR)/synth_parser.o    \
-         $(OBJDIR)/synth_prng.o      \
-         $(OBJDIR)/synth_track.o     \
-         $(OBJDIR)/synth_volume.o
-#===============================================================================
 
 #===============================================================================
 # Set OS flag
