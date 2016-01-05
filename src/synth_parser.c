@@ -447,11 +447,14 @@ __err:
  * Parsing rule: note = T_NOTE T_NUMBER? T_DURATION?
  *                              (T_EXTEND T_NUMBER T_DURATION?)*
  * 
+ * @param  [out]pNumNotes The number of parsed notes (since extends counts as
+ *                        new notes)
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
  * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
  */
-static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
+static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
     synth_err rv;
     synth_note note;
     synth_token token;
@@ -504,6 +507,7 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
     rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
             duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
+    *pNumNotes = 1;
     while (doExtend != 0 && doExtend != 3) {
         /* The only way to get into this section is through a T_EXTEND */
         SYNTH_ASSERT_TOKEN(T_EXTEND);
@@ -529,6 +533,8 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
         rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
                 duration);
         SYNTH_ASSERT(rv == SYNTH_OK);
+
+        (*pNumNotes)++;
     }
 
     rv = SYNTH_OK;
@@ -867,11 +873,13 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
         /* Anything not a note or loop will be parsed as mod */
         switch (token) {
-            case T_NOTE:
+            case T_NOTE: {
+                int numNotes;
+
                 /* Simply parse the current note */
-                rv = synthParser_note(pParser, pCtx);
-                (*pNumNotes)++;
-            break;
+                rv = synthParser_note(&numNotes, pParser, pCtx);
+                *pNumNotes += numNotes;
+            } break;
             case T_SET_LOOP_START:
                 /* Recursively parse a sub-sequence */
                 rv = synthParser_loop(pNumNotes, pParser, pCtx);
