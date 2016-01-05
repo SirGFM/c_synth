@@ -149,6 +149,7 @@ enum enSynthToken {
     T_NUMBER,
     T_COMMA,
     T_DONE,
+    T_EXTEND,
     TK_MAX
 };
 
