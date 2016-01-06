@@ -48,7 +48,7 @@
   LIBNAME := lCSynth
   MAJOR_VERSION := 1
   MINOR_VERSION := 0
-  REV_VERSION   := 1
+  REV_VERSION   := 2
 # If the DEBUG flag was set, generate another binary (so it doesn't collide
 # with the release one)
   ifeq ($(DEBUG), yes)
