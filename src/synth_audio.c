@@ -8,6 +8,7 @@
 #include <c_synth_internal/synth_audio.h>
 #include <c_synth_internal/synth_lexer.h>
 #include <c_synth_internal/synth_parser.h>
+#include <c_synth_internal/synth_renderer.h>
 #include <c_synth_internal/synth_types.h>
 #include <c_synth_internal/synth_track.h>
 
@@ -45,6 +46,12 @@ synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx) {
         /* Actually increase the buffer length */
         pCtx->songs.len += 1 + pCtx->songs.len;
     }
+
+    /* Set the default BPM */
+    pCtx->songs.buf.pAudios[pCtx->songs.used].bpm = 60;
+    /* Set the time signature to a whole note ('brevissima'); This should work
+     * for any simple time signature (1/4, 2/4, 4/4 etc) */
+    pCtx->songs.buf.pAudios[pCtx->songs.used].timeSignature = 1 << 6;
 
     *ppAudio = &(pCtx->songs.buf.pAudios[pCtx->songs.used]);
     pCtx->songs.used++;
@@ -129,6 +136,48 @@ __err:
 }
 
 /**
+ * Return the audio BPM
+ * 
+ * @param  [out]pBpm   The BPM
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getBpm(int *pBpm, synthAudio *pAudio) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pBpm, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+
+    *pBpm = pAudio->bpm;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Return the audio time signature
+ * 
+ * @param  [out]pTime  The time signature
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTimeSignature(int *pTime, synthAudio *pAudio) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pTime, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+
+    *pTime = pAudio->timeSignature;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Return the number of tracks in a song
  * 
  * @param  [out]pNum   The number of tracks
@@ -168,6 +217,10 @@ synth_err synthAudio_getTrackLength(int *pLen, synthAudio *pAudio,
     /* Check that the track is valid */
     SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
 
+    /* Make sure the renderer is at a compass start */
+    rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
     rv = synthTrack_getLength(pLen, &(pCtx->tracks.buf.pTracks[track]), pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
@@ -194,6 +247,10 @@ synth_err synthAudio_getTrackIntroLength(int *pLen, synthAudio *pAudio,
     SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
     /* Check that the track is valid */
     SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
+
+    /* Make sure the renderer is at a compass start */
+    rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = synthTrack_getIntroLength(pLen, &(pCtx->tracks.buf.pTracks[track]),
             pCtx);
@@ -243,6 +300,10 @@ synth_err synthAudio_renderTrack(char *pBuf, synthAudio *pAudio, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     /* Check that the track is valid */
     SYNTH_ASSERT_ERR(track < pAudio->num, SYNTH_INVALID_INDEX);
+
+    /* Make sure the renderer is at a compass start */
+    rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = synthTrack_render(pBuf, &(pCtx->tracks.buf.pTracks[track]), pCtx,
             mode);

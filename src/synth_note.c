@@ -18,20 +18,20 @@
  * by the number of octaves going down
  */
 static int __synthNote_frequency[] = {
-/* 'Cb' 8 */0xffff,
-/*  C   8 */  4186,
-/*  C#  8 */  4435,
-/*  D   8 */  4699,
-/*  D#  8 */  4978,
-/*  E   8 */  5274,
-/*  F   8 */  5588,
-/*  F#  8 */  5920,
-/*  G   8 */  6272,
-/*  G#  8 */  6645,
-/*  A   8 */  7040,
-/*  A#  8 */  7459,
-/*  B   8 */  7902,
-/* 'B#' 8 */0xffff
+/*  B   7 */ 3951,
+/*  C   8 */ 4186,
+/*  C#  8 */ 4435,
+/*  D   8 */ 4699,
+/*  D#  8 */ 4978,
+/*  E   8 */ 5274,
+/*  F   8 */ 5588,
+/*  F#  8 */ 5920,
+/*  G   8 */ 6272,
+/*  G#  8 */ 6645,
+/*  A   8 */ 7040,
+/*  A#  8 */ 7459,
+/*  B   8 */ 7902,
+/*  C   9 */ 8372
 };
 
 /**
@@ -73,7 +73,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     synthNote_setOctave(*ppNote, 4);
     synthNote_setWave(*ppNote, W_SQUARE);
     synthNote_setNote(*ppNote, N_A);
-    synthNote_setDuration(*ppNote, pCtx, 60, 4);
+    synthNote_setDuration(*ppNote, pCtx, 4);
     synthNote_setKeyoff(*ppNote, 0, 75, 0);
     synthNote_setVolume(*ppNote, 0);
 
@@ -201,47 +201,31 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
  * 
  * @param [ in]pNote    The note
  * @param [ in]pCtx     The synthesizer context
- * @param [ in]bpm      The song's speed in beats-per-minute
  * @param [ in]duration Bitfield for the duration. Each bit represents a
  *                      fraction of the duration;
  * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
+synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx,
         int duration) {
-    double nSamples;
-    int freq, len;
+    int bit;
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
-    SYNTH_ASSERT_ERR(bpm > 0, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(duration > 0, SYNTH_BAD_PARAM_ERR);
 
-    /* Store the synthesizer frequency */
-    freq = pCtx->frequency;
-    /* Caculate the duration (in samples) of a semibreve (i.e., "full") note:
-     * 4 beats / N beats per min = 4 beats / (N / 60) beats per second
-     * 4 * 60 / N = T s (duration of semibreve in seconds)
-     * T s * F Hz = number of samples in a semibreve */
-    nSamples = freq * 240.0 / (double)bpm;
-
-    /* Accumulate the note's duration in samples */
-    len = 0;
-    while (duration > 0) {
-        if ((duration & 1) == 1) {
-            /* Accumulate this duration, remembering to transform from
-             * samples-per-miliseconds back to hertz */
-            len += (int)nSamples;
+    /* Invert the bits of the duration */
+    pNote->duration = 0;
+    bit = 6;
+    while (duration != 0) {
+        if (duration & 1) {
+            pNote->duration |= 1 << bit;
         }
 
-        /* Remove a bit and halve the number of samples */
         duration >>= 1;
-        nSamples *= 0.5;
+        bit--;
     }
-
-    /* Store the calculated duration */
-    pNote->len = len;
 
     rv = SYNTH_OK;
 __err:
@@ -289,10 +273,10 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
 
 #undef CLAMP
 
-    /* Calculate (and store) the keyoff in samples */
-    pNote->attack = pNote->len * attack / 100;
-    pNote->keyoff = pNote->len * keyoff / 100;
-    pNote->release = pNote->len * release / 100;
+    /* Store the keyoff in percentage */
+    pNote->attack = attack;
+    pNote->keyoff = keyoff;
+    pNote->release = release;
 
     rv = SYNTH_OK;
 __err:
@@ -363,13 +347,13 @@ __err: \
   }
 
 /**
- * Retrieve the note duration, in samples
+ * Retrieve the note duration, in binary fixed point notation
  * 
  * @param  [out]pVal  The duration
  * @param  [ in]pNote The note
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_GETTER(synthNote_getDuration, int, len, 0)
+SYNTHNOTE_GETTER(synthNote_getDuration, int, duration, 0)
 
 /**
  * Retrieve the panning of the note, where 0 means completely on the left
@@ -410,10 +394,12 @@ SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]mode      Desired mode for the wave
  * @param  [ in]synthFreq Synthesizer's frequency
+ * @param  [ in]duration  The note's length in samples
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
-        synthBufMode mode, int synthFreq) {
+        synthBufMode mode, int synthFreq, int duration) {
+    float attack, keyoff, release;
     int i, noteFreq, numBytes, spc;
     synthVolume *pVolume;
     synth_err rv;
@@ -435,7 +421,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     }
 
     /* Clear the note */
-    memset(pBuf, 0x0, pNote->len * numBytes);
+    memset(pBuf, 0x0, duration * numBytes);
     /* If it's a rest, simply return (since it was already cleared */
     if (pNote->note == N_REST) {
         rv = SYNTH_OK;
@@ -447,9 +433,14 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     /* Calculate how many 'samples-per-cycle' there are for the Note's note */
     spc = synthFreq / noteFreq;
 
+    /* Calculate the note asdasd in samples */
+    attack = duration * pNote->attack / 100.0f;
+    keyoff = duration * pNote->keyoff / 100.0f;
+    release = duration * pNote->release / 100.0f;
+
     /* Synthesize the note audio */
     i = 0;
-    while (i < pNote->release) {
+    while (i < release) {
         char pan;
         int amp, j;
         float clampAmp, perc, waveAmp;
@@ -460,19 +451,18 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         perc = ((float)(i % spc)) / spc;
 
         /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)pNote->len *
+        rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
                 1024);
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
         /* Defines the value that encapsulates the note */
-        if (i < pNote->attack) {
+        if (i < attack) {
             /* Varies the value from 0.0f -> 1.0f */
-            clampAmp = i / (float)pNote->attack;
+            clampAmp = i / attack;
         }
-        else if (i > pNote->keyoff) {
+        else if (i > keyoff) {
             /* Varies the value from 1.0f -> 0.0f */
-            clampAmp = 1.0f - (i - pNote->keyoff) /
-                    (float)(pNote->release - pNote->keyoff);
+            clampAmp = 1.0f - (i - keyoff) / (release - keyoff);
         }
         else {
             clampAmp = 1.0f;
@@ -679,171 +669,6 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         /* Increase, since we are looping through the samples (and not through
          * the bytes) */
         i++;
-#if 0
-
-        char pan;
-        int amp, j, perc, waveAmp;
-
-
-        /* Calculate the percentage into the current cycle in the range
-         * [0,1024) */
-        perc = ((i % spc) << 10) / spc;
-
-        /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pNote->pVol, perc);
-        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
-
-        /* Retrieve the sample's amplitude, according to the note's wave form.
-         * This amplitude is calculated in the range [-0x10000, 0x10000], so it
-         * can correctly be downsampled for 8 and 16 bits amplitudes (as well as
-         * signed and unsigned) */
-        switch (pNote->wave) {
-            case W_SQUARE: {
-                /* 50% duty cycle */
-                if (perc > 512) {
-                    waveAmp = 0x1000;
-                }
-                else {
-                    waveAmp = -0x10000;
-                }
-            } break;
-            case W_PULSE_12_5: {
-                /* 12.5% duty cycle */
-                if (perc > 128) {
-                    waveAmp = 0x1000;
-                }
-                else {
-                    waveAmp = -0x10000;
-                }
-            } break;
-            case W_PULSE_25: {
-                /* 25% duty cycle */
-                if (perc > 256) {
-                    waveAmp = 0x1000;
-                }
-                else {
-                    waveAmp = -0x10000;
-                }
-            } break;
-            case W_PULSE_75: {
-                /* 75% duty cycle */
-                if (perc > 768) {
-                    waveAmp = 0x1000;
-                }
-                else {
-                    waveAmp = -0x10000;
-                }
-            } break;
-            case W_TRIANGLE: {
-                /* Convert the percentage into a triangular wave with its
-                 * positive peak at 256 samples and its negative peak at 768
-                 * samples */
-                if ((perc % 512) < 256) {
-                    waveAmp = 0x10000 * (perc % 256) / 256.0f;
-                }
-                else {
-                    waveAmp = 0x10000 * (256.0f - (perc % 256)) / 256.0f;
-                }
-                if (amp < 512) {
-                    amp = (int)(amp * (perc / 512.0f)) & 0xff;
-                }
-                else {
-                    amp = (int)(amp * ((1024.0f - perc) / 512.0f)) & 0xff;
-                }
-                /* TODO Conver the above to an integer calculation (something
-                 * among these lines:
-                 * 
-                 * amp = (amp * perc * (1 - (perc >> 9)) + amp * (1024 - perc) *
-                 *         (perc >> 9)) >> 9;
-                 * 
-                 * Note that it uses the fact that 'perc >> 9' comes out as 0 if
-                 * the percentage is less than 512 and as 1, otherwise (since
-                 * perc's range is [0, 1024))
-                 * 
-                 * The current problem with the above is that 'amp * perc' (and
-                 * 'amp * (1024 - perc)') will have to be divided by 512, but it
-                 * might come out as 0 for small amplitudes and at the start/end
-                 * of the current cycle.
-                 */
-            } break;
-            case W_NOISE: {
-                /* TODO Implement a decent noise */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
-            } break;
-            default: { /* Avoids warnings */ }
-        }
-
-        /* Retrieve the note panning (in case it uses 2 channels) */
-        rv = synthNote_getPan(&pan, pNote);
-        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
-
-        /* Calculate the sample's actual index */
-        j = i * numBytes;
-
-        /* Convert the amplitude to the desired format and store it at the
-         * buffer */
-        switch (mode) {
-            case SYNTH_1CHAN_U8BITS: {
-                /* Simply store the calculated value */
-                pBuf[j] = amp;
-            } break;
-            case SYNTH_1CHAN_8BITS: {
-                /* TODO */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
-            } break;
-            case SYNTH_1CHAN_U16BITS: {
-                int amp16;
-
-                /* Simply calculate the 16 bits amplitude by 'converting' the
-                 * 8 bits one to the 16 bits range*/
-                amp16 = amp << 8;
-
-                /* Simply store the calculated value; Storing the lower bits on
-                 * byte 0 and the higher ones on bit 1 */
-                pBuf[j] = amp16 & 0xff;
-                pBuf[j + 1] = (amp16 >> 8) & 0xff;
-            } break;
-            case SYNTH_1CHAN_16BITS: {
-                /* TODO */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
-            } break;
-            case SYNTH_2CHAN_U8BITS: {
-                /* Simply store the calculated value on both channels;
-                 * Position 0 is the left channel and position 1 is the right
-                 * one */
-                pBuf[j] = ((amp * 100 - amp * pan) / 100) & 0xff;
-                pBuf[j + 1] = ((amp * 100 - amp * (100 - pan)) / 100) & 0xff;
-            } break;
-            case SYNTH_2CHAN_8BITS: {
-                /* TODO */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
-            } break;
-            case SYNTH_2CHAN_U16BITS: {
-                int lAmp16, rAmp16;
-
-                /* Calculate the panning between channels as having double the
-                 * bits */
-                lAmp16 = (((amp * 100 - amp * pan) << 8) / 100);
-                rAmp16 = (((amp * 100 - amp * (100 - pan)) << 8) / 100);
-
-                /* Store the left channel on bytes 0 (low) and 1 (high) and the
-                 * right one on 2 (low) and 3 (high) */
-                pBuf[j] = lAmp16 & 0xff;
-                pBuf[j + 1] = (lAmp16 >> 8) & 0xff;
-                pBuf[j + 2] = rAmp16 & 0xff;
-                pBuf[j + 3] = (rAmp16 >> 8) & 0xff;
-            } break;
-            case SYNTH_2CHAN_16BITS: {
-                /* TODO */
-                SYNTH_ASSERT_ERR(0, SYNTH_FUNCTION_NOT_IMPLEMENTED);
-            } break;
-            default : { /* Avoids warnings */ }
-        }
-
-        /* Increase, since we are looping through the samples (and not through
-         * the bytes) */
-        i++;
-#endif /* 0 */
     }
     /* The silence (after the key was released) was already cleared, so simply
      * return */

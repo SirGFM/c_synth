@@ -40,6 +40,10 @@
 #  define __SYNTHPARSERCTX_STRUCT__
      typedef struct stSynthParserCtx synthParserCtx;
 #  endif /* __SYNTHPARSERCTX_STRUCT__ */
+#  ifndef __SYNTHRENDERERCTX_STRUCT__
+#  define __SYNTHRENDERERCTX_STRUCT__
+typedef struct stSynthRendererCtx synthRendererCtx;
+#  endif /* __SYNTHRENDERERCTX_STRUCT__ */
 #  ifndef __SYNTHPRNG_STRUCT__
 #  define __SYNTHPRNG_STRUCT__
      typedef struct stSynthPRNGCtx synthPRNGCtx;
@@ -145,6 +149,7 @@ enum enSynthToken {
     T_NUMBER,
     T_COMMA,
     T_DONE,
+    T_EXTEND,
     TK_MAX
 };
 
@@ -199,8 +204,6 @@ struct stSynthParserCtx {
     synth_bool errorFlag;
     /** Which error code was raised */
     synth_err errorCode;
-    /** Song BPM */
-    int bpm;
     /** Current octave */
     int octave;
     /** Default duration (when not specified) */
@@ -215,8 +218,24 @@ struct stSynthParserCtx {
     int release;
     /** Current pan */
     int pan;
+    /** Compass' time signature in binary fixed point notation */
+    int timeSignature;
+    /** Length of the current compass in binary fixed point notation */
+    int curCompassLength;
     /** Current wave */
     synth_wave wave;
+};
+
+/** Struct with data about the currently rendering song/track */
+struct stSynthRendererCtx {
+    /** Number of samples per compass */
+    int samplesPerCompass;
+    /** Current length of the compass in samples */
+    int curCompassLength;
+    /** Audio time signature */
+    int timeSignature;
+    /** Current position within the compass */
+    int curCompassPosition;
 };
 
 /** Defines the types of noise wave generators */
@@ -312,6 +331,8 @@ struct stSynthCtx {
     synthParserCtx parserCtx;
     /** Pseudo-random number generator context */
     synthPRNGCtx prngCtx;
+    /** Keep track of whatever is being rendered */
+    synthRendererCtx renderCtx;
 };
 
 /** Define an audio, which is simply an aggregation of tracks */
@@ -326,6 +347,10 @@ struct stSynthAudio {
     int tracksIndex;
     /** How many tracks the song has */
     int num;
+    /** Song's 'speed' in beats-per-minute */
+    int bpm;
+    /** Song's time signature */
+    int timeSignature;
 };
 
 /** Define a track, which is almost simply a sequence of notes */
@@ -361,6 +386,13 @@ struct stSynthNote {
      * If type is N_loop, represent how many times should repeat.
      */
     int len;
+    /**
+     * Note's duration in binary fixed point notation; It uses 6 bits for the
+     * fractional part
+     */
+    int duration;
+    /** Cached duration of the note in samples */
+    int samplesDuration;
     /** Only used if type is N_loop; Represents note to which should jump. */
     int jumpPosition;
     /** Time, in samples, until the note reaches its maximum amplitude */

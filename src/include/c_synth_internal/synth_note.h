@@ -85,13 +85,11 @@ synth_err synthNote_setNote(synthNote *pNote, synth_note note);
  * 
  * @param [ in]pNote    The note
  * @param [ in]pCtx     The synthesizer context
- * @param [ in]bpm      The song's speed in beats-per-minute
  * @param [ in]duration Bitfield for the duration. Each bit represents a
  *                      fraction of the duration;
  * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int bpm,
-        int duration);
+synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int duration);
 
 /**
  * Set the characteristics of the note's duration
@@ -132,7 +130,7 @@ synth_err synthNote_setVolume(synthNote *pNote, int volume);
 synth_bool synthNote_isLoop(synthNote *pNote);
 
 /**
- * Retrieve the note duration, in samples
+ * Retrieve the note duration, in binary fixed point notation
  * 
  * @param  [out]pVal  The duration
  * @param  [ in]pNote The note
@@ -179,10 +177,11 @@ synth_err synthNote_getJumpPosition(int *pVal, synthNote *pNote);
  * @param  [ in]pCtx      The synthesizer context
  * @param  [ in]mode      Desired mode for the wave
  * @param  [ in]synthFreq Synthesizer's frequency
+ * @param  [ in]duration  The note's length in samples
  * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
-        synthBufMode mode, int synthFreq);
+        synthBufMode mode, int synthFreq, int duration);
 
 #endif /* __SYNTH_NOTE_H__ */
 

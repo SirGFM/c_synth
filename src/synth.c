@@ -9,6 +9,7 @@
 #include <c_synth_internal/synth_lexer.h>
 #include <c_synth_internal/synth_parser.h>
 #include <c_synth_internal/synth_prng.h>
+#include <c_synth_internal/synth_renderer.h>
 #include <c_synth_internal/synth_types.h>
 
 #include <stdio.h>
@@ -373,6 +374,11 @@ synth_err synth_getTrackLength(int *pLen, synthCtx *pCtx, int handle,
     /* Check that the handle is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
 
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
     rv = synthAudio_getTrackLength(pLen, &(pCtx->songs.buf.pAudios[handle]),
             pCtx, track);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
@@ -400,6 +406,11 @@ synth_err synth_getTrackIntroLength(int *pLen, synthCtx *pCtx, int handle,
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     /* Check that the handle is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = synthAudio_getTrackIntroLength(pLen,
             &(pCtx->songs.buf.pAudios[handle]), pCtx, track);
@@ -463,6 +474,11 @@ synth_err synth_renderTrack(char *pBuf, synthCtx *pCtx, int handle, int track,
     /* Check that the handle is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
 
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
     rv = synthAudio_renderTrack(pBuf, &(pCtx->songs.buf.pAudios[handle]),
             pCtx, track, mode);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
@@ -494,6 +510,11 @@ synth_err synth_canSongLoop(synthCtx *pCtx, int handle) {
 
     /* Retrieve the audio */
     pAudio = &(pCtx->songs.buf.pAudios[handle]);
+
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Count how many tracks there are */
     rv = synthAudio_getTrackCount(&numTracks, pAudio);
@@ -597,6 +618,11 @@ synth_err synth_getSongLength(int *pLen, synthCtx *pCtx, int handle) {
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
     rv = SYNTH_OK;
 
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
     /* Check that either the song doesn't loop or that it's loopable */
     rv = synth_canSongLoop(pCtx, handle);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK || rv == SYNTH_NOT_LOOPABLE, rv);
@@ -655,6 +681,11 @@ synth_err synth_getSongIntroLength(int *pLen, synthCtx *pCtx, int handle) {
     /* Check if the song is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
     rv = SYNTH_OK;
+
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Check that either the song doesn't loop or that it's loopable */
     rv = synth_canSongLoop(pCtx, handle);
@@ -968,6 +999,11 @@ synth_err synth_renderSong(char *pBuf, synthCtx *pCtx, int handle,
     SYNTH_ASSERT_ERR(pTmp, SYNTH_BAD_PARAM_ERR);
     /* Check that the handle is valid */
     SYNTH_ASSERT_ERR(handle < pCtx->songs.used, SYNTH_INVALID_INDEX);
+
+    /* Setup the renderer so the track length can be calculated */
+    rv = synthRenderer_init(&(pCtx->renderCtx),
+            &(pCtx->songs.buf.pAudios[handle]), pCtx->frequency);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Check that the song either doesn't loop or can loop nicely */
     rv = synth_canSongLoop(pCtx, handle);

@@ -73,6 +73,10 @@ static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx)
     pParser->release = 0;
     pParser->pan = 50;
     pParser->wave = W_SQUARE;
+    /* Set the time signature to a whole note ('brevissima'); This should work
+     * for any simple time signature (1/4, 2/4, 4/4 etc) */
+    pParser->timeSignature = 1 << 6;
+    pParser->curCompassLength = 0;
     rv = synthVolume_getConst(&(pParser->volume), pCtx, 64);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
@@ -183,6 +187,18 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             case SYNTH_INVALID_WAVE: {
                 pError = "Invalid wave type";
             } break;
+            case SYNTH_COMPASS_OVERFLOW: {
+                pError = "Compass duration overflown";
+            } break;
+            case SYNTH_BAD_LOOP_START: {
+                pError = "Loop start didn't sync with compass start";
+            } break;
+            case SYNTH_BAD_LOOP_END: {
+                pError = "Loop end didn't sync with compass end";
+            } break;
+            case SYNTH_BAD_LOOP_POINT: {
+                pError = "Loop point didn't sync with compass start";
+            } break;
             default: {
                 pError = "Unkown error";
             }
@@ -237,9 +253,11 @@ __err:
  * 
  * @param  [ in]pParser The parser context
  * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pAudio  The audio
  * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
  */
-static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
+static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
     synth_err rv;
     synth_token token;
 
@@ -255,7 +273,7 @@ static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT_TOKEN(T_NUMBER);
 
         /* Store the retrieved value */
-        rv = synthLexer_getValuei(&(pParser->bpm), &(pCtx->lexCtx));
+        rv = synthLexer_getValuei(&(pAudio->bpm), &(pCtx->lexCtx));
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Get the next token */
@@ -313,62 +331,88 @@ __err:
 }
 
 /**
- * Parse a note into the context
- * 
- * Parsing rule: note = T_NOTE T_NUMBER? T_DURATION?
- * 
+ * Do actually output the note and check if the note duration matches the compass
+ */
+static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
+        int doExtend, int octave, synth_note note, int duration) {
+    synth_err rv;
+    synthNote *pNote;
+
+    /* Retrieve a new note */
+    rv = synthNote_init(&pNote, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Initialize the note */
+    rv = synthNote_setPan(pNote, pParser->pan);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setOctave(pNote, octave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setNote(pNote, note);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setWave(pNote, pParser->wave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setDuration(pNote, pCtx, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (doExtend == 1) {
+        /* First part of extended note: do attack only */
+        rv = synthNote_setKeyoff(pNote, pParser->attack, 100, 100);
+    }
+    else if (doExtend == 2) {
+        /* Seconds part of extended note: play it fully */
+        rv = synthNote_setKeyoff(pNote, 0, 100, 100);
+    }
+    else if (doExtend == 3) {
+        /* Last part of extended note: set keyoff and release */
+        rv = synthNote_setKeyoff(pNote, 0, pParser->keyoff, pParser->release);
+    }
+    else if (doExtend == 0) {
+        /* Not extended note: play it normally */
+        rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
+                pParser->release);
+    }
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setVolume(pNote, pParser->volume);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Update the position within the compass */
+    rv = synthNote_getDuration(&duration, pNote);
+    pParser->curCompassLength += duration;
+    SYNTH_ASSERT_ERR(pParser->curCompassLength <= pParser->timeSignature,
+            SYNTH_COMPASS_OVERFLOW);
+    if (pParser->curCompassLength == pParser->timeSignature) {
+        /* Reset the compass if we just reached the next one */
+        pParser->curCompassLength = 0;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve a duration with any number of 'dots'
+ *
+ * @param  [out]pDuration the retrieved duration
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
- * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
  */
-static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
+static synth_err synthParser_getDuration(int *pDuration,
+        synthParserCtx *pParser, synthCtx *pCtx) {
+    int duration;
     synth_err rv;
-    synth_note note;
-    synthNote *pNote;
     synth_token token;
-    int duration, octave, tmp;
 
-    /* Callee function already assures this, but... */
-    SYNTH_ASSERT_TOKEN(T_NOTE);
-
-    /* Set initial duration to whatever the current default is */
-    duration = pParser->duration;
-    octave = pParser->octave;
-
-    /* Store the note to be played */
-    rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
+    /* Retrieve the basic duration */
+    SYNTH_ASSERT_TOKEN(T_NUMBER);
+    rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    note = (synth_note)tmp;
 
-    /* Adjuste the note's octave */
-    if (note == N_CB) {
-        note = N_B;
-        octave--;
-    }
-    else if (note == N_BS) {
-        note = N_C;
-        octave++;
-    }
-
-    /* Get next token */
+    /* Get the next token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
 
-    /* Any number following the note will override the note's duration */
-    synthLexer_lookupToken(&token, &(pCtx->lexCtx));
-    SYNTH_ASSERT(rv == SYNTH_OK);
-
-    if (token == T_NUMBER) {
-        rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
-        SYNTH_ASSERT(rv == SYNTH_OK);
-
-        /* Get the next token */
-        rv = synthLexer_getToken(&(pCtx->lexCtx));
-        SYNTH_ASSERT(rv == SYNTH_OK);
-    }
-
     /* If there are any '.', add half the duration every time */
-    synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_DURATION) {
         int dots, d;
@@ -391,25 +435,107 @@ static synth_err synthParser_note(synthParserCtx *pParser, synthCtx *pCtx) {
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
-    /* Retrieve a new note */
-    rv = synthNote_init(&pNote, pCtx);
+    *pDuration = duration;
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Parse a note into the context
+ * 
+ * Parsing rule: note = T_NOTE T_NUMBER? T_DURATION?
+ *                              (T_EXTEND T_NUMBER T_DURATION?)*
+ * 
+ * @param  [out]pNumNotes The number of parsed notes (since extends counts as
+ *                        new notes)
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synth_err rv;
+    synth_note note;
+    synth_token token;
+    int doExtend, duration, octave, tmp;
+
+    /* Callee function already assures this, but... */
+    SYNTH_ASSERT_TOKEN(T_NOTE);
+
+    /* Set initial duration to whatever the current default is */
+    duration = pParser->duration;
+    octave = pParser->octave;
+    doExtend = 0;
+
+    /* Store the note to be played */
+    rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    /* Initialize the note */
-    rv = synthNote_setPan(pNote, pParser->pan);
+    note = (synth_note)tmp;
+
+    /* Adjuste the note's octave */
+    if (note == N_CB) {
+        note = N_B;
+        octave--;
+    }
+    else if (note == N_BS) {
+        note = N_C;
+        octave++;
+    }
+
+    /* Get next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setOctave(pNote, octave);
+
+    /* Any number following the note will override the note's duration */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setNote(pNote, note);
+
+    /* Retrieve the note's duration, if not the default one */
+    if (token == T_NUMBER) {
+        rv = synthParser_getDuration(&duration, pParser, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    /* Check if the note will be extended */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setWave(pNote, pParser->wave);
+    if (token == T_EXTEND) {
+        doExtend = 1;
+    }
+
+    rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
+            duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setDuration(pNote, pCtx, pParser->bpm, duration);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
-            pParser->release);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setVolume(pNote, pParser->volume);
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    *pNumNotes = 1;
+    while (doExtend != 0 && doExtend != 3) {
+        /* The only way to get into this section is through a T_EXTEND */
+        SYNTH_ASSERT_TOKEN(T_EXTEND);
+        /* Get next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* T_EXTEND must be followed by the extended duration */
+        rv = synthParser_getDuration(&duration, pParser, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Check if the next token is another T_EXTEND */
+        rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        if (token == T_EXTEND) {
+            doExtend = 2;
+        }
+        else {
+            doExtend = 3;
+        }
+
+        /* Output the current note */
+        rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
+                duration);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        (*pNumNotes)++;
+    }
 
     rv = SYNTH_OK;
 __err:
@@ -660,6 +786,8 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     /* We're sure to have this token, but... */
     SYNTH_ASSERT_TOKEN(T_SET_LOOP_START);
+    /* As in music scores, loops must sync with the compass */
+    SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_START);
 
     /* Set basic loop count to 2 (default) */
     count = 2;
@@ -681,6 +809,8 @@ synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     /* Afterwards, a loop end must come */
     SYNTH_ASSERT_TOKEN(T_SET_LOOP_END);
+    /* Again, a compass must have just ended */
+    SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_END);
 
     /* Get the next token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
@@ -743,11 +873,15 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
         /* Anything not a note or loop will be parsed as mod */
         switch (token) {
-            case T_NOTE:
+            case T_NOTE: {
+                int numNotes;
+
                 /* Simply parse the current note */
-                rv = synthParser_note(pParser, pCtx);
-                (*pNumNotes)++;
-            break;
+                rv = synthParser_note(&numNotes, pParser, pCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
+                *pNumNotes += numNotes;
+            } break;
             case T_SET_LOOP_START:
                 /* Recursively parse a sub-sequence */
                 rv = synthParser_loop(pNumNotes, pParser, pCtx);
@@ -815,6 +949,8 @@ static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_SET_LOOPPOINT) {
+        /* Loop point must be found on compass start */
+        SYNTH_ASSERT_ERR(pParser->curCompassLength == 0, SYNTH_BAD_LOOP_POINT);
         /* Set the current position into the track as the looppoint */
         pTrack->loopPoint = numNotes;
 
@@ -922,6 +1058,9 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
+    /* Set the time signature */
+    pAudio->timeSignature = pParser->timeSignature;
+
     /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -931,7 +1070,7 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse the bpm (optional token) */
-    rv = synthParser_bpm(pParser, pCtx);
+    rv = synthParser_bpm(pParser, pCtx, pAudio);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse every track in this audio */

@@ -40,6 +40,24 @@ synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
         char *pString, int len);
 
 /**
+ * Return the audio BPM
+ * 
+ * @param  [out]pBpm   The BPM
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getBpm(int *pBpm, synthAudio *pAudio);
+
+/**
+ * Return the audio time signature
+ * 
+ * @param  [out]pTime  The time signature
+ * @param  [ in]pAudio The audio
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthAudio_getTimeSignature(int *pTime, synthAudio *pAudio);
+
+/**
  * Return the number of tracks in a song
  * 
  * @param  [out]pNum   The number of tracks
