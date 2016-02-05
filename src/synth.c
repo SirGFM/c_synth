@@ -233,7 +233,7 @@ synth_err synth_compileSongFromSDL_RWops(int *pHandle, synthCtx *pCtx,
     rv = synthAudio_init(&pAudio, pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     /* Compile the song */
-    rv = synthAudio_compileSDL_RWops(pAudio, pCtx, pFilename);
+    rv = synthAudio_compileSDL_RWops(pAudio, pCtx, pFile);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     /* Return the newly compiled song */

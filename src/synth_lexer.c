@@ -53,6 +53,22 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
  */
 synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFile, SYNTH_BAD_PARAM_ERR);
+
+    /* Clean the lexer */
+    rv = synthLexer_clear(pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Store its source (i.e., a SDL_RWops) */
+    pCtx->source.sdl = (SDL_RWops*)pFile;
+    pCtx->type = SST_SDL;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
 }
 #endif
 
@@ -311,6 +327,17 @@ static synth_err synthLexer_getRawChar(char *pChar, synthLexCtx *pCtx) {
         tmp = fgetc(pCtx->source.file);
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_EOF);
     }
+#if defined(USE_SDL2)
+    if (pCtx->type == SST_SDL) {
+        /* Since SDL2 doesn't return EOF when reading a char, manually check for
+         * the EOF */
+        SYNTH_ASSERT_ERR(SDL_RWsize(pCtx->source.sdl) <
+                SDL_RWtell(pCtx->source.sdl), SYNTH_EOF);
+        /* Read the actual char */
+        tmp = SDL_ReadU8(pCtx->source.sdl);
+        SYNTH_ASSERT_ERR(tmp != 0, SYNTH_INTERNAL_ERR);
+    }
+#endif
     else if (pCtx->type == SST_STR) {
         /* Get the current character and increase the position */
         SYNTH_ASSERT_ERR(pCtx->source.str.pos < pCtx->source.str.len,
@@ -413,6 +440,12 @@ static synth_err synthLexer_ungetChar(synthLexCtx *pCtx, char c) {
         tmp = ungetc((int)c, pCtx->source.file);
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_INTERNAL_ERR);
     }
+#if defined(USE_SDL2)
+    if (pCtx->type == SST_SDL) {
+        /* Move backward 1 byte */
+        SDL_RWseek(pCtx->source.sdl, -1, SEEK_CUR);
+    }
+#endif
     else if (pCtx->type == SST_STR) {
         /* Or simply decrement the position */
         SYNTH_ASSERT_ERR(pCtx->source.str.pos > 0, SYNTH_INTERNAL_ERR);
@@ -817,6 +850,18 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
             }
         }
     }
+#if defined(USE_SDL2)
+    if (pCtx->type == SST_SDL) {
+        /* Simply compare the current position to the file's size */
+        if (SDL_RWsize(pCtx->source.sdl) == SDL_RWtell(pCtx->source.sdl)) {
+            pCtx->lastToken = T_DONE;
+            return SYNTH_TRUE;
+        }
+        else {
+            return SYNTH_FALSE;
+        }
+    }
+#endif
     else if (pCtx->type == SST_STR) {
         /* If the stream is a string, simply check it's length and, then, if its
          * NULL terminator was found */

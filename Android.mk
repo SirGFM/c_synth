@@ -25,6 +25,8 @@ LOCAL_SRC_FILES := \
         $(LOCAL_PATH)/synth_track.c \
         $(LOCAL_PATH)/synth_volume.c
 
+LOCAL_SHARED_LIBRARIES := SDL2
+LOCAL_CFLAGS += -DUSE_SDL
 LOCAL_LDLIBS := -ldl -landroid
 
 include $(BUILD_SHARED_LIBRARY)

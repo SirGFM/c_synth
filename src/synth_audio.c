@@ -81,7 +81,7 @@ synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
     memset(pAudio, 0x0, sizeof(synthAudio));
 
     /* Init parser */
-    rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
+    rv = synthLexer_initFromSDL_RWops(&(pCtx->lexCtx), pFile);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
     rv = synthParser_init(&(pCtx->parserCtx), pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
