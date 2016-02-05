@@ -10,6 +10,20 @@
 
 #include <c_synth_internal/synth_types.h>
 
+#if defined(USE_SDL2)
+/**
+ * Initialize the lexer, reading tokens from a SDL_RWops
+ * 
+ * If the lexer has already been initialized, it will be reset and
+ * re-initialized with this new source
+ * 
+ * @param  [ in]pCtx  The lexer context, to be initialized
+ * @param  [ in]pFile The file
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
+ */
+synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile);
+#endif
+
 /**
  * Initialize the lexer, reading tokens from a file
  * 

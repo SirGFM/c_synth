@@ -60,8 +60,47 @@ __err:
     return rv;
 }
 
+#if defined(USE_SDL2)
 /**
- * Compile a MML audio file into a object
+ * Compile a MML audio SDL_RWops into an object
+ * 
+ * @param  [ in]pAudio Object that will be filled with the compiled song
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]pFile  File with the song's MML
+ */
+synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
+        void *pFile) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAudio, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFile, SYNTH_BAD_PARAM_ERR);
+
+    /* Clear the audio */
+    memset(pAudio, 0x0, sizeof(synthAudio));
+
+    /* Init parser */
+    rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    rv = synthParser_init(&(pCtx->parserCtx), pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Parse the audio */
+    rv = synthParser_getAudio(&(pCtx->parserCtx), pCtx, pAudio);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    rv = SYNTH_OK;
+__err:
+    /* Clear the lexer, so any open file is closed */
+    synthLexer_clear(&(pCtx->lexCtx));
+
+    return rv;
+}
+#endif
+
+/**
+ * Compile a MML audio file into an object
  * 
  * @param  [ in]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context

@@ -208,6 +208,47 @@ __err:
     return rv;
 }
 
+#if defined(USE_SDL2)
+/**
+ * Parse a file into a compiled song. The file must have been opened as a
+ * SDL_RWops file
+ *
+ * @param  [out]pHandle Handle of the loaded song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pFile   The SDL_RWops file
+ */
+synth_err synth_compileSongFromSDL_RWops(int *pHandle, synthCtx *pCtx,
+        void *pFile) {
+    synthAudio *pAudio;
+    synth_err rv;
+
+    /* TODO Store the previous buffer sizes so we can clean it on error */
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pHandle, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pFile, SYNTH_BAD_PARAM_ERR);
+
+    /* Retrieve the new audio */
+    rv = synthAudio_init(&pAudio, pCtx);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+    /* Compile the song */
+    rv = synthAudio_compileSDL_RWops(pAudio, pCtx, pFilename);
+    SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+    /* Return the newly compiled song */
+    *pHandle = pCtx->songs.used - 1;
+    /* 'Push' the audio into the buffer */
+    rv = SYNTH_OK;
+__err:
+    if (rv != SYNTH_OK) {
+        /* TODO Clear the newly used objects */
+    }
+
+    return rv;
+}
+#endif
+
 /**
  * Parse a file into a compiled song
  * 

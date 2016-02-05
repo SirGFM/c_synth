@@ -10,6 +10,10 @@
 /* Required because of a FILE* */
 #include <stdio.h>
 
+#if defined(USE_SDL2)
+#  include <SDL2/SDL_rwops.h>
+#endif
+
 /* First, define the name (i.e., typedef) of every type */
 
 #  ifndef __SYNTHAUDIO_STRUCT__
@@ -52,6 +56,10 @@ typedef struct stSynthRendererCtx synthRendererCtx;
 #  define __SYNTHSOURCE_UNION__
      typedef union unSynthSource synthSource;
 #  endif /* __SYNTHSOURCE_UNION__ */
+#  ifndef __SYNTHSOURCETYPE_ENUM__
+#  define __SYNTHSOURCETYPE_ENUM__
+     typedef enum enSynthSourceType synthSourceType;
+#  endif /* __SYNTHSOURCETYPE_ENUM__ */
 #  ifndef __SYNTHSTRING_STRUCT__
 #  define __SYNTHSTRING_STRUCT__
      typedef struct stSynthString synthString;
@@ -169,19 +177,31 @@ struct stSynthString {
 
 /** Define a source for a MML audio, which can either be a file or a string */
 union unSynthSource {
-    /** TODO Add support for SDL's SDL_RWops, so it works on mobile! */
+#if defined(USE_SDL2)
+    /** SDL's SDL_RWops, so it works on mobile! */
+    SDL_RWops *sdl;
+#endif
     /** A file */
     FILE *file;
     /** A static string, with its current position and length */
     synthString str;
 };
 
+/** Defines all posible input types for the lexer */
+enum enSynthSourceType {
+    SST_NONE = 0,
+    SST_FILE,
+    SST_STR,
+    SST_SDL,
+    SST_MAX
+};
+
 /** Define the context for the lexer */
 struct stSynthLexCtx {
     /** Last read character */
     char lastChar;
-    /** Whether it's currently processing a file or a string */
-    synth_bool isFile;
+    /** Current input type */
+    synthSourceType type;
     /** Current line on the stream */
     int line;
     /** Position inside the current line */

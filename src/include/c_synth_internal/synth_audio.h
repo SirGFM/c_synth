@@ -18,8 +18,20 @@
  */
 synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx);
 
+#if defined(USE_SDL2)
 /**
- * Compile a MML audio file into a object
+ * Compile a MML audio SDL_RWops into an object
+ * 
+ * @param  [ in]pAudio Object that will be filled with the compiled song
+ * @param  [ in]pCtx   The synthesizer context
+ * @param  [ in]pFile  File with the song's MML
+ */
+synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
+        void *pFile);
+#endif
+
+/**
+ * Compile a MML audio file into an object
  * 
  * @param  [ in]pAudio    Object that will be filled with the compiled song
  * @param  [ in]pCtx      The synthesizer context

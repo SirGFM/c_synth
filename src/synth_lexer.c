@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(USE_SDL2)
+#  include <SDL2/SDL_rwops.h>
+#endif
+
 static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "mml",
     "set bpm",
@@ -37,6 +41,21 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "unknown token"
 };
 
+#if defined(USE_SDL2)
+/**
+ * Initialize the lexer, reading tokens from a SDL_RWops
+ * 
+ * If the lexer has already been initialized, it will be reset and
+ * re-initialized with this new source
+ * 
+ * @param  [ in]pCtx  The lexer context, to be initialized
+ * @param  [ in]pFile The file
+ * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
+ */
+synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile) {
+}
+#endif
+
 /**
  * Initialize the lexer, reading tokens from a file
  * 
@@ -61,7 +80,7 @@ synth_err synthLexer_initFromFile(synthLexCtx *pCtx, char *pFilename) {
     pCtx->source.file = fopen(pFilename, "rt");
     SYNTH_ASSERT_ERR(pCtx->source.file, SYNTH_OPEN_FILE_ERR);
 
-    pCtx->isFile = SYNTH_TRUE;
+    pCtx->type = SST_FILE;
 
     rv = SYNTH_OK;
 __err:
@@ -97,7 +116,7 @@ synth_err synthLexer_initFromString(synthLexCtx *pCtx, char *pString, int len) {
     pCtx->source.str.len = len;
     pCtx->source.str.pos = 0;
 
-    pCtx->isFile = SYNTH_FALSE;
+    pCtx->type = SST_STR;
 
     rv = SYNTH_OK;
 __err:
@@ -120,13 +139,13 @@ synth_err synthLexer_clear(synthLexCtx *pCtx) {
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
     /* Close the file, if it's open */
-    if (pCtx->isFile == SYNTH_TRUE && pCtx->source.file) {
+    if (pCtx->type == SST_FILE && pCtx->source.file) {
         fclose(pCtx->source.file);
     }
     /* If it's a string, it'll be cleaned on the memset */
 
     /* Clear everything (except for everything related to an error ) */
-    pCtx->isFile = 0;
+    pCtx->type = SST_NONE;
     pCtx->ivalue = 0;
     pCtx->lastToken = 0;
     memset(&(pCtx->source), 0x0, sizeof(synthSource));
@@ -287,17 +306,20 @@ static synth_err synthLexer_getRawChar(char *pChar, synthLexCtx *pCtx) {
     /* Set the return to '\0', in case the end of the stream is reached */
     *pChar = '\0';
 
-    if (pCtx->isFile == SYNTH_TRUE) {
+    if (pCtx->type == SST_FILE) {
         /* Read a character from the file */
         tmp = fgetc(pCtx->source.file);
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_EOF);
     }
-    else {
+    else if (pCtx->type == SST_STR) {
         /* Get the current character and increase the position */
         SYNTH_ASSERT_ERR(pCtx->source.str.pos < pCtx->source.str.len,
                 SYNTH_EOS);
         tmp = pCtx->source.str.pStr[pCtx->source.str.pos];
         pCtx->source.str.pos++;
+    }
+    else {
+        SYNTH_ASSERT_ERR(0, SYNTH_INTERNAL_ERR);
     }
 
     /* Return the read character */
@@ -384,17 +406,20 @@ __err:
 static synth_err synthLexer_ungetChar(synthLexCtx *pCtx, char c) {
     synth_err rv;
 
-    if (pCtx->isFile == SYNTH_TRUE) {
+    if (pCtx->type == SST_FILE) {
         int tmp;
 
         /* Return the character to the file */
         tmp = ungetc((int)c, pCtx->source.file);
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_INTERNAL_ERR);
     }
-    else {
+    else if (pCtx->type == SST_STR) {
         /* Or simply decrement the position */
         SYNTH_ASSERT_ERR(pCtx->source.str.pos > 0, SYNTH_INTERNAL_ERR);
         pCtx->source.str.pos--;
+    }
+    else {
+        SYNTH_ASSERT_ERR(0, SYNTH_INTERNAL_ERR);
     }
     /* Update the current position in the file */
     pCtx->linePos--;
@@ -770,7 +795,7 @@ __err:
  * @return           SYNTH_TRUE, SYNTH_FALSE
  */
 static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
-    if (pCtx->isFile == SYNTH_TRUE) {
+    if (pCtx->type == SST_FILE) {
         /* If the stream is a file, first check for the EOF flag */
         if (feof(pCtx->source.file) != 0) {
             pCtx->lastToken = T_DONE;
@@ -792,7 +817,7 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
             }
         }
     }
-    else {
+    else if (pCtx->type == SST_STR) {
         /* If the stream is a string, simply check it's length and, then, if its
          * NULL terminator was found */
         if (pCtx->source.str.pos >= pCtx->source.str.len ||
@@ -804,6 +829,9 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
         else {
             return SYNTH_FALSE;
         }
+    }
+    else {
+        return SYNTH_INTERNAL_ERR;
     }
 }
 

@@ -113,6 +113,19 @@ synth_err synth_init(synthCtx **ppCtx, int freq);
  */
 synth_err synth_free(synthCtx **ppCtx);
 
+#if defined(USE_SDL2)
+/**
+ * Parse a file into a compiled song. The file must have been opened as a
+ * SDL_RWops file
+ *
+ * @param  [out]pHandle Handle of the loaded song
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pFile   The SDL_RWops file
+ */
+synth_err synth_compileSongFromSDL_RWops(int *pHandle, synthCtx *pCtx,
+        void *pFile);
+#endif
+
 /**
  * Parse a file into a compiled song
  * 
