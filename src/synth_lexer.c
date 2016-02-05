@@ -41,7 +41,6 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "unknown token"
 };
 
-#if defined(USE_SDL2)
 /**
  * Initialize the lexer, reading tokens from a SDL_RWops
  * 
@@ -53,6 +52,8 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
  */
 synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile) {
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+#if defined(USE_SDL2)
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -69,8 +70,8 @@ synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile) {
     rv = SYNTH_OK;
 __err:
     return rv;
-}
 #endif
+}
 
 /**
  * Initialize the lexer, reading tokens from a file

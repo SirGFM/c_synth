@@ -60,7 +60,6 @@ __err:
     return rv;
 }
 
-#if defined(USE_SDL2)
 /**
  * Compile a MML audio SDL_RWops into an object
  * 
@@ -70,6 +69,8 @@ __err:
  */
 synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
         void *pFile) {
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+#if defined(USE_SDL2)
     synth_err rv;
 
     /* Sanitize the arguments */
@@ -96,8 +97,8 @@ __err:
     synthLexer_clear(&(pCtx->lexCtx));
 
     return rv;
-}
 #endif
+}
 
 /**
  * Compile a MML audio file into an object

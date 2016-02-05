@@ -208,7 +208,6 @@ __err:
     return rv;
 }
 
-#if defined(USE_SDL2)
 /**
  * Parse a file into a compiled song. The file must have been opened as a
  * SDL_RWops file
@@ -219,6 +218,8 @@ __err:
  */
 synth_err synth_compileSongFromSDL_RWops(int *pHandle, synthCtx *pCtx,
         void *pFile) {
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+#if defined(USE_SDL2)
     synthAudio *pAudio;
     synth_err rv;
 
@@ -246,8 +247,8 @@ __err:
     }
 
     return rv;
-}
 #endif
+}
 
 /**
  * Parse a file into a compiled song

@@ -18,7 +18,6 @@
  */
 synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx);
 
-#if defined(USE_SDL2)
 /**
  * Compile a MML audio SDL_RWops into an object
  * 
@@ -28,7 +27,6 @@ synth_err synthAudio_init(synthAudio **ppAudio, synthCtx *pCtx);
  */
 synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
         void *pFile);
-#endif
 
 /**
  * Compile a MML audio file into an object

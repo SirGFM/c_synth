@@ -10,7 +10,6 @@
 
 #include <c_synth_internal/synth_types.h>
 
-#if defined(USE_SDL2)
 /**
  * Initialize the lexer, reading tokens from a SDL_RWops
  * 
@@ -22,7 +21,6 @@
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_OPEN_FILE_ERR
  */
 synth_err synthLexer_initFromSDL_RWops(synthLexCtx *pCtx, void *pFile);
-#endif
 
 /**
  * Initialize the lexer, reading tokens from a file
