@@ -218,7 +218,6 @@ __err:
  */
 synth_err synth_compileSongFromSDL_RWops(int *pHandle, synthCtx *pCtx,
         void *pFile) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 #if defined(USE_SDL2)
     synthAudio *pAudio;
     synth_err rv;
@@ -247,6 +246,8 @@ __err:
     }
 
     return rv;
+#else
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 #endif
 }
 

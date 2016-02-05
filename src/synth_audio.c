@@ -69,7 +69,6 @@ __err:
  */
 synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
         void *pFile) {
-    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 #if defined(USE_SDL2)
     synth_err rv;
 
@@ -97,6 +96,8 @@ __err:
     synthLexer_clear(&(pCtx->lexCtx));
 
     return rv;
+#else
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 #endif
 }
 
