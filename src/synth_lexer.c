@@ -333,8 +333,8 @@ static synth_err synthLexer_getRawChar(char *pChar, synthLexCtx *pCtx) {
     if (pCtx->type == SST_SDL) {
         /* Since SDL2 doesn't return EOF when reading a char, manually check for
          * the EOF */
-        SYNTH_ASSERT_ERR(SDL_RWsize(pCtx->source.sdl) <
-                SDL_RWtell(pCtx->source.sdl), SYNTH_EOF);
+        SYNTH_ASSERT_ERR(SDL_RWtell(pCtx->source.sdl) <
+                SDL_RWsize(pCtx->source.sdl), SYNTH_EOF);
         /* Read the actual char */
         tmp = SDL_ReadU8(pCtx->source.sdl);
         SYNTH_ASSERT_ERR(tmp != 0, SYNTH_INTERNAL_ERR);
