@@ -330,7 +330,7 @@ static synth_err synthLexer_getRawChar(char *pChar, synthLexCtx *pCtx) {
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_EOF);
     }
 #if defined(USE_SDL2)
-    if (pCtx->type == SST_SDL) {
+    else if (pCtx->type == SST_SDL) {
         /* Since SDL2 doesn't return EOF when reading a char, manually check for
          * the EOF */
         SYNTH_ASSERT_ERR(SDL_RWtell(pCtx->source.sdl) <
@@ -443,7 +443,7 @@ static synth_err synthLexer_ungetChar(synthLexCtx *pCtx, char c) {
         SYNTH_ASSERT_ERR(tmp != EOF, SYNTH_INTERNAL_ERR);
     }
 #if defined(USE_SDL2)
-    if (pCtx->type == SST_SDL) {
+    else if (pCtx->type == SST_SDL) {
         /* Move backward 1 byte */
         SDL_RWseek(pCtx->source.sdl, -1, SEEK_CUR);
     }
@@ -853,7 +853,7 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
         }
     }
 #if defined(USE_SDL2)
-    if (pCtx->type == SST_SDL) {
+    else if (pCtx->type == SST_SDL) {
         /* Simply compare the current position to the file's size */
         if (SDL_RWsize(pCtx->source.sdl) == SDL_RWtell(pCtx->source.sdl)) {
             pCtx->lastToken = T_DONE;
