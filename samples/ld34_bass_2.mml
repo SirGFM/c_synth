@@ -1,0 +1,112 @@
+MML//=======================================//
+// Song written for 'MK-F417XX3'            //
+//     a game by GFM                        //
+//     made for Ludum Dare #34              //
+//==========================================//
+
+t160
+
+//============================================
+// Bass-line-2:
+//   25% square wave,
+//   play notes for 60% of its duration
+//--------------------------------------------
+
+w2 o3 l4 k5 q60 h65 v(30, 15)
+
+// --  1 ->  8 -------------------------------
+[r8 e2..
+ r8 g2..
+ r8 c2..
+ r8 d2..]
+
+l4
+// --  9 -> 10 -------------------------------
+r d2 d
+r d d d
+
+$ // -- Repeat on 10 -------------------------
+
+l4
+// -- 11 -> 14 -------------------------------
+r8 // All the following '^8' are extending the
+   // previous note because of this 'desync'
+   e e e e8
+^8 g g g g8
+^8 c c c c8
+^8 d d d d8
+
+// -- 15 -> 18 -------------------------------
+^8 e e e e8
+^8 g g g g8
+^8 c c c c8
+^8 d d d d8
+
+// -- 19 -> 22 -------------------------------
+^8 e e e e8
+^8 g g g g8
+^8 c c c c8
+^8 d d d d8 // No extension to sync back with
+            // bass-line-1
+
+// Go to a higher pitch (and tone)
+l1
+// -- 23 -> 26 -------------------------------
+[e <
+ g
+ c
+ d >]
+
+// -- 27 -> 30 -------------------------------
+f <
+g+
+c+
+d+ >
+
+// -- 31 -> 34 -------------------------------
+f+ <
+a
+d
+e >
+
+// First part in a higher tone
+
+l4
+// -- 35 -> 38 -------------------------------
+r8 // All the following '^8' are extending the
+   // previous note because of this 'desync'
+   f+ f+ f+ f+8
+^8 a a a a8
+^8 d d d d8
+^8 e e e e8
+
+// -- 39 -> 42 -------------------------------
+^8 f+ f+ f+ f+8
+^8 a a a a8
+^8 d d d d8
+^8 e e e e8
+
+// -- 43 -> 46 -------------------------------
+^8 f+ f+ f+ f+8
+^8 a a a a8
+^8 d d d d8
+^8 e e e e8 // No extension to sync back with
+            // bass-line-1
+
+// Go back to the original pitch
+
+l1
+// -- 47 -> 50 -------------------------------
+f <
+g+
+c+
+d+ >
+
+// -- 51 -> 54 -------------------------------
+e <
+g
+c
+d >
+
+//============================================
+
