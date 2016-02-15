@@ -262,7 +262,8 @@ synth_err synthAudio_getTrackLength(int *pLen, synthAudio *pAudio,
     rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-    rv = synthTrack_getLength(pLen, &(pCtx->tracks.buf.pTracks[track]), pCtx);
+    rv = synthTrack_getLength(pLen,
+            &(pCtx->tracks.buf.pTracks[pAudio->tracksIndex + track]), pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
@@ -293,8 +294,8 @@ synth_err synthAudio_getTrackIntroLength(int *pLen, synthAudio *pAudio,
     rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-    rv = synthTrack_getIntroLength(pLen, &(pCtx->tracks.buf.pTracks[track]),
-            pCtx);
+    rv = synthTrack_getIntroLength(pLen,
+            &(pCtx->tracks.buf.pTracks[pAudio->tracksIndex + track]), pCtx);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
@@ -313,7 +314,8 @@ __err:
 synth_bool synthAudio_isTrackLoopable(synthAudio *pAudio, synthCtx *pCtx,
         int track) {
     if (pAudio && track < pAudio->num) {
-        return synthTrack_isLoopable(&(pCtx->tracks.buf.pTracks[track]));
+        return synthTrack_isLoopable(
+                &(pCtx->tracks.buf.pTracks[pAudio->tracksIndex + track]));
     }
     return SYNTH_FALSE;
 }
@@ -346,7 +348,8 @@ synth_err synthAudio_renderTrack(char *pBuf, synthAudio *pAudio, synthCtx *pCtx,
     rv = synthRenderer_resetPosition(&(pCtx->renderCtx));
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-    rv = synthTrack_render(pBuf, &(pCtx->tracks.buf.pTracks[track]), pCtx,
+    rv = synthTrack_render(pBuf,
+            &(pCtx->tracks.buf.pTracks[pAudio->tracksIndex + track]), pCtx,
             mode);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
