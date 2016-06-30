@@ -1,3 +1,102 @@
+#ifndef __SYNTH_LEXER_H__
+#define __SYNTH_LEXER_H__
+
+#include <c_synth/synth_errors.h>
+
+/**
+ * List of tokens recognized by the lexer. Almost every token is mapped to its
+ * respective characters. The exception are NOTE_TK, STRING_TK, NUMBER_TK and
+ * COMMENT_TK. Both STRING_TK and COMMENT_TK are mapped to the first character
+ * recognized by then. NOTE_TK and STRING_TK, on the other hand, are simply
+ * mapped to available characters, without any intrinsic meaning.
+ */
+enum enSynthToken {
+    STK_HALF_DURATION   = '.',
+    STK_NOTE_EXTENSION  = '^',
+    STK_SHARP           = '+',
+    STK_FLAT            = '-',
+    STK_OCTAVE          = 'o',
+    STK_INCREASE_OCTAVE = '>',
+    STK_DECREASE_OCTAVE = '<',
+    STK_DURATION        = 'l',
+    STK_LOAD            = 'j',
+    STK_INSTRUMENT      = 'i',
+    STK_ENVELOPE        = 'v',
+    STK_WAVE            = 'w',
+    STK_PANNING         = 'p',
+    STK_ATTACK          = 't',
+    STK_KEYOFF          = 'k',
+    STK_RELEASE         = 'q',
+    STK_LOOP_START      = '[',
+    STK_LOOP_END        = ']',
+    STK_REPEAT          = '$',
+    STK_MACRO           = 'm',
+    STK_END             = ';',
+    STK_BPM             = 'B',
+    STK_KEY             = 'K',
+    STK_TEMPO           = 'T',
+    STK_STRING          = '_',
+    STK_COMMENT         = '#',
+    STK_NOTE            = 'a',
+    STK_NUMBER          = 'n',
+    STK_END_OF_INPUT    = '\0'
+};
+typedef enum enSynthToken synthToken;
+
+#if defined(ENABLE_STRING_INPUT)
+/** A simple string that may be used as input for the lexre */
+struct stSynthString {
+    /** Total length of the string */
+    unsigned int len;
+    /** Current position on the string */
+    unsigned int pos;
+    /** Pointer to the static (and NULL-terminated) string */
+    char *pStr;
+};
+typedef struct stSynthString synthString;
+#endif
+
+/** An input that shall be tokenized by the lexer */
+union unSynthInput {
+#if defined(USE_SDL2)
+    /** SDL's SDL_RWops, so it works on mobile! */
+    SDL_RWops *sdl;
+#endif
+    /** A file */
+    FILE *file;
+#if defined(ENABLE_STRING_INPUT)
+    /** A static string, with its current position and length */
+    synthString str;
+#endif
+};
+typedef union unSynthInput synthInput;
+
+/** List of types available as input */
+enum enSynthInputType {
+    SST_NONE = 0,
+    SST_FILE,
+    SST_STR,
+    SST_SDL,
+    SST_MAX
+};
+typedef enum enSynthInputType synthInputType;
+
+struct stSynthLexerCtx {
+    synthToken token;
+    synthInputType inputType;
+    int data;
+    int line;
+    int linePos;
+    synthInput input;
+};
+typedef struct stSynthLexerCtx synthLexerCtx;
+
+#endif
+
+
+/* ========================================================================== */
+
+
 /**
  * @file src/include/synth_internal/synth_lexer.h
  * 
