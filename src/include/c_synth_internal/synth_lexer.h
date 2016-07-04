@@ -1,7 +1,42 @@
 #ifndef __SYNTH_LEXER_H__
 #define __SYNTH_LEXER_H__
 
+/** Required for fixed-width sizes */
+#include <stdint.h>
 #include <c_synth/synth_errors.h>
+
+typedef struct stSynth_lexerCtx synth_lexerCtx;
+
+/* == LEXER GLOBAL VARS ==================================================== */
+
+/** Pointer to the start of the lexer within the application's memory */
+extern synthLexer_ctx *pLexer;
+/** Amount of memory required by the lexer */
+extern size_t synth_lexerSize;
+
+/* == LEXER TYPES ========================================================== */
+
+/** Represents all possible notes within a single octave. */
+enum enSynth_note {
+    /** Equivalent to NT_B on a lower octave */
+    NT_CB = 0,
+    NT_C,
+    NT_CS,
+    NT_D,
+    NT_DS,
+    NT_E,
+    NT_F,
+    NT_FS,
+    NT_G,
+    NT_GS,
+    NT_A,
+    NT_AS,
+    NT_B,
+    /** Equivalent to NT_C on a higher octave */
+    NT_BS,
+    NT_REST
+};
+typedef enum enSynth_note synth_note;
 
 /**
  * List of tokens recognized by the lexer. Almost every token is mapped to its
@@ -10,11 +45,9 @@
  * recognized by then. NOTE_TK and STRING_TK, on the other hand, are simply
  * mapped to available characters, without any intrinsic meaning.
  */
-enum enSynthToken {
+enum enSynth_token {
     STK_HALF_DURATION   = '.',
     STK_NOTE_EXTENSION  = '^',
-    STK_SHARP           = '+',
-    STK_FLAT            = '-',
     STK_OCTAVE          = 'o',
     STK_INCREASE_OCTAVE = '>',
     STK_DECREASE_OCTAVE = '<',
@@ -41,55 +74,86 @@ enum enSynthToken {
     STK_NUMBER          = 'n',
     STK_END_OF_INPUT    = '\0'
 };
-typedef enum enSynthToken synthToken;
+typedef enum enSynth_token synth_token;
 
-#if defined(ENABLE_STRING_INPUT)
-/** A simple string that may be used as input for the lexre */
-struct stSynthString {
-    /** Total length of the string */
-    unsigned int len;
-    /** Current position on the string */
-    unsigned int pos;
-    /** Pointer to the static (and NULL-terminated) string */
-    char *pStr;
+/** Possible representations for a token's data */
+union unSynth_tokenData {
+    synthNote note;
+    uint16_t numVal;
 };
-typedef struct stSynthString synthString;
-#endif
+typedef union unSynth_tokenData synth_tokenData;
 
-/** An input that shall be tokenized by the lexer */
-union unSynthInput {
-#if defined(USE_SDL2)
-    /** SDL's SDL_RWops, so it works on mobile! */
-    SDL_RWops *sdl;
-#endif
-    /** A file */
-    FILE *file;
-#if defined(ENABLE_STRING_INPUT)
-    /** A static string, with its current position and length */
-    synthString str;
-#endif
+/** Token and its value (if any) packed into a single 32 bits struct */
+struct stSynth_packedToken {
+    /** The token */
+    synth_token token : 16;
+    /** The token's data (only used on STK_NOTE and STK_NUMBER) */
+    synth_tokenData data : 16;
 };
-typedef union unSynthInput synthInput;
+typedef struct stSynth_packedToken synth_packedToken;
 
-/** List of types available as input */
-enum enSynthInputType {
-    SST_NONE = 0,
-    SST_FILE,
-    SST_STR,
-    SST_SDL,
-    SST_MAX
-};
-typedef enum enSynthInputType synthInputType;
-
-struct stSynthLexerCtx {
-    synthToken token;
-    synthInputType inputType;
-    int data;
+/** The lexer context */
+struct stSynth_lexerCtx {
+    /** The retrieved token */
+    synth_packedToken token;
+    /** Current line withing the input (useful for error logging) */
     int line;
+    /** Current position within a line (useful for error logging) */
     int linePos;
-    synthInput input;
+    /** FILE* from where the song is read */
+    void *pInput;
 };
-typedef struct stSynthLexerCtx synthLexerCtx;
+
+/* == LEXER FUNCTIONS ====================================================== */
+
+/**
+ * Setup the lexer.
+ *
+ * Must be called only once during initialization.
+ *
+ * @param  [ in]pBaseMemory Position in memory where the lexer will be
+ *                          stored. Must be at least synth_lexerSize.
+ */
+synth_err synth_setupLexer(void *pBaseMemory);
+
+/**
+ * (Re)initializes the lexer.
+ *
+ * The input file is rewound and the first token is retrieved.
+ *
+ * @param  [ in]pFile Input file used by the lexer
+ */
+synth_err synth_initLexer(void *pFile);
+
+/**
+ * Retrieve the next token.
+ */
+synth_err synth_getNextToken();
+
+/**
+ * Retrieves the current line in ASCII format.
+ *
+ * The returned string is actually two lines long. The first points to
+ * the current position within the actual input and the second one is
+ * the actual input until the current position (plus the line number).
+ * E.g.:
+ *
+ * Actual line: "a+ f g+ a+ f g+ a+ f"
+ * Line number: 70
+ * Current position: 9
+ *
+ * Output: "           v\n70: a+ f g+ \0"
+ * Printed output (2 spaces indent):
+ * --           v
+ * --70: a+ f g+ 
+ *
+ * This is mostly useful for reporting errors on parsing errors.
+ *
+ * @param  [out]pSize   Length of the string
+ * @param  [out]pString The current line. If NULL, the maximum required
+ *                      size will be returned.
+ */
+synth_err synth_getLexerLine(unsigned int *pSize, char *pString);
 
 #endif
 
