@@ -1,3 +1,27 @@
+/**
+ * @project c_synth
+ * @license zlib license
+ * @file    src/include/c_synth_internal/synth_lexer.h
+ *
+ * The language's lexer.
+ *
+ * Breaks an input into tokens, which are used by the parser to
+ * syntactically analyze songs.
+ *
+ * By design, there shall be only one lexer for each application that
+ * links it, and it may be accessed within the library through the
+ * global pointer 'pLexer'. There's no need to directly access it
+ * outside the library, but one may retrieve the current line (and the
+ * position within it) through the function 'synth_getLexerLine'.
+ *
+ * The user of the lexer is required to alloc the memory that it
+ * requires, which must be at least 'synth_lexerSize' bytes long. Also,
+ * even though the lexer may use outside resources (e.g., FILE*) as
+ * input, it's responsibility of the caller to clean all that up. This
+ * is intended to help cleaning up the whole synthesizer in one go,
+ * since a single memory block may be alloc'ed and divided by the
+ * caller.
+ */
 #ifndef __SYNTH_LEXER_H__
 #define __SYNTH_LEXER_H__
 
