@@ -143,7 +143,7 @@ synth_token synth_getNextToken() {
         case 'c': if (c == 'c') { pLexer->token.data.note = NT_C; }
         case 'd': if (c == 'd') { pLexer->token.data.note = NT_D; }
         case 'e': if (c == 'e') { pLexer->token.data.note = NT_E; }
-        case 'f': if (c == 'f') { pLexer->token.data.note = NT_G; }
+        case 'f': if (c == 'f') { pLexer->token.data.note = NT_F; }
         case 'g': if (c == 'g') { pLexer->token.data.note = NT_G; }
 
             /* Check sharp/flat modifier */

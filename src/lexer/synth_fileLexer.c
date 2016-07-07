@@ -7,6 +7,7 @@
  */
 #include <c_synth_internal/synth_lexer.h>
 
+/** Required for everything FILE* related */
 #include <stdio.h>
 
 /**
@@ -50,10 +51,10 @@ char synth_getNextCharFile() {
 
     do {
         c = fgetc((FILE*)pLexer->pInput);
+
         switch (c) {
-            case EOF: {
-                return '\0';
-            } break;
+            case (int)'\r':
+            break;
             case (int)'\n': {
                 pLexer->linePos = 0;
                 pLexer->line++;
@@ -62,8 +63,9 @@ char synth_getNextCharFile() {
             case (int)'\t': {
                 pLexer->linePos++;
             } break;
-            case (int)'\r':
-            break;
+            case EOF: {
+                return '\0';
+            } break;
             default: {
                 pLexer->linePos++;
                 return (char)c;
@@ -87,7 +89,9 @@ char synth_ungetCharFile() {
     /* TODO Check for 'underflows' (i.e., reading past the begin of the
      * file) */
 
+    fseek((FILE*)pLexer->pInput, -1, SEEK_CUR);
     c = fgetc((FILE*)pLexer->pInput);
+
     fseek((FILE*)pLexer->pInput, -2, SEEK_CUR);
     pLexer->linePos--;
     if (c == '\n') {
