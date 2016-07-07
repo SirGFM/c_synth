@@ -30,7 +30,6 @@
 /** Required for memset */
 #include <string.h>
 
-#include <c_synth/synth_errors.h>
 #include <c_synth_internal/synth_lexer.h>
 
 /* == LEXER GLOBAL VARS ============================================ */
@@ -51,42 +50,15 @@ size_t synth_lexerSize = sizeof(synthLexer_ctx);
  *                          stored. Must point to at least
  *                          synth_lexerSize.
  */
-synth_err synth_setupLexer(void *pBaseMemory) {
-    if (pLexer) {
-        /* Should it be an error to setup it twice? */
-    }
-
+void synth_setupLexer(void *pBaseMemory) {
     pLexer = (synthLexer_ctx*)pBaseMemory;
     memset(pLexer, 0x0, sizeof(synthLexer_ctx));
 }
 
 /**
- * (Re)initializes the lexer.
- *
- * The input file is rewound and the first token is retrieved.
- *
- * @param  [ in]pFile Input file used by the lexer
- */
-synth_err synth_initLexer(void *pFile) {
-    if (!pFile || !pLexer) {
-        /* Assert the error */
-    }
-
-    /* Start it at 1, instead of 0, because it aims to help report
-     * errors (and pretty much every text editor starts lines and
-     * position at 1) */
-    pLexer->line = 1;
-    pLexer->linePos = 1;
-    pLexer->pInput = pFile;
-
-    synth_rewindInput();
-    return synth_getNextToken();
-}
-
-/**
  * Retrieve the next token.
  */
-synth_err synth_getNextToken() {
+synth_token synth_getNextToken() {
     char c;
 
     /* Most tokens are mapped to their actual characters */
@@ -116,27 +88,30 @@ synth_err synth_getNextToken() {
         case STK_TEMPO:
         case STK_END_OF_INPUT:
             pLexer->token.token = (synth_token)c;
-            /* TODO Return OK */
-            return;
+            return (synth_token)c;
         case STK_STRING: {
             pLexer->token.token = (synth_token)c;
+
             do {
                 /* TODO Store the current character somewhere */
+                /* TODO Assert that it's valid */
                 c = synth_getNextChar();
-            } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-                    || (c >= '0' && c <= '9'));
+            } while (c != STK_STRING);
             synth_ungetChar();
-            /* TODO Return OK */
-            return;
+
+            return STK_STRING;
         } break;
         case STK_COMMENT: {
+            int curLine;
+
             pLexer->token.token = (synth_token)c;
+            curLine = pLexer->line;
             do {
                 c = synth_getNextChar();
-            } while (c != '\n' && c != STK_END_OF_INPUT);
+            } while (pLexer->line == curLine && c != STK_END_OF_INPUT);
             synth_ungetChar();
-            /* TODO Return OK */
-            return;
+
+            return STK_COMMENT;
         } break;
         /* STK_NUMBER */
         case '0':
@@ -152,7 +127,7 @@ synth_err synth_getNextToken() {
             uint16_t val = 0;
 
             do {
-                val = val * 10 + c - '0';
+                val = val * 10 + (uint16_t)(c - '0');
                 c = synth_getNextChar();
             } while (c >= '0' && c <= '9');
             synth_ungetChar();
@@ -160,19 +135,18 @@ synth_err synth_getNextToken() {
             pLexer->token.token = STK_NUMBER;
             pLexer->token.data.numVal = val;
 
-            /* TODO Return OK */
-            return;
+            return STK_NUMBER;
         } break;
         /* STK_NOTE */
-        case 'a':
-        case 'b':
-        case 'c':
-        case 'd':
-        case 'e':
-        case 'f':
-        case 'g': {
-            /* TODO Fix this so it actually works */
-            pLexer->token.data.note = (synthNote)c;
+        case 'a': pLexer->token.data.note = NT_A;
+        case 'b': if (c == 'b') { pLexer->token.data.note = NT_B; }
+        case 'c': if (c == 'c') { pLexer->token.data.note = NT_C; }
+        case 'd': if (c == 'd') { pLexer->token.data.note = NT_D; }
+        case 'e': if (c == 'e') { pLexer->token.data.note = NT_E; }
+        case 'f': if (c == 'f') { pLexer->token.data.note = NT_G; }
+        case 'g': if (c == 'g') { pLexer->token.data.note = NT_G; }
+
+            /* Check sharp/flat modifier */
             c = synth_getNextChar();
             if (c == '+') {
                 pLexer->token.data.note++;
@@ -183,11 +157,12 @@ synth_err synth_getNextToken() {
             else {
                 synth_ungetChar();
             }
+
             pLexer->token.token = STK_NOTE;
-            /* TODO Lookup modifier */
-        } break;
+            return STK_NOTE;
+        break;
         default:
-            return UNKOWN;
+            return STK_UNKOWN;
     }
 }
 
@@ -214,7 +189,5 @@ synth_err synth_getNextToken() {
  * @param  [out]pString The current line. If NULL, the maximum required
  *                      size will be returned.
  */
-synth_err synth_getLexerLine(unsigned int *pSize, char *pString);
-
-#endif
+void synth_getLexerLine(unsigned int *pSize, char *pString);
 

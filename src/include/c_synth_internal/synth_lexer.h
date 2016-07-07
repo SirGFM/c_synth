@@ -27,7 +27,6 @@
 
 /** Required for fixed-width sizes */
 #include <stdint.h>
-#include <c_synth/synth_errors.h>
 
 typedef struct stSynth_lexerCtx synth_lexerCtx;
 
@@ -93,11 +92,12 @@ enum enSynth_token {
     STK_BPM             = 'B',
     STK_KEY             = 'K',
     STK_TEMPO           = 'T',
-    STK_STRING          = '_',
+    STK_STRING          = '"',
     STK_COMMENT         = '#',
     STK_NOTE            = 'a',
     STK_NUMBER          = 'n',
-    STK_END_OF_INPUT    = '\0'
+    STK_END_OF_INPUT    = '\0',
+    STK_UNKNOWN         = '?'
 };
 typedef enum enSynth_token synth_token;
 
@@ -140,12 +140,14 @@ struct stSynth_lexerCtx {
  *                          stored. Must point to at least
  *                          synth_lexerSize.
  */
-synth_err synth_setupLexer(void *pBaseMemory);
+void synth_setupLexer(void *pBaseMemory);
 
 /**
  * Retrieve the next token.
+ *
+ * @return The retrieved token (for ease of use).
  */
-synth_err synth_getNextToken();
+synth_token synth_getNextToken();
 
 /**
  * Retrieves the current line in ASCII format.
@@ -170,22 +172,53 @@ synth_err synth_getNextToken();
  * @param  [out]pString The current line. If NULL, the maximum required
  *                      size will be returned.
  */
-synth_err synth_getLexerLine(unsigned int *pSize, char *pString);
+void synth_getLexerLine(unsigned int *pSize, char *pString);
 
 /* == LEXER BACKEND FUNCTIONS =============================== */
+
+/**
+ * Define the backend functions
+ */
+#define synth_loadInput(pInput) synth_loadFileInput(pInput)
+#define synth_rewindInput() synth_fileRewindInput()
+#define synth_getNextChar() synth_fileGetNextChar()
+#define synth_ungetChar() synth_fileUngetChar()
 
 /**
  * (Re)initializes the lexer.
  *
  * The input file is rewound and the first token is retrieved.
  *
- * @param  [ in]pFile Input file used by the lexer
+ * @param  [ in]pInput Input file used by the lexer
  */
-synth_err synth_loadInput(void *pFile);
+void synth_loadFileInput(void *pInput);
 
-synth_err synth_rewindInput();
-char synth_getNextChar();
-synth_err synth_ungetChar();
+/**
+ * Rewinds the input to its start
+ */
+void synth_rewindFileInput(void);
+
+/**
+ * Reads the next character from the input.
+ *
+ * Any kind of whitespace (' ', '\t', '\n', '\r') is completely ignored.
+ * Also, pLexer's line and linePos are updated accordingly.
+ *
+ * @return The character read. On error and on end of input, '\0' is
+ *         returned.
+ */
+char synth_getNextCharFile(void);
+
+/**
+ * Move the current position within the input back.
+ *
+ * This function updates pLexer's line and linePos. Other than that,
+ * it's useful when parsing tokens that are/may be longer than one
+ * character long.
+ *
+ * @return The character that was on the current position.
+ */
+char synth_ungetCharFile(void);
 
 #endif
 
