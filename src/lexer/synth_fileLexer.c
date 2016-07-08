@@ -31,7 +31,7 @@ void synth_rewindFileInput() {
     /* Start it at 1, instead of 0, because it aims to help report
      * errors (and pretty much every text editor starts lines and
      * position at 1) */
-    pLexer->line = 0;
+    pLexer->line = 1;
     pLexer->linePos = 1;
 
     rewind((FILE*)pLexer->pInput);
@@ -92,12 +92,11 @@ char synth_ungetCharFile() {
     fseek((FILE*)pLexer->pInput, -1, SEEK_CUR);
     c = fgetc((FILE*)pLexer->pInput);
 
-    fseek((FILE*)pLexer->pInput, -2, SEEK_CUR);
+    fseek((FILE*)pLexer->pInput, -1, SEEK_CUR);
     pLexer->linePos--;
     if (c == '\n') {
         pLexer->line--;
-        /* TODO Query the line position, somehow? */
-        pLexer->linePos = 10;
+        pLexer->linePos = 0;
     }
     else if (c == EOF) {
         c = '\0';

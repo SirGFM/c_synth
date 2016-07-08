@@ -221,5 +221,21 @@ char synth_getNextCharFile(void);
  */
 char synth_ungetCharFile(void);
 
+/**
+ * Dictionary of notes.
+ *
+ * @param  [ in]note The note
+ * @return           Static string with the note's name
+ */
+char* synth_noteDict(synth_note note);
+
+/**
+ * Dictionary of tokens.
+ *
+ * @param  [ in]token The token.
+ * @return            Static string with the token's name
+ */
+char* synth_tokenDictionary(synth_token token);
+
 #endif
 

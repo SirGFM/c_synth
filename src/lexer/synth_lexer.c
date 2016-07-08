@@ -166,6 +166,24 @@ synth_token synth_getNextToken() {
     }
 }
 
+/* == LEXER DEBUG FUNCTION ========================================= */
+
+/**
+ * Dictionary of notes.
+ *
+ * @param  [ in]note The note
+ * @return           Static string with the note's name
+ */
+char* synth_noteDict(synth_note note);
+
+/**
+ * Dictionary of tokens.
+ *
+ * @param  [ in]token The token.
+ * @return            Static string with the token's name
+ */
+char* synth_tokenDictionary(synth_token token);
+
 /**
  * Retrieves the current line in ASCII format.
  *
