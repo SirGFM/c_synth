@@ -1,33 +1,31 @@
 
+# TODO Redirect STDERR to a variable, so the first error isn't on the same line
+# of the compilation command
+
+#==============================================================================
+# Import the configurations
+#==============================================================================
+  include conf/Makefile.conf
+#==============================================================================
+
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS = $(OBJDIR)/synth.o          \
-         $(OBJDIR)/synth_audio.o    \
-         $(OBJDIR)/synth_lexer.o    \
-         $(OBJDIR)/synth_note.o     \
-         $(OBJDIR)/synth_parser.o   \
-         $(OBJDIR)/synth_prng.o     \
-         $(OBJDIR)/synth_renderer.o \
-         $(OBJDIR)/synth_track.o    \
-         $(OBJDIR)/synth_volume.o
+  OBJS = lexer/synth_lexer.o \
+         lexer/synth_fileLexer.o
 #===============================================================================
 
-#==============================================================================
-# Select which compiler to use (either gcc or emcc)
-#==============================================================================
-  ifeq ($(MAKECMDGOALS), emscript)
-    CC := emcc
-  else
-    ifeq ($(MAKECMDGOALS), emscript_clean)
-      CC := emcc
-    else
-      ifndef ($(CC))
-        CC := gcc
-      endif
-    endif
-  endif
-#==============================================================================
+#===============================================================================
+# Define every app (each must have its specific build rule)
+#===============================================================================
+  APPS = synth_tokenizer
+#===============================================================================
+
+#===============================================================================
+# List of directories that must be generated
+#===============================================================================
+  DIRLIST := $(BINDIR) $(OBJDIR) $(OBJDIR)/lexer
+#===============================================================================
 
 #==============================================================================
 # Clear the suffixes' default rule, since there's an explicit one
@@ -38,126 +36,20 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: emscript fast fast_all release install clean emscript_clean distclean
+.PHONY: all shared static clean listflags mkdirs apps
 #==============================================================================
-
-#==============================================================================
-# Define compilation target
-#==============================================================================
-  TARGET := libCSynth
-  LIBNAME := lCSynth
-  MAJOR_VERSION := 1
-  MINOR_VERSION := 0
-  REV_VERSION   := 2
-# If the DEBUG flag was set, generate another binary (so it doesn't collide
-# with the release one)
-  ifeq ($(DEBUG), yes)
-    TARGET := $(TARGET)_dbg
-  endif
-#==============================================================================
-
-#===============================================================================
-# Set OS flag
-#===============================================================================
-  OS := $(shell uname)
-  ifeq ($(OS), MINGW32_NT-6.1)
-    OS := Win
-  endif
-  ifeq ($(CC), emcc)
-    OS := emscript
-  endif
-#===============================================================================
-
-#===============================================================================
-# Define CFLAGS (compiler flags)
-#===============================================================================
-# Add all warnings and default include path
-  CFLAGS := -Wall -I"./include" -I"./src/include"
-# Add architecture flag
-  ARCH := $(shell uname -m)
-  ifeq ($(OS), emscript)
-    CFLAGS := $(CFLAGS) -I"$(EMSCRIPTEN)/system/include/" -m32
-  else
-    ifeq ($(ARCH), x86_64)
-      CFLAGS := $(CFLAGS) -m64
-    else
-      CFLAGS := $(CFLAGS) -m32
-    endif
-  endif
-# Add debug flags
-  ifeq ($(OS), emscript)
-    CFLAGS := $(CFLAGS) -O2
-  else
-    ifneq ($(RELEASE), yes)
-      CFLAGS := $(CFLAGS) -g -O0
-    else
-      CFLAGS := $(CFLAGS) -O3
-    endif
-  endif
-# Set flags required by OS
-  ifeq ($(OS), Win)
-    CFLAGS := $(CFLAGS) -I"/d/windows/mingw/include"
-  else
-    CFLAGS := $(CFLAGS) -fPIC
-  endif
-# Set the current compiler
-  ifeq ($(OS), emscript)
-    CFLAGS := $(CFLAGS) -DEMCC
-  endif
-#===============================================================================
-
-#===============================================================================
-# Define LFLAGS (linker flags)
-#===============================================================================
-  LFLAGS := 
-  SDL_LFLAGS := -lSDL2
-  
-  ifeq ($(OS), Win)
-    LFLAGS := $(LFLAGS) -lmingw32
-    SDL_LFLAGS := -lSDL2main -lSDL2
-  else
-    LFLAGS := $(LFLAGS) -lm
-  endif
-#===============================================================================
 
 #===============================================================================
 # Define where source files can be found and where objects and binary are output
 #===============================================================================
-  VPATH := src:tst
-  OBJDIR := obj/$(OS)
-  BINDIR := bin/$(OS)
-  TESTDIR := tst
-  ifeq ($(OS), Win)
-     ifeq ($(ARCH), x64)
-       LIBPATH := /d/windows/mingw/lib
-     else
-       LIBPATH := /d/windows/mingw/mingw32/lib
-     endif
-     HEADERPATH := /d/windows/mingw/include
-  else
-    LIBPATH := /usr/lib
-    HEADERPATH := /usr/include
-  endif
+  VPATH := src:app
 #===============================================================================
 
 #==============================================================================
-# Automatically look up for tests and compile them
+# Make both objects and apps list constants
 #==============================================================================
- TEST_SRC := $(wildcard $(TESTDIR)/tst_*.c)
- TEST_OBJS := $(TEST_SRC:$(TESTDIR)/%.c=$(OBJDIR)/%.o)
- TEST_BIN := $(addprefix $(BINDIR)/, $(TEST_SRC:$(TESTDIR)/%.c=%$(BIN_EXT)))
-#==============================================================================
-
-#==============================================================================
-# Make sure the test's object files aren't automatically deleted
-#==============================================================================
-.SECONDARY: $(TEST_OBJS)
-#==============================================================================
-
-#==============================================================================
-# Make the objects list constant (and the icon, if any)
-#==============================================================================
-  OBJS := $(OBJS)
+  OBJS := $(OBJS:%=$(OBJDIR)/%)
+  APPS := $(APPS:%=$(BINDIR)/%)
 #==============================================================================
 
 #==============================================================================
@@ -174,236 +66,127 @@
   endif
 #==============================================================================
 
-#==============================================================================
-# Get the number of cores for fun stuff
-#==============================================================================
-  ifeq ($(OS), Win)
-   CORES := 1
-  else
-   CORES := $$(($(shell nproc) * 2))
-  endif
-#==============================================================================
-
 #===============================================================================
 # Define default compilation rule
 #===============================================================================
-all: static shared tests
+all: listflags static shared apps
 #===============================================================================
 
 #==============================================================================
-# Rule for building a object file for emscript
+# Rule for building the static lib
 #==============================================================================
-emscript: $(BINDIR)/$(TARGET).bc
-#===============================================================================
-
-#==============================================================================
-# Rule for cleaning emscript build... It's required to modify the CC
-#==============================================================================
-emscript_clean: clean
-#===============================================================================
-
-#==============================================================================
-# Build a emscript (LLVM) binary, to be used when compiling for HTML5
-#==============================================================================
-$(BINDIR)/$(TARGET).bc: MKDIRS $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(OBJS)
-#==============================================================================
-
-#==============================================================================
-# Define the release rule, to compile everything on RELEASE mode (it's done in
-# quite an ugly way.... =/)
-#==============================================================================
-release: MKDIRS
-	# Remove all old binaries
-	make clean
-	# Compile everything in release mode
-	make RELEASE=yes fast
-	# Remove all debug info from the binaries
-	strip $(BINDIR)/$(TARGET).a
-	strip $(BINDIR)/$(TARGET).$(MNV)
-	# Delete all .o to recompile as debug
-	rm -f $(OBJS)
-	# Recompile the lib with debug info
-	make DEBUG=yes fast
-	date
+listflags:
+	@ echo "Active build flags:"
+	@ echo "  OS     : $(OS)"
+	@ echo "  ARCH   : $(ARCH)"
+	@ echo "  CC     : $(CC)"
+	@ echo "  DEBUG  : $(DEBUG)"
+	@ echo "  VERSION: $(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)"
+	@ echo "  CFLAGS : $(CFLAGS)"
 #==============================================================================
 
 #==============================================================================
 # Rule for building the static lib
 #==============================================================================
-static: MKDIRS $(BINDIR)/$(TARGET).a
+static: mkdirs $(BINDIR)/$(TARGET_NAME).a
 #==============================================================================
 
 #==============================================================================
 # Rule for building the shared libs
 #==============================================================================
-shared: MKDIRS $(BINDIR)/$(TARGET).$(MNV)
+shared: mkdirs $(BINDIR)/$(TARGET)
 #==============================================================================
 
 #==============================================================================
-# Rule for building tests
+# Rule for building all apps
 #==============================================================================
-tests: MKDIRS shared $(TEST_BIN)
-#==============================================================================
-
-#==============================================================================
-# Rule for installing the library
-#==============================================================================
-ifeq ($(OS), Win)
-  install: release
-	# Create destiny directories
-	mkdir -p /c/c_synth/lib/
-	mkdir -p /c/c_synth/include/c_synth
-	# Copy every shared lib (normal, optmized and debug)
-	cp -f $(BINDIR)/$(TARGET)*.$(MNV) /c/c_synth/lib
-	# -P = don't follow sym-link
-	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) /c/c_synth/lib
-	cp -fP $(BINDIR)/$(TARGET)*.$(SO) /c/c_synth/lib
-	# Copy the headers
-	cp -rf ./include/c_synth/* /c/c_synth/include/c_synth
-else
-  install: release
-	# Create destiny directories
-	mkdir -p $(LIBPATH)/c_synth
-	mkdir -p $(HEADERPATH)/c_synth
-	# Copy every shared lib (normal, optmized and debug)
-	cp -f $(BINDIR)/$(TARGET)*.$(MNV) $(LIBPATH)/c_synth
-	# -P = don't follow sym-link
-	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) $(LIBPATH)/c_synth
-	cp -fP $(BINDIR)/$(TARGET)*.$(SO) $(LIBPATH)/c_synth
-	# Copy the static lib
-	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)/c_synth
-	# Copy the headers
-	cp -rf ./include/c_synth/* $(HEADERPATH)/c_synth
-	# Make the lib be automatically found
-	echo "$(LIBPATH)/c_synth" > /etc/ld.so.conf.d/c_synth.conf
-	# Update the paths
-	ldconfig
-endif
-#==============================================================================
-
-#==============================================================================
-# Rule for uninstalling the library
-#==============================================================================
-ifeq ($(OS), Win)
-  uninstall:
-	# Remove the libraries (account for different versions)
-	rm -f /c/c_synth/lib/$(TARGET)_dbg.*
-	rm -f /c/c_synth/lib/$(TARGET).*
-	# Remove the headers
-	rm -rf /c/c_synth/include/*
-	# Remove its directories
-	rmdir /c/c_synth/lib/
-	rmdir /c/c_synth/include/
-	rmdir /c/c_synth/
-else
-  uninstall:
-	# Remove the libraries (account for different versions)
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.*
-	rm -f $(LIBPATH)/c_synth/$(TARGET).*
-	# Remove the headers
-	rm -rf $(HEADERPATH)/c_synth/*
-	# Remove its directories
-	rmdir $(LIBPATH)/c_synth
-	rmdir $(HEADERPATH)/c_synth
-	# Remove the lib from the default path
-	rm /etc/ld.so.conf.d/c_synth.conf
-	# Update the paths
-	ldconfig
-endif
+apps: mkdirs $(APPS)
 #==============================================================================
 
 #==============================================================================
 # Rule for actually building the static library
 #==============================================================================
-$(BINDIR)/$(TARGET).a: $(OBJS)
-	rm -f $(BINDIR)/$(TARGET).a
-	ar -cvq $(BINDIR)/$(TARGET).a $(OBJS)
+$(BINDIR)/$(TARGET_NAME).a: $(OBJS)
+	@ echo -n "Building the static lib '$@'... "
+	@ rm -f $(BINDIR)/$(TARGET_NAME).a
+	@ ar -cvq $(BINDIR)/$(TARGET_NAME).a $(OBJS) > /dev/null
+	@ echo "DONE"
 #==============================================================================
 
 #==============================================================================
 # Rule for actually building the shared library
 #==============================================================================
-ifeq ($(OS), Win)
-  $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
-	rm -f $(BINDIR)/$(TARGET).$(MNV)
-	gcc -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-all-symbols \
-	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
-else
-  $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
-	rm -f $(BINDIR)/$(TARGET).$(MNV) $(BINDIR)/$(TARGET).$(SO)
-	gcc -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
-	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
-	cd $(BINDIR); ln -f -s $(TARGET).$(MNV) $(TARGET).$(MJV)
-	cd $(BINDIR); ln -f -s $(TARGET).$(MJV) $(TARGET).$(SO)
-endif
-#==============================================================================
 
-#==============================================================================
-# Rule for compiling test binaries that uses SDL2 as its backend (those are
-# prefixed by 'tst_' and suffixed by 'SDL2')
-#==============================================================================
-$(BINDIR)/tst_%SDL2$(BIN_EXT): $(OBJDIR)/tst_%SDL2.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg $(SDL_LFLAGS)
-#==============================================================================
+# Windows DLL
+$(BINDIR)/$(TARGET_NAME).dll: $(OBJS)
+	@ echo -n "Building the DLL '$@'... "
+	@ rm -f $@
+	@ gcc -shared -Wl,-soname,$(TARGET_NAME).dll -Wl,-export-all-symbols \
+	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	@ echo "DONE"
 
-#==============================================================================
-# Rule for compiling a test binary (it's prefixed by 'tst_')
-#==============================================================================
-$(BINDIR)/tst_%$(BIN_EXT): $(OBJDIR)/tst_%.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg
+# Linux shared lib symlink 2
+$(BINDIR)/$(TARGET_NAME).so: $(BINDIR)/$(TARGET_MAJOR)
+	@ echo -n "Building the shared lib '$@'... "
+	@ rm -f $(BINDIR)/$(TARGET_NAME).so
+	@ cd $(BINDIR); ln -f -s $(TARGET_MAJOR) $(TARGET_NAME).so
+	@ echo "DONE"
+
+# Linux shared lib symlink 1
+$(BINDIR)/$(TARGET_MAJOR): $(BINDIR)/$(TARGET_MINOR)
+	@ echo -n "Building the shared lib '$@'... "
+	@ rm -f $(BINDIR)/$(TARGET_MAJOR)
+	@ cd $(BINDIR); ln -f -s $(TARGET_MINOR) $(TARGET_MAJOR)
+	@ echo "DONE"
+
+# Linux shared lib
+$(BINDIR)/$(TARGET_MINOR): $(OBJS)
+	@ echo -n "Building the shared lib '$@'... "
+	@ rm -f $(BINDIR)/$(TARGET_MINOR)
+	@ gcc -shared -Wl,-soname,$(TARGET_MAJOR) -Wl,-export-dynamic \
+	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	@ echo "DONE"
 #==============================================================================
 
 #==============================================================================
 # Rule for compiling any .c in its object
 #==============================================================================
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+	@ echo -n "Compiling '$<' into '$@'... "
+	@ $(CC) $(CFLAGS) -o $@ -c $<
+	@ echo "DONE"
 #==============================================================================
 
 #==============================================================================
 # Rule for creating every directory
 #==============================================================================
-MKDIRS: | $(OBJDIR)
-#==============================================================================
-
-#==============================================================================
-# Build everything as fast as possible (and using as many cores/threads as
-# possible)
-#==============================================================================
-fast:
-	make -j $(CORES) static shared
-#==============================================================================
-
-#==============================================================================
-# Build everything as fast as possible (and using as many cores/threads as
-# possible)
-#==============================================================================
-fast_all:
-	make -j $(CORES) static shared && make -j $(CORES)
-#==============================================================================
-
-#==============================================================================
-# Rule for actually creating every directory
-#==============================================================================
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-	mkdir -p $(BINDIR)
+mkdirs:
+	@ echo -n "Checking/Creating necessary directories... "
+	@ mkdir -p $(DIRLIST)
+	@ echo "DONE"
 #==============================================================================
 
 #==============================================================================
 # Removes all built objects (use emscript_clean to clear the emscript stuff)
 #==============================================================================
 clean:
-	rm -f $(OBJS) $(BINDIR)/$(TARGET).a $(BINDIR)/*
-	rm -rf $(OBJDIR) $(BINDIR)
+	@ echo -n "Cleaning the project... "
+	@ rm -f $(OBJS) $(BINDIR)/$(TARGET).a $(BINDIR)/*
+	@ rm -rf $(DIRLIST)
+	@ echo "DONE"
 #==============================================================================
 
 #==============================================================================
-# Remove all built objects and target directories
+# Rule for each specific app
 #==============================================================================
-distclean: clean
-	make emscript_clean
-	rmdir obj/ bin/
+SYNTH_TOKENIZER_OBJ := $(OBJDIR)/synth_tokenizer.o \
+        $(OBJDIR)/lexer/synth_lexerDict.o $(OBJDIR)/lexer/synth_lexer.o \
+        $(OBJDIR)/lexer/synth_fileLexer.o
+
+$(BINDIR)/synth_tokenizer: $(SYNTH_TOKENIZER_OBJ)
+	@ echo -n "Building the app '$@'... "
+	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ)
+	@ echo "DONE"
+
 #==============================================================================
 
