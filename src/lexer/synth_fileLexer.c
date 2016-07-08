@@ -20,7 +20,7 @@
 void synth_loadFileInput(void *pInput) {
     pLexer->pInput = pInput;
 
-    synth_fileRewindInput();
+    synth_rewindFileInput();
     synth_getNextToken();
 }
 

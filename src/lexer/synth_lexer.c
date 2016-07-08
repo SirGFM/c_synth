@@ -35,9 +35,9 @@
 /* == LEXER GLOBAL VARS ============================================ */
 
 /** Lexer's reference */
-synthLexer_ctx *pLexer = 0;
+synth_lexerCtx *pLexer = 0;
 /** Amount of memory required by the lexer */
-size_t synth_lexerSize = sizeof(synthLexer_ctx);
+size_t synth_lexerSize = sizeof(synth_lexerCtx);
 
 /* == LEXER FUNCTIONS ======================================= */
 
@@ -51,8 +51,8 @@ size_t synth_lexerSize = sizeof(synthLexer_ctx);
  *                          synth_lexerSize.
  */
 void synth_setupLexer(void *pBaseMemory) {
-    pLexer = (synthLexer_ctx*)pBaseMemory;
-    memset(pLexer, 0x0, sizeof(synthLexer_ctx));
+    pLexer = (synth_lexerCtx*)pBaseMemory;
+    memset(pLexer, 0x0, sizeof(synth_lexerCtx));
 }
 
 /**
@@ -162,7 +162,7 @@ synth_token synth_getNextToken() {
             return STK_NOTE;
         break;
         default:
-            return STK_UNKOWN;
+            return STK_UNKNOWN;
     }
 }
 

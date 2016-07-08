@@ -27,15 +27,8 @@
 
 /** Required for fixed-width sizes */
 #include <stdint.h>
-
-typedef struct stSynth_lexerCtx synth_lexerCtx;
-
-/* == LEXER GLOBAL VARS ============================================ */
-
-/** Lexer's reference */
-extern synthLexer_ctx *pLexer;
-/** Amount of memory required by the lexer */
-extern size_t synth_lexerSize;
+/** Required for size_t */
+#include <stddef.h>
 
 /* == LEXER TYPES ================================================== */
 
@@ -103,7 +96,7 @@ typedef enum enSynth_token synth_token;
 
 /** Possible representations for a token's data */
 union unSynth_tokenData {
-    synthNote note;
+    synth_note note;
     uint16_t numVal;
 };
 typedef union unSynth_tokenData synth_tokenData;
@@ -111,9 +104,9 @@ typedef union unSynth_tokenData synth_tokenData;
 /** Token and its value (if any) packed into a single 32 bits struct */
 struct stSynth_packedToken {
     /** The token */
-    synth_token token : 16;
+    synth_token token;
     /** The token's data (only used on STK_NOTE and STK_NUMBER) */
-    synth_tokenData data : 16;
+    synth_tokenData data;
 };
 typedef struct stSynth_packedToken synth_packedToken;
 
@@ -128,6 +121,14 @@ struct stSynth_lexerCtx {
     /** FILE* from where the song is read */
     void *pInput;
 };
+typedef struct stSynth_lexerCtx synth_lexerCtx;
+
+/* == LEXER GLOBAL VARS ============================================ */
+
+/** Lexer's reference */
+extern synth_lexerCtx *pLexer;
+/** Amount of memory required by the lexer */
+extern size_t synth_lexerSize;
 
 /* == LEXER FUNCTIONS ======================================= */
 
@@ -180,9 +181,9 @@ void synth_getLexerLine(unsigned int *pSize, char *pString);
  * Define the backend functions
  */
 #define synth_loadInput(pInput) synth_loadFileInput(pInput)
-#define synth_rewindInput() synth_fileRewindInput()
-#define synth_getNextChar() synth_fileGetNextChar()
-#define synth_ungetChar() synth_fileUngetChar()
+#define synth_rewindInput() synth_rewindFileInput()
+#define synth_getNextChar() synth_getNextCharFile()
+#define synth_ungetChar() synth_ungetCharFile()
 
 /**
  * (Re)initializes the lexer.
