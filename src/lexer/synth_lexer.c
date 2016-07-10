@@ -31,13 +31,14 @@
 #include <string.h>
 
 #include <c_synth_internal/synth_lexer.h>
+#include <c_synth_internal/synth_memory.h>
 
 /* == LEXER GLOBAL VARS ============================================ */
 
 /** Lexer's reference */
 synth_lexerCtx *pLexer = 0;
 /** Amount of memory required by the lexer */
-size_t synth_lexerSize = sizeof(synth_lexerCtx);
+const size_t synth_lexerSize = synth_align32(sizeof(synth_lexerCtx));
 
 /* == LEXER FUNCTIONS ======================================= */
 
@@ -46,13 +47,12 @@ size_t synth_lexerSize = sizeof(synth_lexerCtx);
  *
  * Must be called only once during initialization.
  *
- * @param  [ in]pBaseMemory Position in memory where the lexer will be
- *                          stored. Must point to at least
- *                          synth_lexerSize.
+ * @param  [ in]pMemory Position in memory where the lexer will be
+ *                      stored. Must point to at least synth_lexerSize.
  */
-void synth_setupLexer(void *pBaseMemory) {
-    pLexer = (synth_lexerCtx*)pBaseMemory;
-    memset(pLexer, 0x0, sizeof(synth_lexerCtx));
+void synth_setupLexer(void *pMemory) {
+    pLexer = (synth_lexerCtx*)pMemory;
+    memset(pLexer, 0x0, synth_lexerSize);
 }
 
 /**
@@ -169,23 +169,7 @@ synth_token synth_getNextToken() {
 /* == LEXER DEBUG FUNCTION ========================================= */
 
 /**
- * Dictionary of notes.
- *
- * @param  [ in]note The note
- * @return           Static string with the note's name
- */
-char* synth_noteDict(synth_note note);
-
-/**
- * Dictionary of tokens.
- *
- * @param  [ in]token The token.
- * @return            Static string with the token's name
- */
-char* synth_tokenDictionary(synth_token token);
-
-/**
- * Retrieves the current line in ASCII format.
+ * Retrieves the current line in ASCII format. TODO Implement this.
  *
  * The returned string is actually two lines long. The first points to
  * the current position within the actual input and the second one is

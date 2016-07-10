@@ -94,9 +94,16 @@ void synth_cleanMemory();
  * @param  [ in]value Value to be aligned
  * @return            Aligned value
  */
-static inline int synth_align32(int value) {
-    return ((value + 3) & ~4)
-}
+#define synth_align32(value) ((value + 3) & ~4)
+
+/**
+ * Retrieves a memory region within another region
+ *
+ * @param  [ in]pMemory Base memory region
+ * @param  [ in]offset  Offset within the memory
+ * @return              Pointer to the start of that region
+ */
+#define synth_getMemory(pMemory, offset) ((void*)(pMemory + offset))
 
 /**
  * Retrieves a memory region within the objects' memory
@@ -104,9 +111,7 @@ static inline int synth_align32(int value) {
  * @param  [ in]offset Offset within objects' memory
  * @return             Pointer to the start of that region
  */
-static inline void* synth_getRegion(int offset) {
-    return (void*)( ((uint8_t*)pObjects) + synth_memorySize + offset);
-}
+#define synth_getRegion(offset) (synth_getMemory((uint8_t*)pObjects, offset))
 
 #endif /* __SYNTH_MEMORY_H__ */
 

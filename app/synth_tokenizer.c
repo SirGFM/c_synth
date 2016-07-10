@@ -19,9 +19,6 @@
     } \
   } while (0)
 
-extern synth_lexerCtx *pLexer;
-extern size_t synth_lexerSize;
-
 int main(int argc, char *argv[]) {
     void *pMem = 0;
     FILE *pFile = 0;
