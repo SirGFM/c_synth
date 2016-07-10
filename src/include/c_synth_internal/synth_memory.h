@@ -3,7 +3,21 @@
  * @license zlib license
  * @file    src/include/c_synth_internal/synth_memory.h
  *
- * Helps to manage memory for objects.
+ * @summary Helps to manage memory for objects.
+ *
+ * This module should be used to logically separate the synthesizer's
+ * data memory into a few different regions. Each region should have a
+ * fixed size and shall be used by a single module (e.g., one region for
+ * songs and another one for instruments).
+ *
+ * The default use-case expects this memory to be initialized with
+ * exactly the required amount of memory, perfectly distributed between
+ * each region. However, it's written in such a way that one may request
+ * its memory to be expanded and it will automatically fix all pointers
+ * within the module. This mode may be useful for the offline tools,
+ * since it will be able to calculate the required memory for a few
+ * songs/instruments without relying in aproximations or guesses by the
+ * user.
  */
 #ifndef __SYNTH_MEMORY_H__
 #define __SYNTH_MEMORY_H__
@@ -17,8 +31,14 @@
 
 /** Defines a region within the base memory */
 struct stSynth_region {
+    /** Offset from the memory's base */
     int offset;
+    /** Size of the memory region */
     int len;
+#  ifdef ENABLE_MALLOC
+    /** Amount of used memory */
+    int used;
+#  endif
 };
 typedef struct stSynth_region synth_region;
 
@@ -75,6 +95,42 @@ void synth_setupMemory(void *pMemory, int instrumentsLen, int songsLen,
  */
 void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen,
         int stringsLen);
+
+/**
+ * Dynamically expands the memory for instruments.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for instruments
+ */
+void synth_expandInstruments(int len);
+
+/**
+ * Dynamically expands the memory for songs.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for songs
+ */
+void synth_expandSongs(int len);
+
+/**
+ * Dynamically expands the memory for tracks.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for tracks
+ */
+void synth_expandTracks(int len);
+
+/**
+ * Dynamically expands the memory for strings.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for strings
+ */
+void synth_expandStrings(int len);
 
 /**
  * Clean up the dinamically allo'ec memory
