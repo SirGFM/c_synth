@@ -1,7 +1,4 @@
 
-# TODO Redirect STDERR to a variable, so the first error isn't on the same line
-# of the compilation command
-
 #==============================================================================
 # Import the configurations
 #==============================================================================
@@ -118,6 +115,7 @@ $(BINDIR)/$(TARGET_NAME).a: $(OBJS)
 #==============================================================================
 
 # Windows DLL
+# TODO Check if stderr redirection works on windows and fix here
 $(BINDIR)/$(TARGET_NAME).dll: $(OBJS)
 	@ echo -n "Building the DLL '$@'... "
 	@ rm -f $@
@@ -144,7 +142,9 @@ $(BINDIR)/$(TARGET_MINOR): $(OBJS)
 	@ echo -n "Building the shared lib '$@'... "
 	@ rm -f $(BINDIR)/$(TARGET_MINOR)
 	@ gcc -shared -Wl,-soname,$(TARGET_MAJOR) -Wl,-export-dynamic \
-	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS) \
+	    && (rm -f err.out ; true) \
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -153,7 +153,9 @@ $(BINDIR)/$(TARGET_MINOR): $(OBJS)
 #==============================================================================
 $(OBJDIR)/%.o: %.c
 	@ echo -n "Compiling '$<' into '$@'... "
-	@ $(CC) $(CFLAGS) -o $@ -c $<
+	@ $(CC) $(CFLAGS) -o $@ -c $< > /dev/null 2> err.out \
+	    && (rm -f err.out ; true) \
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
 	@ echo "DONE"
 #==============================================================================
 
