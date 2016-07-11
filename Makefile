@@ -23,7 +23,7 @@
 # List of directories that must be generated
 #===============================================================================
   DIRLIST := $(BINDIR) $(OBJDIR) $(OBJDIR)/lexer $(OBJDIR)/memory \
-    $(OBJDIR)/app $(OBJDIR)/app/lexer $(OBJDIR)/app/memory
+    $(OBJDIR)/dyn $(OBJDIR)/dyn/lexer $(OBJDIR)/dyn/memory
 #===============================================================================
 
 #==============================================================================
@@ -106,7 +106,7 @@ apps: mkdirs $(APPS)
 # Rule for actually building the static library
 #==============================================================================
 $(BINDIR)/$(TARGET_NAME).a: $(OBJS)
-	@ echo -n "Building the static lib '$@'... "
+	@ echo -n "[  AR  ] $@... "
 	@ rm -f $(BINDIR)/$(TARGET_NAME).a
 	@ ar -cvq $(BINDIR)/$(TARGET_NAME).a $(OBJS) > /dev/null
 	@ echo "DONE"
@@ -119,7 +119,7 @@ $(BINDIR)/$(TARGET_NAME).a: $(OBJS)
 # Windows DLL
 # TODO Check if stderr redirection works on windows and fix here
 $(BINDIR)/$(TARGET_NAME).dll: $(OBJS)
-	@ echo -n "Building the DLL '$@'... "
+	@ echo -n "[  DLL ] $@... "
 	@ rm -f $@
 	@ gcc -shared -Wl,-soname,$(TARGET_NAME).dll -Wl,-export-all-symbols \
 	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
@@ -127,21 +127,21 @@ $(BINDIR)/$(TARGET_NAME).dll: $(OBJS)
 
 # Main linux shared lib symlink (i.e., libCSynth.so)
 $(BINDIR)/$(TARGET_NAME).so: $(BINDIR)/$(TARGET_MAJOR)
-	@ echo -n "Building the shared lib '$@'... "
+	@ echo -n "[  SO  ] $@... "
 	@ rm -f $(BINDIR)/$(TARGET_NAME).so
 	@ cd $(BINDIR); ln -f -s $(TARGET_MAJOR) $(TARGET_NAME).so
 	@ echo "DONE"
 
 # Major linux shared lib symlink (e.g., libCSynth.so.2)
 $(BINDIR)/$(TARGET_MAJOR): $(BINDIR)/$(TARGET_MINOR)
-	@ echo -n "Building the shared lib '$@'... "
+	@ echo -n "[  SO  ] $@... "
 	@ rm -f $(BINDIR)/$(TARGET_MAJOR)
 	@ cd $(BINDIR); ln -f -s $(TARGET_MINOR) $(TARGET_MAJOR)
 	@ echo "DONE"
 
 # Linux shared lib (e.g., libCSynth.so.2.0.0)
 $(BINDIR)/$(TARGET_MINOR): $(OBJS)
-	@ echo -n "Building the shared lib '$@'... "
+	@ echo -n "[  SO  ] $@... "
 	@ rm -f $(BINDIR)/$(TARGET_MINOR)
 	@ gcc -shared -Wl,-soname,$(TARGET_MAJOR) -Wl,-export-dynamic \
 	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS) \
@@ -151,10 +151,10 @@ $(BINDIR)/$(TARGET_MINOR): $(OBJS)
 #==============================================================================
 
 #==============================================================================
-# Rule for compiling any .c in its object
+# Rule for compiling any .c into its object
 #==============================================================================
 $(OBJDIR)/%.o: %.c
-	@ echo -n "Compiling '$<' into '$@'... "
+	@ echo -n "[  CC  ] $< -> $@... "
 	@ $(CC) $(CFLAGS) -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
 	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
@@ -162,10 +162,10 @@ $(OBJDIR)/%.o: %.c
 #==============================================================================
 
 #==============================================================================
-# Rule for compiling any .c in its object (for apps)
+# Rule for compiling any .c into its object (with malloc enabled)
 #==============================================================================
-$(OBJDIR)/app/%.o: %.c
-	@ echo -n "Compiling '$<' into '$@'... "
+$(OBJDIR)/dyn/%.o: %.c
+	@ echo -n "[CC APP] $< -> $@... "
 	@ $(CC) $(CFLAGS) -DENABLE_MALLOC -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
 	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
@@ -176,7 +176,7 @@ $(OBJDIR)/app/%.o: %.c
 # Rule for creating every directory
 #==============================================================================
 mkdirs:
-	@ echo -n "Checking/Creating necessary directories... "
+	@ echo -n "[MKDIRS] ... "
 	@ mkdir -p $(DIRLIST)
 	@ echo "DONE"
 #==============================================================================
@@ -185,7 +185,7 @@ mkdirs:
 # Removes all built objects (use emscript_clean to clear the emscript stuff)
 #==============================================================================
 clean:
-	@ echo -n "Cleaning the project... "
+	@ echo -n "[ CLEAN ] ... "
 	@ rm -f $(OBJS) $(BINDIR)/$(TARGET).a $(BINDIR)/*
 	@ rm -rf $(DIRLIST)
 	@ echo "DONE"
@@ -194,16 +194,15 @@ clean:
 #==============================================================================
 # Rule for each specific app
 #==============================================================================
-
-SYNTH_TOKENIZER_OBJ := $(OBJDIR)/app/synth_tokenizer.o \
-        $(OBJDIR)/app/lexer/synth_lexerDict.o \
-        $(OBJDIR)/app/lexer/synth_lexer.o \
-        $(OBJDIR)/app/lexer/synth_fileLexer.o \
-        $(OBJDIR)/app/memory/synth_memory.o \
-        $(OBJDIR)/app/memory/synth_dynamicMemory.o \
+SYNTH_TOKENIZER_OBJ := $(OBJDIR)/dyn/synth_tokenizer.o \
+        $(OBJDIR)/dyn/lexer/synth_lexerDict.o \
+        $(OBJDIR)/dyn/lexer/synth_lexer.o \
+        $(OBJDIR)/dyn/lexer/synth_fileLexer.o \
+        $(OBJDIR)/dyn/memory/synth_memory.o \
+        $(OBJDIR)/dyn/memory/synth_dynamicMemory.o \
 
 $(BINDIR)/synth_tokenizer: $(SYNTH_TOKENIZER_OBJ)
-	@ echo -n "Building the app '$@'... "
+	@ echo -n "[  APP ] $@... "
 	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ)
 	@ echo "DONE"
 
