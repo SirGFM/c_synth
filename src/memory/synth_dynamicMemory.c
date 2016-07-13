@@ -7,7 +7,6 @@
  *
  * Implements the functions required to expand the object's memory.
  */
-#define ENABLE_MALLOC
 #include <c_synth_internal/synth_memory.h>
 
 /** Required for fixed-width sizes */
@@ -26,33 +25,35 @@
  * @param  [ in]songsLen       Bytes reserved for songs
  * @param  [ in]tracksLen      Bytes reserved for tracks
  * @param  [ in]stringsLen     Bytes reserved for strings
+ * @param  [ in]stackLen       Bytes reserved for the stack
  */
-void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen,
-        int stringsLen) {
+void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen
+        , int stringsLen, int stackLen) {
     synth_memory *pOld, *pNew;
 
     pNew = malloc(synth_memorySize + instrumentsLen + songsLen
-            + tracksLen + stringsLen);
+            + tracksLen + stringsLen + stackLen);
 
-    pOld = pObjects;
+    pOld = pMemory;
     synth_setupMemory(pNew, instrumentsLen, songsLen, tracksLen
-            , stringsLen);
+            , stringsLen, stackLen);
     if (!pOld) {
         return;
     }
 
-#define COPY_REGION(attribute) \
+#define COPY_REGION(_attr_) \
   do { \
-    pNew->attribute.used = pOld->attribute.used; \
-    memcpy(synth_getRegion(pNew->attribute.offset), \
-        synth_getMemory((uint8_t*)pOld, pOld->attribute.offset), \
-        pOld->attribute.len); \
+    pNew->_attr_.used = pOld->_attr_.used; \
+    memcpy(synth_getRegion(pNew->_attr_.offset), \
+        synth_getMemory((uint8_t*)pOld, pOld->_attr_.offset), \
+        pOld->_attr_.len); \
   } while (0)
 
     COPY_REGION(instruments);
     COPY_REGION(songs);
     COPY_REGION(tracks);
     COPY_REGION(strings);
+    COPY_REGION(stack);
 
 #undef COPY_REGION
 
@@ -67,8 +68,8 @@ void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen,
  * @param  [ in]len Bytes reserved for instruments
  */
 void synth_expandInstruments(int len) {
-    synth_expandMemory(len, pObjects->songs.len, pObjects->tracks.len
-            , pObjects->strings.len);
+    synth_expandMemory(len, pMemory->songs.len, pMemory->tracks.len
+            , pMemory->strings.len, pMemory->stack.len);
 }
 
 /**
@@ -79,8 +80,9 @@ void synth_expandInstruments(int len) {
  * @param  [ in]len Bytes reserved for songs
  */
 void synth_expandSongs(int len) {
-    synth_expandMemory(pObjects->instruments.len, len
-            , pObjects->tracks.len, pObjects->strings.len);
+    synth_expandMemory(pMemory->instruments.len, len
+            , pMemory->tracks.len, pMemory->strings.len
+            , pMemory->stack.len);
 }
 
 /**
@@ -91,8 +93,8 @@ void synth_expandSongs(int len) {
  * @param  [ in]len Bytes reserved for tracks
  */
 void synth_expandTracks(int len) {
-    synth_expandMemory(pObjects->instruments.len, pObjects->songs.len
-            , len, pObjects->strings.len);
+    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+            , len, pMemory->strings.len, pMemory->stack.len);
 }
 
 /**
@@ -103,15 +105,27 @@ void synth_expandTracks(int len) {
  * @param  [ in]len Bytes reserved for strings
  */
 void synth_expandStrings(int len) {
-    synth_expandMemory(pObjects->instruments.len, pObjects->songs.len
-            , pObjects->tracks.len, len);
+    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+            , pMemory->tracks.len, len, pMemory->stack.len);
+}
+
+/**
+ * Dynamically expands the memory for the stack.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for the stack
+ */
+void synth_expandStack(int len) {
+    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+            , pMemory->tracks.len, pMemory->strings.len, len);
 }
 
 /**
  * Clean up the dinamically allo'ec memory
  */
 void synth_cleanMemory() {
-    free(pObjects);
-    pObjects = 0;
+    free(pMemory);
+    pMemory = 0;
 }
 

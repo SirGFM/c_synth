@@ -90,14 +90,31 @@ synth_token synth_getNextToken() {
             pLexer->token.token = (synth_token)c;
             return (synth_token)c;
         case STK_STRING: {
-            pLexer->token.token = (synth_token)c;
+            char *pString;
+            int i;
 
+            pLexer->token.token = (synth_token)c;
+            i = pMemory->stack.used;
+            pString = synth_getRegion(pMemory->stack.offset);
             do {
-                /* TODO Store the current character somewhere */
-                /* TODO Assert that it's valid */
+#ifdef ENABLE_MALLOC
+                if (i >= pMemory->stack.len - 1) {
+                    synth_expandStrings(pMemory->stack.len * 2 + 1);
+                    pString = synth_getRegion(pMemory->stack.offset);
+                }
+#endif
                 c = synth_getNextChar();
+                pString[i] = c;
+                i++;
             } while (c != STK_STRING);
-            synth_ungetChar();
+
+            if (i > 1) {
+                /* Overwrite the final '"' with a '\0' */
+                pString[i - 1] = '\0';
+            }
+            else {
+                /* TODO Error! Empty string! */
+            }
 
             return STK_STRING;
         } break;

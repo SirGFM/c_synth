@@ -27,7 +27,7 @@
 #include <string.h>
 
 /** Objects' reference */
-synth_memory *pObjects = 0;
+synth_memory *pMemory = 0;
 /** Amount of memory required by the memory */
 const size_t synth_memorySize = synth_align32(sizeof(synth_memory));
 
@@ -39,25 +39,39 @@ const size_t synth_memorySize = synth_align32(sizeof(synth_memory));
  * way that it may be later expanded into another region simply by
  * properly memcpy'ing it.
  *
- * @param  [ in]pMemory        Memory region for objects
+ * @param  [ in]pBase          Memory region for objects
  * @param  [ in]instrumentsLen Bytes reserved for instruments
  * @param  [ in]songsLen       Bytes reserved for songs
  * @param  [ in]tracksLen      Bytes reserved for tracks
  * @param  [ in]stringsLen     Bytes reserved for strings
+ * @param  [ in]stackLen       Bytes reserved for the stack
  */
-void synth_setupMemory(void *pMemory, int instrumentsLen, int songsLen,
-        int tracksLen, int stringsLen) {
-    pObjects = (synth_memory*)pMemory;
-    memset(pObjects, 0x0, synth_memorySize + instrumentsLen + songsLen
-            + tracksLen + stringsLen);
+void synth_setupMemory(void *pBase, int instrumentsLen, int songsLen,
+        int tracksLen, int stringsLen, int stackLen) {
+    pMemory = (synth_memory*)pBase;
+    memset(pMemory, 0x0, synth_memorySize + instrumentsLen + songsLen
+            + tracksLen + stringsLen + stackLen);
 
-    pObjects->instruments.offset = (int)synth_memorySize;
-    pObjects->instruments.len = instrumentsLen;
-    pObjects->songs.offset = pObjects->instruments.offset + instrumentsLen;
-    pObjects->songs.len = songsLen;
-    pObjects->tracks.offset = pObjects->songs.offset + songsLen;
-    pObjects->tracks.len = tracksLen;
-    pObjects->strings.offset = pObjects->tracks.offset + tracksLen;
-    pObjects->strings.len = stringsLen;
+    /* Put region '_to_' on the start of the memory */
+#define SET_BASE(_to_) \
+  do { \
+    pMemory->_to_.offset = (int)synth_memorySize; \
+    pMemory->_to_.len = _to_##Len; \
+  } while (0)
+    /* Put region '_to_' right after region '_from_' */
+#define SET_OFFSET(_to_, _from_) \
+  do { \
+    pMemory->_to_.offset = pMemory->_from_.offset + _from_##Len; \
+    pMemory->_to_.len = _to_##Len; \
+  } while (0)
+
+    SET_BASE(instruments);
+    SET_OFFSET(songs, instruments);
+    SET_OFFSET(tracks, songs);
+    SET_OFFSET(strings, tracks);
+    SET_OFFSET(stack, strings);
+
+#undef SET_BASE
+#undef SET_OFFSET
 }
 

@@ -35,10 +35,8 @@ struct stSynth_region {
     int offset;
     /** Size of the memory region */
     int len;
-#  ifdef ENABLE_MALLOC
     /** Amount of used memory */
     int used;
-#  endif
 };
 typedef struct stSynth_region synth_region;
 
@@ -50,15 +48,17 @@ struct stSynth_memory {
     synth_region songs;
     /** Tracks parsed */
     synth_region tracks;
-    /** Strings tokenized by the lexer */
+    /** Strings saved for later use (e.g., an instrument's name) */
     synth_region strings;
+    /** Shared region for any needed memory */
+    synth_region stack;
 };
 typedef struct stSynth_memory synth_memory;
 
 /* == MEMORY GLOBAL VARS ============================================ */
 
 /** Objects' reference */
-extern synth_memory *pObjects;
+extern synth_memory *pMemory;
 /** Amount of memory required by the memory */
 extern const size_t synth_memorySize;
 
@@ -71,16 +71,16 @@ extern const size_t synth_memorySize;
  * way that it may be later expanded into another region simply by
  * properly memcpy'ing it.
  *
- * @param  [ in]pMemory        Memory region for objects
+ * @param  [ in]pBase          Memory region for objects
  * @param  [ in]instrumentsLen Bytes reserved for instruments
  * @param  [ in]songsLen       Bytes reserved for songs
  * @param  [ in]tracksLen      Bytes reserved for tracks
  * @param  [ in]stringsLen     Bytes reserved for strings
+ * @param  [ in]stackLen       Bytes reserved for the stack
  */
-void synth_setupMemory(void *pMemory, int instrumentsLen, int songsLen,
-        int tracksLen, int stringsLen);
+void synth_setupMemory(void *pBase, int instrumentsLen, int songsLen,
+        int tracksLen, int stringsLen, int stackLen);
 
-#  ifdef ENABLE_MALLOC
 /* == DYNAMIC MEMORY FUNCTIONS ====================================== */
 
 /**
@@ -92,9 +92,10 @@ void synth_setupMemory(void *pMemory, int instrumentsLen, int songsLen,
  * @param  [ in]songsLen       Bytes reserved for songs
  * @param  [ in]tracksLen      Bytes reserved for tracks
  * @param  [ in]stringsLen     Bytes reserved for strings
+ * @param  [ in]stackLen       Bytes reserved for the stack
  */
 void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen,
-        int stringsLen);
+        int stringsLen, int stackLen);
 
 /**
  * Dynamically expands the memory for instruments.
@@ -133,11 +134,18 @@ void synth_expandTracks(int len);
 void synth_expandStrings(int len);
 
 /**
+ * Dynamically expands the memory for the stack.
+ *
+ * If the memory hasn't been setup'ed, it will be properly alloc'ed.
+ *
+ * @param  [ in]len Bytes reserved for the stack
+ */
+void synth_expandStack(int len);
+
+/**
  * Clean up the dinamically allo'ec memory
  */
 void synth_cleanMemory();
-
-#  endif
 
 /* == MEMORY INLINE FUNCTIONS ======================================= */
 
@@ -167,7 +175,7 @@ void synth_cleanMemory();
  * @param  [ in]offset Offset within objects' memory
  * @return             Pointer to the start of that region
  */
-#define synth_getRegion(offset) (synth_getMemory((uint8_t*)pObjects, offset))
+#define synth_getRegion(offset) (synth_getMemory((uint8_t*)pMemory, offset))
 
 #endif /* __SYNTH_MEMORY_H__ */
 
