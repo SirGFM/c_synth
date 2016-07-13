@@ -150,7 +150,7 @@ void synth_cleanMemory();
  * @param  [ in]value Value to be aligned
  * @return            Aligned value
  */
-#define synth_align32(value) ((value + 3) & ~4)
+#define synth_align32(value) ((value + 3) & ~3)
 
 /**
  * Retrieves a memory region within another region

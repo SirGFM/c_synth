@@ -154,7 +154,7 @@ $(BINDIR)/$(TARGET_MINOR): $(OBJS)
 # Rule for compiling any .c into its object
 #==============================================================================
 $(OBJDIR)/%.o: %.c
-	@ echo -n "[  CC  ] $< -> $@... "
+	@ echo -n "[  CC  ] $@ < $<... "
 	@ $(CC) $(CFLAGS) -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
 	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
@@ -165,7 +165,7 @@ $(OBJDIR)/%.o: %.c
 # Rule for compiling any .c into its object (with malloc enabled)
 #==============================================================================
 $(OBJDIR)/dyn/%.o: %.c
-	@ echo -n "[CC APP] $< -> $@... "
+	@ echo -n "[CC APP] $@ < $<... "
 	@ $(CC) $(CFLAGS) -DENABLE_MALLOC -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
 	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
