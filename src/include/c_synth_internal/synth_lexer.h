@@ -146,10 +146,10 @@ extern const size_t synth_lexerSize;
  *
  * Must be called only once during initialization.
  *
- * @param  [ in]pMemory Position in memory where the lexer will be
- *                      stored. Must point to at least synth_lexerSize.
+ * @param  [ in]pBase Position in memory where the lexer will be stored.
+ *                    Must point to at least synth_lexerSize.
  */
-void synth_setupLexer(void *pMemory);
+void synth_setupLexer(void *pBase);
 
 /**
  * Retrieve the next token.

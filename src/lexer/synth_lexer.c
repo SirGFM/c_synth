@@ -47,11 +47,11 @@ const size_t synth_lexerSize = synth_align32(sizeof(synth_lexerCtx));
  *
  * Must be called only once during initialization.
  *
- * @param  [ in]pMemory Position in memory where the lexer will be
- *                      stored. Must point to at least synth_lexerSize.
+ * @param  [ in]pBase Position in memory where the lexer will be stored.
+ *                    Must point to at least synth_lexerSize.
  */
-void synth_setupLexer(void *pMemory) {
-    pLexer = (synth_lexerCtx*)pMemory;
+void synth_setupLexer(void *pBase) {
+    pLexer = (synth_lexerCtx*)pBase;
     memset(pLexer, 0x0, synth_lexerSize);
 }
 
@@ -94,13 +94,18 @@ synth_token synth_getNextToken() {
             int i;
 
             pLexer->token.token = (synth_token)c;
+#ifdef ENABLE_MALLOC
+            if (!pMemory) {
+                synth_expandMemory(0, 0, 0, 0, 1);
+            }
+#endif
             i = pMemory->stack.used;
-            pString = synth_getRegion(pMemory->stack.offset);
+            pString = synth_getRegion(stack);
             do {
 #ifdef ENABLE_MALLOC
                 if (i >= pMemory->stack.len - 1) {
-                    synth_expandStrings(pMemory->stack.len * 2 + 1);
-                    pString = synth_getRegion(pMemory->stack.offset);
+                    synth_expandStack(pMemory->stack.len * 2 + 1);
+                    pString = synth_getRegion(stack);
                 }
 #endif
                 c = synth_getNextChar();

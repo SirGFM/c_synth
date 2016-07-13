@@ -44,7 +44,7 @@ void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen
 #define COPY_REGION(_attr_) \
   do { \
     pNew->_attr_.used = pOld->_attr_.used; \
-    memcpy(synth_getRegion(pNew->_attr_.offset), \
+    memcpy(synth_getRegion(_attr_), \
         synth_getMemory((uint8_t*)pOld, pOld->_attr_.offset), \
         pOld->_attr_.len); \
   } while (0)

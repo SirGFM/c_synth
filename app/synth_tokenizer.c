@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include <c_synth_internal/synth_lexer.h>
+#include <c_synth_internal/synth_memory.h>
 
 #define ASSERT(stmt) \
   do { \
@@ -54,8 +55,7 @@ int main(int argc, char *argv[]) {
             case STK_STRING: {
                 printf("%s:%s ",
                         synth_tokenDictionary(pLexer->token.token),
-                        "NOT_YET_IMPLEMENTED");
-                /* TODO Print the string */
+                        (char*)synth_getRegion(stack));
             } break;
             default: {
                 printf("%s ",
@@ -72,6 +72,8 @@ __ret:
         fclose(pFile);
     }
     free(pMem);
+
+    synth_cleanMemory();
 
     return rv;
 }

@@ -172,10 +172,11 @@ void synth_cleanMemory();
 /**
  * Retrieves a memory region within the objects' memory
  *
- * @param  [ in]offset Offset within objects' memory
- * @return             Pointer to the start of that region
+ * @param  [ in]_region_ Region to be retrieved
+ * @return               Pointer to the start of that region
  */
-#define synth_getRegion(offset) (synth_getMemory((uint8_t*)pMemory, offset))
+#define synth_getRegion(_region_) \
+    (synth_getMemory((uint8_t*)pMemory, pMemory->_region_.offset))
 
 #endif /* __SYNTH_MEMORY_H__ */
 
