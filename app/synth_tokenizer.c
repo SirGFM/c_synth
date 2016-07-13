@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     ASSERT(pMem);
 
     synth_setupLexer(pMem);
+    synth_expandMemory(0, 0, 0, 0, 0);
 
     pFile = fopen(argv[1], "rt");
     ASSERT(pFile);

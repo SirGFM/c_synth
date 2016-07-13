@@ -94,11 +94,6 @@ synth_token synth_getNextToken() {
             int i;
 
             pLexer->token.token = (synth_token)c;
-#ifdef ENABLE_MALLOC
-            if (!pMemory) {
-                synth_expandMemory(0, 0, 0, 0, 1);
-            }
-#endif
             i = pMemory->stack.used;
             pString = synth_getRegion(stack);
             do {
