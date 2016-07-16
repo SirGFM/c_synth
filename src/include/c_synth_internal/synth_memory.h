@@ -34,21 +34,11 @@
  * targeting devices with restricted memory (mobile, HTML5, older
  * consoles) and ensuring that there are no memory leaks.
  *
- * To ease that restriction, apps may use dynamic memory [...]
- *
- * This module should be used to logically separate the synthesizer's
- * data memory into a few different regions. Each region should have a
- * fixed size and shall be used by a single module (e.g., one region for
- * songs and another one for instruments).
- *
- * The default use-case expects this memory to be initialized with
- * exactly the required amount of memory, perfectly distributed between
- * each region. However, it's written in such a way that one may request
- * its memory to be expanded and it will automatically fix all pointers
- * within the module. This mode may be useful for the offline tools,
- * since it will be able to calculate the required memory for a few
- * songs/instruments without relying in aproximations or guesses by the
- * user.
+ * To ease that restriction, some of the synthesizer's tools (located on
+ * the apps directory) use dynamic memory and report the used memory.
+ * This way, one could even call those apps from their build script,
+ * redirect the memory requirement to a file and use that as input on
+ * their final application.
  */
 #ifndef __SYNTH_MEMORY_H__
 #define __SYNTH_MEMORY_H__
