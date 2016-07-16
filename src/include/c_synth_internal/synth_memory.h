@@ -3,7 +3,38 @@
  * @license zlib license
  * @file    src/include/c_synth_internal/synth_memory.h
  *
- * @summary Helps to manage memory for objects.
+ * @summary   Container where parsed input is stored
+ *
+ * @typedef   synth_region     Position of region within the container.
+ * @typedef   synth_memory     The container, divided into regions.
+ *
+ * @globalvar pMemory          Reference to the data container.
+ * @globalvar synth_memorySize Amount of bytes require by the container.
+ *
+ * @description
+ *
+ * Describes how an user-supplied memory region should be divided
+ * between all parsed data. The memory is divided as a container for the
+ * following objects:
+ *   - instruments;
+ *   - songs;
+ *   - tracks;
+ *   - strings;
+ *   - other temporary data.
+ *
+ * Instruments, songs and tracks are the logical representation of
+ * parsed structures. Take a look at the wiki for more info about them.
+ * Strings are usually used to point at instruments, but only while
+ * parsing an input. "Other temporary data" may be anything (e.g., the
+ * string just tokenized by the lexer or a macro).
+ *
+ * When the synthesizer is used as a library, setting up this module
+ * requires knowing exactly how much memory each sub-region will need.
+ * Although this may prove slightly cumbersome, it aims to help
+ * targeting devices with restricted memory (mobile, HTML5, older
+ * consoles) and ensuring that there are no memory leaks.
+ *
+ * To ease that restriction, apps may use dynamic memory [...]
  *
  * This module should be used to logically separate the synthesizer's
  * data memory into a few different regions. Each region should have a
