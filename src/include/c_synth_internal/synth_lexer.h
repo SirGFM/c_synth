@@ -1,9 +1,18 @@
 /**
- * @project c_synth
- * @license zlib license
- * @file    src/include/c_synth_internal/synth_lexer.h
+ * @project   c_synth
+ * @license   zlib license
+ * @file      src/include/c_synth_internal/synth_lexer.h
  *
- * The language's lexer.
+ * @summary   The language's lexer.
+ *
+ * @typedef   synth_note        Notes within an octave.
+ * @typedef   synth_token       Tokens recognized by the lexer.
+ * @typedef   synth_tokenData   Data that may accompany a token.
+ * @typedef   synth_packedToken A token and its data (if any).
+ * @typedef   synth_lexerCtx    The lexer context
+ *
+ * @globalvar pLexer            Reference to the lexer.
+ * @globalvar synth_lexerSize   Amount of memory required by the lexer.
  *
  * Breaks an input into tokens, which are used by the parser to
  * syntactically analyze songs.
@@ -30,7 +39,7 @@
 /** Required for size_t */
 #include <stddef.h>
 
-/* == LEXER TYPES ================================================== */
+/* == LEXER TYPES =================================================== */
 
 /** Represents all possible notes within a single octave. */
 enum enSynth_note {
@@ -123,25 +132,24 @@ struct stSynth_lexerCtx {
 };
 typedef struct stSynth_lexerCtx synth_lexerCtx;
 
-/* == LEXER GLOBAL VARS ============================================ */
+/* == LEXER GLOBAL VARS ============================================= */
 
 /** Lexer's reference */
 extern synth_lexerCtx *pLexer;
 /** Amount of memory required by the lexer */
-extern size_t synth_lexerSize;
+extern const size_t synth_lexerSize;
 
-/* == LEXER FUNCTIONS ======================================= */
+/* == LEXER FUNCTIONS =============================================== */
 
 /**
  * Setup the lexer.
  *
  * Must be called only once during initialization.
  *
- * @param  [ in]pBaseMemory Position in memory where the lexer will be
- *                          stored. Must point to at least
- *                          synth_lexerSize.
+ * @param  [ in]pBase Position in memory where the lexer will be stored.
+ *                    Must point to at least synth_lexerSize.
  */
-void synth_setupLexer(void *pBaseMemory);
+void synth_setupLexer(void *pBase);
 
 /**
  * Retrieve the next token.
@@ -175,7 +183,7 @@ synth_token synth_getNextToken();
  */
 void synth_getLexerLine(unsigned int *pSize, char *pString);
 
-/* == LEXER BACKEND FUNCTIONS =============================== */
+/* == LEXER BACKEND FUNCTIONS ======================================= */
 
 /**
  * Define the backend functions

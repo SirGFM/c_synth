@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include <c_synth_internal/synth_lexer.h>
+#include <c_synth_internal/synth_memory.h>
 
 #define ASSERT(stmt) \
   do { \
@@ -18,9 +19,6 @@
       goto __ret; \
     } \
   } while (0)
-
-extern synth_lexerCtx *pLexer;
-extern size_t synth_lexerSize;
 
 int main(int argc, char *argv[]) {
     void *pMem = 0;
@@ -57,8 +55,7 @@ int main(int argc, char *argv[]) {
             case STK_STRING: {
                 printf("%s:%s ",
                         synth_tokenDictionary(pLexer->token.token),
-                        "NOT_YET_IMPLEMENTED");
-                /* TODO Print the string */
+                        (char*)synth_getRegion(stack));
             } break;
             default: {
                 printf("%s ",
@@ -75,6 +72,8 @@ __ret:
         fclose(pFile);
     }
     free(pMem);
+
+    synth_cleanMemory();
 
     return rv;
 }
