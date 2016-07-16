@@ -22,11 +22,10 @@
     ifeq ($(MAKECMDGOALS), emscript_clean)
       CC := emcc
     else
-      ifndef ($(CC))
-        CC := gcc
-      endif
+        CC ?= gcc
     endif
   endif
+  AR ?= ar
 #==============================================================================
 
 #==============================================================================
@@ -59,7 +58,7 @@
 #===============================================================================
 # Set OS flag
 #===============================================================================
-  OS := $(shell uname)
+  OS ?= $(shell uname)
   ifeq ($(OS), MINGW32_NT-6.1)
     OS := Win
   endif
@@ -74,7 +73,7 @@
 # Add all warnings and default include path
   CFLAGS := -Wall -I"./include" -I"./src/include"
 # Add architecture flag
-  ARCH := $(shell uname -m)
+  ARCH ?= $(shell uname -m)
   ifeq ($(OS), emscript)
     CFLAGS := $(CFLAGS) -I"$(EMSCRIPTEN)/system/include/" -m32
   else
@@ -165,12 +164,10 @@
 #==============================================================================
   ifeq ($(OS), Win)
     SO := dll
-    MJV := $(SO)
-    MNV := $(SO)
   else
-    SO := so
-    MJV := $(SO).$(MAJOR_VERSION)
-    MNV := $(SO).$(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)
+    SO ?= so
+    MJV ?= $(SO).$(MAJOR_VERSION)
+    MNV ?= $(SO).$(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)
   endif
 #==============================================================================
 
@@ -237,7 +234,7 @@ static: MKDIRS $(BINDIR)/$(TARGET).a
 #==============================================================================
 # Rule for building the shared libs
 #==============================================================================
-shared: MKDIRS $(BINDIR)/$(TARGET).$(MNV)
+shared: MKDIRS $(BINDIR)/$(TARGET).$(SO)
 #==============================================================================
 
 #==============================================================================
@@ -318,25 +315,31 @@ endif
 #==============================================================================
 $(BINDIR)/$(TARGET).a: $(OBJS)
 	rm -f $(BINDIR)/$(TARGET).a
-	ar -cvq $(BINDIR)/$(TARGET).a $(OBJS)
+	$(AR) -cvq $(BINDIR)/$(TARGET).a $(OBJS)
 #==============================================================================
 
 #==============================================================================
 # Rule for actually building the shared library
 #==============================================================================
-ifeq ($(OS), Win)
-  $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
-	rm -f $(BINDIR)/$(TARGET).$(MNV)
-	gcc -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-all-symbols \
-	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
-else
-  $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
-	rm -f $(BINDIR)/$(TARGET).$(MNV) $(BINDIR)/$(TARGET).$(SO)
-	gcc -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
-	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
-	cd $(BINDIR); ln -f -s $(TARGET).$(MNV) $(TARGET).$(MJV)
+$(BINDIR)/$(TARGET).dll: $(OBJS)
+	rm -f $@
+	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-all-symbols \
+	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+
+$(BINDIR)/$(TARGET).so: $(BINDIR)/$(TARGET).$(MJV)
+	rm -f $(BINDIR)/$(TARGET).$(SO)
 	cd $(BINDIR); ln -f -s $(TARGET).$(MJV) $(TARGET).$(SO)
-endif
+
+$(BINDIR)/$(TARGET).$(MJV): $(BINDIR)/$(TARGET).$(MNV)
+	rm -f $(BINDIR)/$(TARGET).$(MJV)
+	cd $(BINDIR); ln -f -s $(TARGET).$(MNV) $(TARGET).$(MJV)
+
+$(BINDIR)/$(TARGET).$(MNV): $(OBJS)
+	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
+	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
+
+$(BINDIR)/$(TARGET).dylib: $(OBJS)
+	$(CC) -dynamiclib $(CFLAGS) -o $(BINDIR)/$(TARGET).dylib $(OBJS)
 #==============================================================================
 
 #==============================================================================
