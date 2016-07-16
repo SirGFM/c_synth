@@ -93,29 +93,36 @@ synth_token synth_getNextToken() {
             char *pString;
             int i;
 
-            pLexer->token.token = (synth_token)c;
+            #if defined(ENABLE_MALLOC)
+                if (!pMemory) {
+                    synth_expandMemory(0, 0, 0, 0, 0);
+                }
+            #endif
+
             i = pMemory->stack.used;
             pString = synth_getRegion(stack);
             do {
-#ifdef ENABLE_MALLOC
-                if (i >= pMemory->stack.len - 1) {
-                    synth_expandStack(pMemory->stack.len * 2 + 1);
-                    pString = synth_getRegion(stack);
-                }
-#endif
+                #if defined(ENABLE_MALLOC)
+                    if (i >= pMemory->stack.len - 1) {
+                        synth_expandStack(pMemory->stack.len * 2 + 1);
+                        pString = synth_getRegion(stack);
+                    }
+                #endif
+                /* Note that this call skips the first 'STK_STRING' */
                 c = synth_getNextChar();
                 pString[i] = c;
                 i++;
             } while (c != STK_STRING);
 
             if (i > 1) {
-                /* Overwrite the final '"' with a '\0' */
+                /* Overwrite the final 'STK_sTRING' with a '\0' */
                 pString[i - 1] = '\0';
             }
             else {
                 /* TODO Error! Empty string! */
             }
 
+            pLexer->token.token = STK_STRING;
             return STK_STRING;
         } break;
         case STK_COMMENT: {

@@ -3,21 +3,24 @@
  * @license zlib license
  * @file    src/memory/synth_memory.c
  *
- * @summary Helps to manage memory for objects.
+ * @summary   Container where parsed input is stored
  *
- * This module should be used to logically separate the synthesizer's
- * data memory into a few different regions. Each region should have a
- * fixed size and shall be used by a single module (e.g., one region for
- * songs and another one for instruments).
+ * @description
  *
- * The default use-case expects this memory to be initialized with
- * exactly the required amount of memory, perfectly distributed between
- * each region. However, it's written in such a way that one may request
- * its memory to be expanded and it will automatically fix all pointers
- * within the module. This mode may be useful for the offline tools,
- * since it will be able to calculate the required memory for a few
- * songs/instruments without relying in aproximations or guesses by the
- * user.
+ * Describes how an user-supplied memory region should be divided
+ * between all parsed data. The memory is divided as a container for the
+ * following objects:
+ *   - instruments;
+ *   - songs;
+ *   - tracks;
+ *   - strings;
+ *   - other temporary data.
+ *
+ * Instruments, songs and tracks are the logical representation of
+ * parsed structures. Take a look at the wiki for more info about them.
+ * Strings are usually used to point at instruments, but only while
+ * parsing an input. "Other temporary data" may be anything (e.g., the
+ * string just tokenized by the lexer or a macro).
  */
 #include <c_synth_internal/synth_memory.h>
 
@@ -52,13 +55,13 @@ void synth_setupMemory(void *pBase, int instrumentsLen, int songsLen,
     memset(pMemory, 0x0, synth_memorySize + instrumentsLen + songsLen
             + tracksLen + stringsLen + stackLen);
 
-    /* Put region '_to_' on the start of the memory */
+/** Put region '_to_' on the start of the memory */
 #define SET_BASE(_to_) \
   do { \
     pMemory->_to_.offset = (int)synth_memorySize; \
     pMemory->_to_.len = _to_##Len; \
   } while (0)
-    /* Put region '_to_' right after region '_from_' */
+/** Put region '_to_' right after region '_from_' */
 #define SET_OFFSET(_to_, _from_) \
   do { \
     pMemory->_to_.offset = pMemory->_from_.offset + _from_##Len; \

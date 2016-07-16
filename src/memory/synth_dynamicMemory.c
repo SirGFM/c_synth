@@ -3,7 +3,9 @@
  * @license zlib license
  * @file    src/memory/synth_dynamicmemory.c
  *
- * @summary Helps to manage memory for objects.
+ * @summary   Container where parsed input is stored
+ *
+ * @description
  *
  * Implements the functions required to expand the object's memory.
  */
@@ -41,12 +43,15 @@ void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen
         return;
     }
 
+/** Copy region '_attr_' from the old memory into the new one */
 #define COPY_REGION(_attr_) \
   do { \
     pNew->_attr_.used = pOld->_attr_.used; \
-    memcpy(synth_getRegion(_attr_), \
-        synth_getMemory((uint8_t*)pOld, pOld->_attr_.offset), \
-        pOld->_attr_.len); \
+    if (pOld->_attr_.len > 0) { \
+        memcpy(synth_getRegion(_attr_) \
+            , synth_getMemory((uint8_t*)pOld, pOld->_attr_.offset) \
+            , pOld->_attr_.len); \
+    } \
   } while (0)
 
     COPY_REGION(instruments);
@@ -68,8 +73,13 @@ void synth_expandMemory(int instrumentsLen, int songsLen, int tracksLen
  * @param  [ in]len Bytes reserved for instruments
  */
 void synth_expandInstruments(int len) {
-    synth_expandMemory(len, pMemory->songs.len, pMemory->tracks.len
-            , pMemory->strings.len, pMemory->stack.len);
+    if (!pMemory) {
+        synth_expandMemory(len, 0, 0, 0, 0);
+    }
+    else {
+        synth_expandMemory(len, pMemory->songs.len, pMemory->tracks.len
+                , pMemory->strings.len, pMemory->stack.len);
+    }
 }
 
 /**
@@ -80,9 +90,14 @@ void synth_expandInstruments(int len) {
  * @param  [ in]len Bytes reserved for songs
  */
 void synth_expandSongs(int len) {
-    synth_expandMemory(pMemory->instruments.len, len
-            , pMemory->tracks.len, pMemory->strings.len
-            , pMemory->stack.len);
+    if (!pMemory) {
+        synth_expandMemory(0, len, 0, 0, 0);
+    }
+    else {
+        synth_expandMemory(pMemory->instruments.len, len
+                , pMemory->tracks.len, pMemory->strings.len
+                , pMemory->stack.len);
+    }
 }
 
 /**
@@ -93,8 +108,13 @@ void synth_expandSongs(int len) {
  * @param  [ in]len Bytes reserved for tracks
  */
 void synth_expandTracks(int len) {
-    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
-            , len, pMemory->strings.len, pMemory->stack.len);
+    if (!pMemory) {
+        synth_expandMemory(0, 0, len, 0, 0);
+    }
+    else {
+        synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+                , len, pMemory->strings.len, pMemory->stack.len);
+    }
 }
 
 /**
@@ -105,8 +125,13 @@ void synth_expandTracks(int len) {
  * @param  [ in]len Bytes reserved for strings
  */
 void synth_expandStrings(int len) {
-    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
-            , pMemory->tracks.len, len, pMemory->stack.len);
+    if (!pMemory) {
+        synth_expandMemory(0, 0, 0, len, 0);
+    }
+    else {
+        synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+                , pMemory->tracks.len, len, pMemory->stack.len);
+    }
 }
 
 /**
@@ -117,8 +142,13 @@ void synth_expandStrings(int len) {
  * @param  [ in]len Bytes reserved for the stack
  */
 void synth_expandStack(int len) {
-    synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
-            , pMemory->tracks.len, pMemory->strings.len, len);
+    if (!pMemory) {
+        synth_expandMemory(0, 0, 0, 0, len);
+    }
+    else {
+        synth_expandMemory(pMemory->instruments.len, pMemory->songs.len
+                , pMemory->tracks.len, pMemory->strings.len, len);
+    }
 }
 
 /**
