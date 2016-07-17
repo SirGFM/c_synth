@@ -8,9 +8,9 @@
 #===============================================================================
 # Define every object required by compilation
 #===============================================================================
-  OBJS = lexer/synth_lexer.o \
-         lexer/synth_fileLexer.o \
-         memory/synth_memory.o
+  OBJS := lexer/synth_lexer.o \
+          lexer/synth_fileLexer.o \
+          memory/synth_memory.o
 #===============================================================================
 
 #===============================================================================
@@ -35,7 +35,8 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: all shared static clean listflags mkdirs apps
+.PHONY: all shared static clean help mkdirs apps install_linux \
+        install_win install_macosx
 #==============================================================================
 
 #===============================================================================
@@ -47,68 +48,72 @@
 #==============================================================================
 # Make both objects and apps list constants. Also prepend the output folder
 #==============================================================================
-  OBJS := $(OBJS:%=$(OBJDIR)/%)
-  APPS := $(APPS:%=$(BINDIR)/%)
-#==============================================================================
-
-#==============================================================================
-# Set shared library's extension
-#==============================================================================
-  ifeq ($(OS), Win)
-    SO := dll
-    MJV := $(SO)
-    MNV := $(SO)
-  else
-    SO := so
-    MJV := $(SO).$(MAJOR_VERSION)
-    MNV := $(SO).$(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)
-  endif
+  LIB_OBJS := $(OBJS:%=$(OBJDIR)/%)
+  APPS     := $(APPS:%=$(BINDIR)/%)
 #==============================================================================
 
 #===============================================================================
 # Define default compilation rule
 #===============================================================================
-all: listflags static shared apps
+all: help static shared apps
 #===============================================================================
 
 #==============================================================================
-# Rule for building the static lib
+# Display a short helper
 #==============================================================================
-listflags:
+help:
 	@ echo "Active build flags:"
-	@ echo "  OS     : $(OS)"
-	@ echo "  ARCH   : $(ARCH)"
-	@ echo "  CC     : $(CC)"
-	@ echo "  DEBUG  : $(DEBUG)"
-	@ echo "  VERSION: $(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)"
-	@ echo "  CFLAGS : $(CFLAGS)"
+	@ echo "  OS      : $(OS)"
+	@ echo "  ARCH    : $(ARCH)"
+	@ echo "  CC      : $(CC)"
+	@ echo "  DEBUG   : $(DEBUG)"
+	@ echo "  VERSION : $(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)"
+	@ echo "  CFLAGS  : $(CFLAGS)"
+	@ echo "  LDFLAGS : $(LDFLAGS)"
+	@ echo ""
+	@ echo -n "NOTE: If the compilation fails with error \"No such file or "
+	@ echo      "directory\", try running:"
+	@ echo "    '$$ make OS=$(OS) mkdirs'"
+	@ echo ""
 #==============================================================================
 
 #==============================================================================
 # Rule for building the static lib
 #==============================================================================
-static: mkdirs $(BINDIR)/$(TARGET_NAME).a
+static: $(BINDIR)/$(LIB_NAME).a
 #==============================================================================
 
 #==============================================================================
 # Rule for building the shared libs
 #==============================================================================
-shared: mkdirs $(BINDIR)/$(TARGET)
+shared: $(BINDIR)/$(TARGET_LIB)
 #==============================================================================
 
 #==============================================================================
 # Rule for building all apps
 #==============================================================================
-apps: mkdirs $(APPS)
+apps: $(APPS)
+#==============================================================================
+
+#==============================================================================
+# Rule for installing the lib
+#==============================================================================
+install: $(INSTALL_RULE)
+
+# TODO
+#install_linux:
+#install_win:
+#install_macosx:
+
 #==============================================================================
 
 #==============================================================================
 # Rule for actually building the static library
 #==============================================================================
-$(BINDIR)/$(TARGET_NAME).a: $(OBJS)
+$(BINDIR)/$(LIB_NAME).a: $(LIB_OBJS)
 	@ echo -n "[  AR  ] $@... "
-	@ rm -f $(BINDIR)/$(TARGET_NAME).a
-	@ ar -cvq $(BINDIR)/$(TARGET_NAME).a $(OBJS) > /dev/null
+	@ rm -f $@
+	@ ar -cvq $@ $(LIB_OBJS) > /dev/null
 	@ echo "DONE"
 #==============================================================================
 
@@ -117,34 +122,42 @@ $(BINDIR)/$(TARGET_NAME).a: $(OBJS)
 #==============================================================================
 
 # Windows DLL
-# TODO Check if stderr redirection works on windows and fix here
-$(BINDIR)/$(TARGET_NAME).dll: $(OBJS)
+$(BINDIR)/$(LIB_NAME).dll: $(LIB_OBJS)
 	@ echo -n "[  DLL ] $@... "
 	@ rm -f $@
-	@ gcc -shared -Wl,-soname,$(TARGET_NAME).dll -Wl,-export-all-symbols \
-	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	@ gcc -shared -Wl,-soname,$(LIB_NAME).dll -Wl,-export-all-symbols \
+	    $(CFLAGS) -o $@ $(LIB_OBJS) $(LDFLAGS)
 	@ echo "DONE"
 
 # Main linux shared lib symlink (i.e., libCSynth.so)
-$(BINDIR)/$(TARGET_NAME).so: $(BINDIR)/$(TARGET_MAJOR)
+$(BINDIR)/$(LIB_NAME).so: $(BINDIR)/$(LIB_NAME).so.$(MAJOR_VERSION)
 	@ echo -n "[  SO  ] $@... "
-	@ rm -f $(BINDIR)/$(TARGET_NAME).so
-	@ cd $(BINDIR); ln -f -s $(TARGET_MAJOR) $(TARGET_NAME).so
+	@ rm -f $@
+	@ cd $(BINDIR); ln -f -s $(LIB_NAME).so.$(MAJOR_VERSION) $(LIB_NAME).so
 	@ echo "DONE"
 
 # Major linux shared lib symlink (e.g., libCSynth.so.2)
-$(BINDIR)/$(TARGET_MAJOR): $(BINDIR)/$(TARGET_MINOR)
+$(BINDIR)/$(LIB_NAME).so.$(MAJOR_VERSION): $(BINDIR)/$(LIB_NAME).so.$(VERSION)
 	@ echo -n "[  SO  ] $@... "
-	@ rm -f $(BINDIR)/$(TARGET_MAJOR)
-	@ cd $(BINDIR); ln -f -s $(TARGET_MINOR) $(TARGET_MAJOR)
+	@ rm -f $@
+	@ cd $(BINDIR); ln -f -s $(LIB_NAME).so.$(VERSION) $(LIB_NAME).so.$(MAJOR_VERSION)
 	@ echo "DONE"
 
 # Linux shared lib (e.g., libCSynth.so.2.0.0)
-$(BINDIR)/$(TARGET_MINOR): $(OBJS)
+$(BINDIR)/$(LIB_NAME).so.$(VERSION): $(LIB_OBJS)
 	@ echo -n "[  SO  ] $@... "
-	@ rm -f $(BINDIR)/$(TARGET_MINOR)
-	@ gcc -shared -Wl,-soname,$(TARGET_MAJOR) -Wl,-export-dynamic \
-	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS) \
+	@ rm -f $@
+	@ gcc -shared -Wl,-soname,$(LIB_NAME).so.$(MAJOR_VERSION) -Wl,-export-dynamic \
+	    $(CFLAGS) -o $@ $(LIB_OBJS) $(LDFLAGS) \
+	    && (rm -f err.out ; true) \
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	@ echo "DONE"
+
+# Mac OS X shared lib (e.g., libCSynth.dylib)
+$(BINDIR)/$(LIB_NAME).dylib: $(LIB_OBJS)
+	@ echo -n "[ DYLIB] $@... "
+	@ rm -f $@
+	@ gcc -dynamiclib $(CFLAGS) -o $@ $(LIB_OBJS) $(LDFLAGS) \
 	    && (rm -f err.out ; true) \
 	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
 	@ echo "DONE"
@@ -194,16 +207,17 @@ clean:
 #==============================================================================
 # Rule for each specific app
 #==============================================================================
-SYNTH_TOKENIZER_OBJ := $(OBJDIR)/dyn/synth_tokenizer.o \
-        $(OBJDIR)/dyn/lexer/synth_lexerDict.o \
-        $(OBJDIR)/dyn/lexer/synth_lexer.o \
-        $(OBJDIR)/dyn/lexer/synth_fileLexer.o \
-        $(OBJDIR)/dyn/memory/synth_memory.o \
-        $(OBJDIR)/dyn/memory/synth_dynamicMemory.o \
+SYNTH_TOKENIZER_OBJ := $(OBJS) \
+                       lexer/synth_lexerDict.o \
+                       memory/synth_dynamicMemory.o \
+                       synth_tokenizer.o
+SYNTH_TOKENIZER_OBJ := $(SYNTH_TOKENIZER_OBJ:%=$(OBJDIR)/dyn/%)
 
 $(BINDIR)/synth_tokenizer: $(SYNTH_TOKENIZER_OBJ)
 	@ echo -n "[  APP ] $@... "
-	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ)
+	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ) > /dev/null 2> err.out \
+	    && (rm -f err.out ; true) \
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
 	@ echo "DONE"
 
 #==============================================================================

@@ -1,0 +1,18 @@
+
+#==============================================================================
+# Configurations used when OS == Win
+#==============================================================================
+
+ifneq (,$(findstring $(OS), MINGW))
+    OS := Win
+endif
+ifneq (,$(findstring $(OS), MSYS))
+    OS := Win
+endif
+
+ifeq ($(OS), Win)
+    ARCH         ?= i686
+    TARGET_LIB   := $(LIB_NAME).dll
+    INSTALL_RULE := install_win
+endif
+

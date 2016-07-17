@@ -1,0 +1,12 @@
+
+#==============================================================================
+# Configurations used when OS == OSX
+#==============================================================================
+
+ifeq ($(OS), OSX)
+    CC           ?= i686-apple-darwin10-gcc
+    ARCH         ?= i686
+    TARGET_LIB   := $(LIB_NAME).dylib
+    INSTALL_RULE := install_macosx
+endif
+
