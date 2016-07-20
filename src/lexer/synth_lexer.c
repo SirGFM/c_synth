@@ -95,7 +95,7 @@ synth_token synth_getNextToken() {
 
             #if defined(ENABLE_MALLOC)
                 if (!pMemory) {
-                    synth_expandMemory(0, 0, 0, 0, 0);
+                    synth_expandMemory(0, 0, 0, 0, 0, 0);
                 }
             #endif
 
@@ -104,7 +104,7 @@ synth_token synth_getNextToken() {
             do {
                 #if defined(ENABLE_MALLOC)
                     if (i >= pMemory->stack.len - 1) {
-                        synth_expandStack(pMemory->stack.len * 2 + 1);
+                        synth_expandStack(pMemory->stack.len | 1);
                         pString = synth_getRegion(stack);
                     }
                 #endif

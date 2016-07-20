@@ -67,7 +67,7 @@ help:
 	@ echo "  ARCH    : $(ARCH)"
 	@ echo "  CC      : $(CC)"
 	@ echo "  DEBUG   : $(DEBUG)"
-	@ echo "  VERSION : $(MAJOR_VERSION).$(MINOR_VERSION).$(REV_VERSION)"
+	@ echo "  VERSION : $(VERSION)"
 	@ echo "  CFLAGS  : $(CFLAGS)"
 	@ echo "  LDFLAGS : $(LDFLAGS)"
 	@ echo ""

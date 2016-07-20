@@ -1,3 +1,55 @@
+
+#ifndef __SYNTH_INTERNAL_TYPES_H__
+#define __SYNTH_INTERNAL_TYPES_H__
+
+struct st_synth_instrument {
+    int envelope;
+    int wave;
+    int panning;
+    int attack;
+    int keyoff;
+    int release;
+};
+typedef struct st_synth_instrument synth_instrument;
+
+struct st_synth_song {
+    int bmp;
+    int numTracks;
+    int offset;
+};
+typedef struct st_synth_song synth_song;
+
+struct st_synth_track {
+    synth_instrument instrument;
+    int position;
+    int numNodes;
+    int offset;
+};
+typedef struct st_synth_track synth_track;
+
+struct st_synth_node {
+    union {
+        int note;
+        int wave;
+        int stuff;
+    } self;
+};
+typedef struct st_synth_node synth_node;
+
+#endif /* __SYNTH_INTERNAL_TYPES_H__ */
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Define all types used within the library, but not 'publicly exported' to the
  * user
