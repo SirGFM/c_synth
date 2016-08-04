@@ -2,28 +2,117 @@
 #ifndef __SYNTH_INTERNAL_TYPES_H__
 #define __SYNTH_INTERNAL_TYPES_H__
 
-struct st_synth_instrument {
-    int envelope;
-    int wave;
-    int panning;
-    int attack;
-    int keyoff;
-    int release;
+/** Required for fixed-width sizes */
+#include <stdint.h>
+
+/** Waveform for synthesizing notes */
+enum enSynth_waveform {
+    WF_12_5_PW    = 0,
+    WF_25_PW      = 1,
+    WF_50_PW      = 2,
+    WF_75_PW      = 3,
+    WF_TRIANGLE   = 4,
+    WF_SAWTOOTH   = 5,
+    WF_WHITENOISE = 6,
+    WF_MAX
 };
-typedef struct st_synth_instrument synth_instrument;
+typedef enum enSynth_waveform synth_waveform;
+
+/**
+ * Envelop for the note's amplitude.
+ * The amplitude is linearly interpolated between the start and end
+ * values. Also, each value is 4 bits long, so they range from [0,15].
+ * It's important to note that the synthesizer may adjust the volume
+ * according to the number of tracks currently playing.
+ */
+struct stSynth_envelop {
+    uint8_t start : 4;
+    uint8_t end   : 4;
+};
+typedef struct stSynth_envelop synth_envelop;
+
+/**
+ * Instrument that controls how notes ares synthesized.
+ *
+ * It defaults to:
+ *   - .envelop = { .start=7, .end=12 }
+ *   - .wave    = WF_50_PW
+ *   - .pan     = 3
+ *   - .attack  = 1
+ *   - .keyoff  = 5
+ *   - .release = 6
+ */
+struct stSynth_instrument {
+    synth_envelop envelop;
+    synth_waveform wave;
+    /**
+     * Amplitude's separation ratio between left and right channel.
+     * It's represented by a 3 bit value, ranging from 0 to 6. 0 and 6
+     * sets the track to play only on the left or right channel,
+     * respectively, while 3 divide the song evenly between both
+     * channels.
+     */
+    uint8_t pan : 3;
+    /**
+     * Percentage of the note's duration that takes to reach full
+     * amplitude from silence.
+     * It must be on the range [0, 7]. 0 makes the note start maxed out.
+     * Also, note that this value is overriden by both keyoff and
+     * release.
+     */
+    uint8_t attack : 3;
+    /**
+     * Percentage of the note's duration that takes the note to start
+     * fading out. It must be on the range [0, 7]. Note that this value
+     * is overriden by release.
+     */
+    uint8_t keyoff : 3;
+    /**
+     * Percentage of the note's duration when it goes completely
+     * silent. It must be on the range [0, 7].
+     */
+    uint8_t release : 3;
+};
+typedef struct stSynth_instrument synth_instrument;
 
 struct st_synth_song {
-    int bmp;
-    int numTracks;
-    int offset;
+    /**
+     * Time signature.
+     * This information is relevant even after a song is successfully
+     * parsed so the BMP may be correctly modified.
+     */
+    int signature;
+    uint16_t trackIndex;
+    /**
+     * The song speed in beats per minutes.
+     */
+    uint8_t bmp;
+    uint8_t numTracks;
 };
 typedef struct st_synth_song synth_song;
 
 struct st_synth_track {
+    /** Starting index of the track's notes within pMemory->nodes. */
+    uint32_t nodeIndex;
+    /**
+     * The current instrument used to render the track.
+     * Any modifications to the instrument (e.g., a TK_WAVE token) will
+     * directly modify this attribute.
+     */
     synth_instrument instrument;
-    int position;
-    int numNodes;
-    int offset;
+    /**
+     * Position of the current node being playing.
+     * This implies that a track will never simultaneously play more
+     * than once.
+     */
+    uint16_t position;
+    /**
+     * Number of nodes on the track.
+     * 16 bits enables 65535 nodes per track. Considering a 4/4 song at
+     * 120 bpm that only has 1/64 notes, it would be 34 minutes long. It
+     * seems to be way more than enough for any common cases.
+     */
+    uint16_t numNodes;
 };
 typedef struct st_synth_track synth_track;
 
@@ -35,6 +124,13 @@ struct st_synth_node {
     } self;
 };
 typedef struct st_synth_node synth_node;
+
+/**
+ * Initialize a non-constant instrument
+ *
+ * @param  [out]pInstrument The instrument
+ */
+inline void synth_setDefaultInstrument(synth_instrument *pInstrument);
 
 #endif /* __SYNTH_INTERNAL_TYPES_H__ */
 
