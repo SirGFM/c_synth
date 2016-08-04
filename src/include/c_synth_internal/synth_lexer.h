@@ -59,7 +59,8 @@ enum enSynth_note {
     NT_B,
     /** Equivalent to NT_C on a higher octave */
     NT_BS,
-    NT_REST
+    NT_REST,
+    NT_MAX
 };
 typedef enum enSynth_note synth_note;
 

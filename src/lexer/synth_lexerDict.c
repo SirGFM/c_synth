@@ -9,8 +9,23 @@
  */
 #include <c_synth_internal/synth_lexer.h>
 
-#define case2str(name) \
-    case name: return #name;
+static char *_synth_noteDict[NT_MAX] = {
+    [NT_CB]   = "Cb",
+    [NT_C]    = "C",
+    [NT_CS]   = "C#",
+    [NT_D]    = "D",
+    [NT_DS]   = "D#",
+    [NT_E]    = "E",
+    [NT_F]    = "F",
+    [NT_FS]   = "F#",
+    [NT_G]    = "G",
+    [NT_GS]   = "G#",
+    [NT_A]    = "A",
+    [NT_AS]   = "A#",
+    [NT_B]    = "B",
+    [NT_BS]   = "B#",
+    [NT_REST] = "rest"
+};
 
 /**
  * Dictionary of notes.
@@ -19,24 +34,11 @@
  * @return           Static string with the note's name
  */
 char* synth_noteDict(synth_note note) {
-    switch (note) {
-        case2str(NT_CB);
-        case2str(NT_C);
-        case2str(NT_CS);
-        case2str(NT_D);
-        case2str(NT_DS);
-        case2str(NT_E);
-        case2str(NT_F);
-        case2str(NT_FS);
-        case2str(NT_G);
-        case2str(NT_GS);
-        case2str(NT_A);
-        case2str(NT_AS);
-        case2str(NT_B);
-        case2str(NT_BS);
-        case2str(NT_REST);
-        default: return "invalid note";
+    if (note < NT_MAX) {
+        return _synth_noteDict[note];
     }
+
+    return "invalid note";
 }
 
 /**
@@ -46,6 +48,9 @@ char* synth_noteDict(synth_note note) {
  * @return            Static string with the token's name
  */
 char* synth_tokenDictionary(synth_token token) {
+#define case2str(name) \
+    case name: return #name;
+
     switch (token) {
         case2str(STK_HALF_DURATION);
         case2str(STK_NOTE_EXTENSION);
@@ -77,5 +82,7 @@ char* synth_tokenDictionary(synth_token token) {
         case2str(STK_UNKNOWN);
         default: return "invalid token";
     }
+
+#undef case2str
 }
 
