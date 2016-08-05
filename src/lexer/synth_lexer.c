@@ -30,6 +30,10 @@
 /** Required for memset */
 #include <string.h>
 
+/** Required for synth_err */
+#include <c_synth/synth_error.h>
+
+#include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>
 #include <c_synth_internal/synth_memory.h>
 
@@ -222,6 +226,11 @@ synth_token synth_getNextToken() {
  *                      size will be returned.
  */
 synth_err synth_getLexerLine(unsigned int *pSize, char *pString) {
+    /** Avoids an "Unused parameter" warning (which becames an error) */
+    int a = 0;
+    if (!pSize || !pString) {
+        a++;
+    }
     return SYNTH_FUNCTION_NOT_IMPLEMENTED;
 }
 

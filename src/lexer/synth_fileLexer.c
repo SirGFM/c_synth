@@ -5,6 +5,7 @@
  *
  * Backend for all accesses to inputs as files, within the lexer.
  */
+#include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>
 
 /** Required for everything FILE* related */
