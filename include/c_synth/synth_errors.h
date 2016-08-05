@@ -19,6 +19,7 @@
 
 typedef enum {
     SYNTH_OK = 0,
+    SYNTH_FUNCTION_NOT_IMPLEMENTED,
     SYNTH_MAX_ERR
 } synth_err;
 
