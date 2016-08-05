@@ -3,7 +3,7 @@
 # Conditional configuration
 #
 # Set EXTRA_CFLAGS and BUILD_TARGET:
-#   - EXTRA_CFLAGS := (-m64 | -m32) (-g -O0 | -O3) [-fPIC]
+#   - EXTRA_CFLAGS := (-m64 | -m32) (-g -O0 -DDEBUG | -O3) [-DSTRICT] [-fPIC]
 #   - BUILD_TARGET := ${OS}_(debug | release)
 #==============================================================================
 
@@ -14,18 +14,24 @@ else
 endif
 
 ifeq ($(DEBUG), yes)
-    EXTRA_CFLAGS := $(EXTRA_CFLAGS) -g -O0
+    EXTRA_CFLAGS := $(EXTRA_CFLAGS) -g -O0 -DDEBUG
 else
     EXTRA_CFLAGS := $(EXTRA_CFLAGS) -O3
+endif
+
+ifeq ($(STRICT), yes)
+    EXTRA_CFLAGS := $(EXTRA_CFLAGS) -DSTRICT
 endif
 
 ifneq ($(OS), Win)
     EXTRA_CFLAGS := $(EXTRA_CFLAGS) -fPIC
 endif
 
+RELEASE_TARGET := $(OS)_release
+DEBUG_TARGET := $(OS)_debug
 ifeq ($(DEBUG), yes)
-    BUILD_TARGET := $(OS)_debug
+    BUILD_TARGET := $(DEBUG_TARGET)
 else
-    BUILD_TARGET := $(OS)_release
+    BUILD_TARGET := $(RELEASE_TARGET)
 endif
 

@@ -5,6 +5,7 @@
  *
  * Backend for all accesses to inputs as files, within the lexer.
  */
+#include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>
 
 /** Required for everything FILE* related */
@@ -18,6 +19,7 @@
  * @param  [ in]pInput Input file used by the lexer
  */
 void synth_loadFileInput(void *pInput) {
+    synth_assert(pInput);
     pLexer->pInput = pInput;
 
     synth_rewindFileInput();
@@ -28,6 +30,8 @@ void synth_loadFileInput(void *pInput) {
  * Rewinds the input to its start
  */
 void synth_rewindFileInput() {
+    synth_assert(pLexer->pInput);
+
     /* Start it at 1, instead of 0, because it aims to help report
      * errors (and pretty much every text editor starts lines and
      * position at 1) */
@@ -48,6 +52,8 @@ void synth_rewindFileInput() {
  */
 char synth_getNextCharFile() {
     int c;
+
+    synth_assert(pLexer->pInput);
 
     do {
         c = fgetc((FILE*)pLexer->pInput);
@@ -86,6 +92,8 @@ char synth_getNextCharFile() {
 char synth_ungetCharFile() {
     int c;
 
+    synth_assert(pLexer->pInput);
+
     /* TODO Check for 'underflows' (i.e., reading past the begin of the
      * file) */
 
@@ -95,6 +103,7 @@ char synth_ungetCharFile() {
     fseek((FILE*)pLexer->pInput, -1, SEEK_CUR);
     pLexer->linePos--;
     if (c == '\n') {
+        /* TODO Fix the line position */
         pLexer->line--;
         pLexer->linePos = 0;
     }

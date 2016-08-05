@@ -38,6 +38,8 @@
 #include <stdint.h>
 /** Required for size_t */
 #include <stddef.h>
+/** Required for synth_err */
+#include <c_synth/synth_error.h>
 
 /* == LEXER TYPES =================================================== */
 
@@ -182,7 +184,7 @@ synth_token synth_getNextToken();
  * @param  [out]pString The current line. If NULL, the maximum required
  *                      size will be returned.
  */
-void synth_getLexerLine(unsigned int *pSize, char *pString);
+synth_err synth_getLexerLine(unsigned int *pSize, char *pString);
 
 /* == LEXER BACKEND FUNCTIONS ======================================= */
 

@@ -1,6 +1,11 @@
 
 #==============================================================================
 # Import the configurations
+#------------------------------------------------------------------------------
+# ARCH=x86_64 -> -m64
+# DEBUG=yes -> -g -O0 -DDEBUG
+# STRICT=yes -> -DSTRICT
+# ...
 #==============================================================================
   include conf/Makefile.conf
 #==============================================================================
@@ -11,7 +16,17 @@
   OBJS := lexer/synth_lexer.o \
           lexer/synth_fileLexer.o \
           memory/synth_memory.o \
+          error/synth_errorDict.o \
           synth_type.o
+#===============================================================================
+
+#===============================================================================
+# Extra objects used only on debug or strict mode
+#===============================================================================
+# I'll fix this eventually!!! (NO IFs SHOULD BE PLACED ON THE MAIN MAKEFILE)
+ifneq (, $(filter yes, $(DEBUG) $(STRICT)))
+  EXTRA_OBJS := error/synth_error.o
+endif
 #===============================================================================
 
 #===============================================================================
@@ -23,8 +38,15 @@
 #===============================================================================
 # List of directories that must be generated
 #===============================================================================
-  DIRLIST := $(BINDIR) $(OBJDIR) $(OBJDIR)/lexer $(OBJDIR)/memory \
-    $(OBJDIR)/dyn $(OBJDIR)/dyn/lexer $(OBJDIR)/dyn/memory
+  DIRS := error lexer memory
+# List all directories used when compiling with dynamic memory
+  DIRS := $(DIRS) dyn $(DIRS:%=dyn/%)
+# Generated a list with all the required directories
+  DIRLIST := $(BASE_BINDIR) $(BASE_OBJDIR)
+  DIRLIST := $(DIRLIST) $(DIRS:%=$(BASE_OBJDIR)/$(RELEASE_TARGET)/%)
+  DIRLIST := $(DIRLIST) $(DIRS:%=$(BASE_OBJDIR)/$(DEBUG_TARGET)/%)
+  DIRLIST := $(DIRLIST) $(BASE_BINDIR)/$(DEBUG_TARGET)
+  DIRLIST := $(DIRLIST) $(BASE_BINDIR)/$(RELEASE_TARGET)
 #===============================================================================
 
 #==============================================================================
@@ -49,6 +71,7 @@
 #==============================================================================
 # Make both objects and apps list constants. Also prepend the output folder
 #==============================================================================
+  OBJS     := $(OBJS) $(EXTRA_OBJS)
   LIB_OBJS := $(OBJS:%=$(OBJDIR)/%)
   APPS     := $(APPS:%=$(BINDIR)/%)
 #==============================================================================
@@ -160,7 +183,7 @@ $(BINDIR)/$(LIB_NAME).dylib: $(LIB_OBJS)
 	@ rm -f $@
 	@ gcc -dynamiclib $(CFLAGS) -o $@ $(LIB_OBJS) $(LDFLAGS) \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -171,7 +194,7 @@ $(OBJDIR)/%.o: %.c
 	@ echo -n "[  CC  ] $@ < $<... "
 	@ $(CC) $(CFLAGS) -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -182,7 +205,7 @@ $(OBJDIR)/dyn/%.o: %.c
 	@ echo -n "[CC APP] $@ < $<... "
 	@ $(CC) $(CFLAGS) -DENABLE_MALLOC -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -196,11 +219,10 @@ mkdirs:
 #==============================================================================
 
 #==============================================================================
-# Removes all built objects (use emscript_clean to clear the emscript stuff)
+# Removes all built objects
 #==============================================================================
 clean:
 	@ echo -n "[ CLEAN ] ... "
-	@ rm -f $(OBJS) $(BINDIR)/$(TARGET).a $(BINDIR)/*
 	@ rm -rf $(DIRLIST)
 	@ echo "DONE"
 #==============================================================================
@@ -218,7 +240,7 @@ $(BINDIR)/synth_tokenizer: $(SYNTH_TOKENIZER_OBJ)
 	@ echo -n "[  APP ] $@... "
 	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ) > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 
 #==============================================================================

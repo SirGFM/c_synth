@@ -30,6 +30,10 @@
 /** Required for memset */
 #include <string.h>
 
+/** Required for synth_err */
+#include <c_synth/synth_error.h>
+
+#include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>
 #include <c_synth_internal/synth_memory.h>
 
@@ -51,6 +55,8 @@ const size_t synth_lexerSize = synth_align32(sizeof(synth_lexerCtx));
  *                    Must point to at least synth_lexerSize.
  */
 void synth_setupLexer(void *pBase) {
+    synth_assert(pBase);
+
     pLexer = (synth_lexerCtx*)pBase;
     memset(pLexer, 0x0, synth_lexerSize);
 }
@@ -98,6 +104,7 @@ synth_token synth_getNextToken() {
                     synth_expandMemory(0, 0, 0, 0, 0, 0);
                 }
             #endif
+            synth_assert(pMemory);
 
             i = pMemory->stack.used;
             pString = synth_getRegion(stack);
@@ -108,18 +115,21 @@ synth_token synth_getNextToken() {
                         pString = synth_getRegion(stack);
                     }
                 #endif
+                synth_assert(i < pMemory->stack.len);
                 /* Note that this call skips the first 'STK_STRING' */
                 c = synth_getNextChar();
                 pString[i] = c;
                 i++;
             } while (c != STK_STRING);
 
+            synth_assert(i > 1);
             if (i > 1) {
-                /* Overwrite the final 'STK_sTRING' with a '\0' */
+                /* Overwrite the final 'STK_STRING' with a '\0' */
                 pString[i - 1] = '\0';
             }
             else {
                 /* TODO Error! Empty string! */
+                return STK_UNKNOWN;
             }
 
             pLexer->token.token = STK_STRING;
@@ -193,7 +203,7 @@ synth_token synth_getNextToken() {
 /* == LEXER DEBUG FUNCTION ========================================= */
 
 /**
- * Retrieves the current line in ASCII format. TODO Implement this.
+ * Retrieves the current line in ASCII format.
  *
  * The returned string is actually two lines long. The first points to
  * the current position within the actual input and the second one is
@@ -215,5 +225,12 @@ synth_token synth_getNextToken() {
  * @param  [out]pString The current line. If NULL, the maximum required
  *                      size will be returned.
  */
-void synth_getLexerLine(unsigned int *pSize, char *pString);
+synth_err synth_getLexerLine(unsigned int *pSize, char *pString) {
+    /** Avoids an "Unused parameter" warning (which becames an error) */
+    int a = 0;
+    if (!pSize || !pString) {
+        a++;
+    }
+    return SYNTH_FUNCTION_NOT_IMPLEMENTED;
+}
 
