@@ -1,6 +1,11 @@
 
 #==============================================================================
 # Import the configurations
+#------------------------------------------------------------------------------
+# ARCH=x86_64 -> -m64
+# DEBUG=yes -> -g -O0 -DDEBUG
+# STRICT=yes -> -DSTRICT
+# ...
 #==============================================================================
   include conf/Makefile.conf
 #==============================================================================
@@ -12,6 +17,15 @@
           lexer/synth_fileLexer.o \
           memory/synth_memory.o \
           synth_type.o
+#===============================================================================
+
+#===============================================================================
+# Extra objects used only on debug or strict mode
+#===============================================================================
+# I'll fix this eventually!!! (NO IFs SHOULD BE PLACED ON THE MAIN MAKEFILE)
+ifneq (, $(filter yes, $(DEBUG) $(STRICT)))
+  EXTRA_OBJS := synth_error.o
+endif
 #===============================================================================
 
 #===============================================================================
@@ -49,6 +63,7 @@
 #==============================================================================
 # Make both objects and apps list constants. Also prepend the output folder
 #==============================================================================
+  OBJS     := $(OBJS) $(EXTRA_OBJS)
   LIB_OBJS := $(OBJS:%=$(OBJDIR)/%)
   APPS     := $(APPS:%=$(BINDIR)/%)
 #==============================================================================
@@ -160,7 +175,7 @@ $(BINDIR)/$(LIB_NAME).dylib: $(LIB_OBJS)
 	@ rm -f $@
 	@ gcc -dynamiclib $(CFLAGS) -o $@ $(LIB_OBJS) $(LDFLAGS) \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -171,7 +186,7 @@ $(OBJDIR)/%.o: %.c
 	@ echo -n "[  CC  ] $@ < $<... "
 	@ $(CC) $(CFLAGS) -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -182,7 +197,7 @@ $(OBJDIR)/dyn/%.o: %.c
 	@ echo -n "[CC APP] $@ < $<... "
 	@ $(CC) $(CFLAGS) -DENABLE_MALLOC -o $@ -c $< > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 #==============================================================================
 
@@ -218,7 +233,7 @@ $(BINDIR)/synth_tokenizer: $(SYNTH_TOKENIZER_OBJ)
 	@ echo -n "[  APP ] $@... "
 	@ $(CC) $(CFLAGS) -o $@ $(SYNTH_TOKENIZER_OBJ) > /dev/null 2> err.out \
 	    && (rm -f err.out ; true) \
-	    || (echo "[FAILED]"; cat err.out >&2 ; rm err.out false)
+	    || (echo "[FAILED]"; cat err.out >&2 ; rm -f err.out; false)
 	@ echo "DONE"
 
 #==============================================================================
