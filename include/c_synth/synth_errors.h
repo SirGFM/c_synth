@@ -1,10 +1,38 @@
 /**
- * @file include/synth/synth_errors.h
+ * @project   c_synth
+ * @license   zlib license
+ * @file      include/c_synth/synth_error.h
+ *
+ * @summary   The language's lexer.
+ *
+ * @typedef   synth_error Error code returned by the synth
  * 
- * Enumeration of possible errors
+ * List all errors. They are mapped into an enumeration that (hopefully)
+ * covers all cases and, therefore, will never required a generic
+ * "function failed".
+ *
+ * A human readable error string may be retrieved from the function
+ * 'synth_getErrorString'.
  */
-#ifndef __SYNTH_ERRORS_H
-#define __SYNTH_ERRORS_H
+#ifndef __SYNTH_ERRORS_H__
+#define __SYNTH_ERRORS_H__
+
+typedef enum {
+    SYNTH_OK = 0,
+    SYNTH_MAX_ERR
+} synth_err;
+
+/**
+ * Returns a human readable string for a given error.
+ *
+ * @param  [ in]rv The error code
+ * @return         Error description
+ */
+const char* synth_getErrorString(synth_err rv);
+
+#endif /* __SYNTH_ERRORS_H__ */
+
+#ifndef __SYNTH_ERRORS_H__
 
 typedef enum {
     SYNTH_OK = 0,
@@ -38,5 +66,5 @@ typedef enum {
     SYNTH_MAX_ERR
 } synth_err;
 
-#endif
+#endif /* __SYNTH_ERRORS_H__ */
 

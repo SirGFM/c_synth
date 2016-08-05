@@ -11,8 +11,8 @@
  * and they are designed to aid finding runtime bugs, or "simple
  * programming errors".
  */
-#ifndef __SYNTH_ERROR_H__
-#define __SYNTH_ERROR_H__
+#ifndef __SYNTH_INTERNAL_ERROR_H__
+#define __SYNTH_INTERNAL_ERROR_H__
 
 /**
  * Check if a statement is false and exit the program with an error
@@ -50,5 +50,5 @@
 void synth_throwError(const char *pAsserted, const char *pFile
         , const char *pFunction, const int line);
 
-#endif /* __SYNTH_ERROR_H__ */
+#endif /* __SYNTH_INTERNAL_ERROR_H__ */
 

@@ -16,6 +16,7 @@
   OBJS := lexer/synth_lexer.o \
           lexer/synth_fileLexer.o \
           memory/synth_memory.o \
+          error/synth_errorDict.o \
           synth_type.o
 #===============================================================================
 
