@@ -24,7 +24,7 @@
 #===============================================================================
 # I'll fix this eventually!!! (NO IFs SHOULD BE PLACED ON THE MAIN MAKEFILE)
 ifneq (, $(filter yes, $(DEBUG) $(STRICT)))
-  EXTRA_OBJS := synth_error.o
+  EXTRA_OBJS := error/synth_error.o
 endif
 #===============================================================================
 
@@ -37,8 +37,15 @@ endif
 #===============================================================================
 # List of directories that must be generated
 #===============================================================================
-  DIRLIST := $(BINDIR) $(OBJDIR) $(OBJDIR)/lexer $(OBJDIR)/memory \
-    $(OBJDIR)/dyn $(OBJDIR)/dyn/lexer $(OBJDIR)/dyn/memory
+  DIRS := error lexer memory
+# List all directories used when compiling with dynamic memory
+  DIRS := $(DIRS) dyn $(DIRS:%=dyn/%)
+# Generated a list with all the required directories
+  DIRLIST := $(BASE_BINDIR) $(BASE_OBJDIR)
+  DIRLIST := $(DIRLIST) $(DIRS:%=$(BASE_OBJDIR)/$(RELEASE_TARGET)/%)
+  DIRLIST := $(DIRLIST) $(DIRS:%=$(BASE_OBJDIR)/$(DEBUG_TARGET)/%)
+  DIRLIST := $(DIRLIST) $(BASE_BINDIR)/$(DEBUG_TARGET)
+  DIRLIST := $(DIRLIST) $(BASE_BINDIR)/$(RELEASE_TARGET)
 #===============================================================================
 
 #==============================================================================
@@ -211,11 +218,10 @@ mkdirs:
 #==============================================================================
 
 #==============================================================================
-# Removes all built objects (use emscript_clean to clear the emscript stuff)
+# Removes all built objects
 #==============================================================================
 clean:
 	@ echo -n "[ CLEAN ] ... "
-	@ rm -f $(OBJS) $(BINDIR)/$(TARGET).a $(BINDIR)/*
 	@ rm -rf $(DIRLIST)
 	@ echo "DONE"
 #==============================================================================

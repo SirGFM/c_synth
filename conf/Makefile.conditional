@@ -27,9 +27,11 @@ ifneq ($(OS), Win)
     EXTRA_CFLAGS := $(EXTRA_CFLAGS) -fPIC
 endif
 
+RELEASE_TARGET := $(OS)_release
+DEBUG_TARGET := $(OS)_debug
 ifeq ($(DEBUG), yes)
-    BUILD_TARGET := $(OS)_debug
+    BUILD_TARGET := $(DEBUG_TARGET)
 else
-    BUILD_TARGET := $(OS)_release
+    BUILD_TARGET := $(RELEASE_TARGET)
 endif
 
