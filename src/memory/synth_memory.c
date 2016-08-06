@@ -28,6 +28,8 @@
 #include <c_synth_internal/synth_memory.h>
 /** Required for the internal types */
 #include <c_synth_internal/synth_types.h>
+/** Required for synth_assert */
+#include <c_synth_internal/synth_error.h>
 
 /** Required for size_t */
 #include <stddef.h>
@@ -90,6 +92,8 @@ void synth_setupMemory(void *pBase, int instrumentsNum, int songsNum
     int instrumentsLen,  songsLen, tracksLen, nodesLen, stringsLen
             , stackLen;
 
+    synth_assert(pBase);
+
 /** Retrieve the actual amount of bytes required by a given region */
 #define CONVERT_SIZE(_region_) \
   _region_##sLen = ( _region_##sNum * sizeof(synth_##_region_) )
@@ -131,5 +135,48 @@ void synth_setupMemory(void *pBase, int instrumentsNum, int songsNum
 
 #undef SET_BASE
 #undef SET_OFFSET
+}
+
+/**
+ * Search for a null-terminated string on the memory.
+ *
+ * @param  [ in]pString The string
+ * @return              Position of the string or -1, if not found
+ */
+int synth_getStringPosition(char *pString) {
+    /* Points to the start of the strings region */
+    char *pTmp;
+    /* Index of the stored string being compared */
+    int i;
+    /* Current position within both strings */
+    int j;
+
+    synth_assert(pString);
+    synth_assert(strlen(pString) > 0);
+
+    pTmp = (char*)synth_getRegion(strings);
+
+    i = 0;
+    j = 0;
+    while (i < pMemory->strings.used) {
+        if (pString[j] == '\0' && pTmp[i + j] == '\0') {
+            /* String found */
+            return i;
+        }
+        else if (pString[j] != pTmp[i + j]) {
+            /* Move over to the next string */
+            while (j < pMemory->strings.used && pTmp[i + j] != '\0') {
+                j++;
+            }
+            i = j + 1;
+            /* Go back to the start of both strings */
+            j = 0;
+        }
+
+        j++;
+    }
+
+    /* String not found */
+    return -1;
 }
 

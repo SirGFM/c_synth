@@ -124,6 +124,14 @@ int synth_computeRequiredMemory(int instrumentsCount, int songsCount
 void synth_setupMemory(void *pBase, int InstrumentsNum, int SongsNum
         , int TracksNum, int NodesNum, int stringsNum, int stackNum);
 
+/**
+ * Search for a null-terminated string on the memory.
+ *
+ * @param  [ in]pString The string
+ * @return              Position of the string or -1, if not found
+ */
+int synth_getStringPosition(char *pString);
+
 /* == DYNAMIC MEMORY FUNCTIONS ====================================== */
 
 /**
@@ -196,7 +204,7 @@ void synth_expandStrings(int num);
 void synth_expandStack(int num);
 
 /**
- * Clean up the dinamically allo'ec memory
+ * Clean up the dinamically allo'ec memory.
  */
 void synth_cleanMemory();
 
