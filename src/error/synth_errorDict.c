@@ -12,6 +12,9 @@
 static const char* _synth_errorDict[SYNTH_MAX_ERR] = {
       [SYNTH_OK] = "No error detected"
     , [SYNTH_FUNCTION_NOT_IMPLEMENTED] = "Function not implemented"
+    , [SYNTH_PARSER_ERROR] = "Parsing error"
+    , [SYNTH_DUPLICATED_STRING] = "Trying to add duplicated string"
+    , [SYNTH_VALUE_RANGE] = "Value outside the allowed range"
 };
 
 /**
