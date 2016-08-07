@@ -19,23 +19,23 @@ enum enSynth_waveform {
 typedef enum enSynth_waveform synth_waveform;
 
 /**
- * Envelop for the note's amplitude.
+ * Envelope for the note's amplitude.
  * The amplitude is linearly interpolated between the start and end
  * values. Also, each value is 4 bits long, so they range from [0,15].
  * It's important to note that the synthesizer may adjust the volume
  * according to the number of tracks currently playing.
  */
-struct stSynth_envelop {
+struct stSynth_envelope {
     uint8_t start : 4;
     uint8_t end   : 4;
 };
-typedef struct stSynth_envelop synth_envelop;
+typedef struct stSynth_envelope synth_envelope;
 
 /**
  * Instrument that controls how notes ares synthesized.
  *
  * It defaults to:
- *   - .envelop = { .start=7, .end=12 }
+ *   - .envelope = { .start=7, .end=12 }
  *   - .wave    = WF_50_PW
  *   - .pan     = 3
  *   - .attack  = 1
@@ -43,7 +43,7 @@ typedef struct stSynth_envelop synth_envelop;
  *   - .release = 6
  */
 struct stSynth_instrument {
-    synth_envelop envelop;
+    synth_envelope envelope;
     synth_waveform wave;
     /**
      * Amplitude's separation ratio between left and right channel.
@@ -575,7 +575,7 @@ struct stSynthNote {
     synth_wave wave;
     /** Musical note to be played */
     synth_note note;
-    /** Index to either a value between 0x0 and 0xff or a envelop */
+    /** Index to either a value between 0x0 and 0xff or a envelope */
     int volume;
 };
 

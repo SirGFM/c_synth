@@ -1,4 +1,28 @@
 /**
+ * @project c_synth
+ * @license zlib license
+ * @file    src/include/c_synth_internal/synth_parser.h
+ *
+ * The language's parser.
+ */
+#ifndef __SYNTH_PARSER_H__
+#define __SYNTH_PARSER_H__
+
+/** Required for fixed-width sizes */
+#include <stdint.h>
+/** Required for synth_err */
+#include <c_synth/synth_error.h>
+
+struct stSynth_parser {
+    int octave;
+    int duration;
+    int startPosition;
+};
+typedef struct stSynth_parser synth_parser;
+
+#endif /* __SYNTH_PARSER_H__ */
+
+/**
  * @file @src/include/synth_internal/synth_parser.h
  */
 #ifndef __SYNTH_PARSER_H__

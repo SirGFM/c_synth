@@ -1,4 +1,288 @@
 /**
+ * @project c_synth
+ * @license zlib license
+ * @file    src/include/c_synth_internal/synth_parser.h
+ *
+ * The language's parser.
+ *
+ * Every synth_parse* function expect the current token to be the one
+ * which the function parses. I.e., for synth_parseEnvelope,
+ * pLexer->token.token must be STK_ENVELOPE.
+ *
+ * Also, each of those functions exit with the lexer on the next token
+ * to be parsed.
+ */
+#include <string.h>
+/** Required for synth_err */
+#include <c_synth/synth_error.h>
+/** Required for synth_assert */
+#include <c_synth_internal/synth_error.h>
+
+/**
+ * Retrieve the next token that isn't a comment
+ */
+static inline synth_token synth_parseGetNextToken() {
+    synth_token token;
+    do {
+        token = synth_getNextToken();
+    } while (token == STK_COMMENT);
+    return token;
+}
+
+/**
+ * STK_ENVELOPE := STK_NUMBER STK_NUMBER?
+ */
+static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
+    uint8_t start, end;
+
+    synth_assert(pLexer->token.token == STK_ENVELOPE);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    start = (uint8_t)pLexer->token->data.numVal;
+
+    /* Try to get the second value of the envelope. If it isn't a
+     * number, the parser will already be on the next token. Otherwise,
+     * it must be "manually" requested */
+    if (synth_parserGetNextToken() == STK_NUMBER) {
+        end = (uint8_t)pLexer->token->data.numVal;
+        synth_parserGetNextToken();
+    }
+    else {
+        end = start;
+    }
+
+    if (start > 15 || end > 15) {
+        /* TODO Set maximum value to 15 */
+        return SYNTH_VALUE_RANGE;
+    }
+
+    pEnvelope->start = start;
+    pEnvelope->end = end;
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_WAVE := STK_NUMBER
+ */
+static synth_err synth_parseWave(synth_waveform *pWave) {
+    synth_assert(pLexer->token.token == STK_WAVE);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    if ((synth_waveform)pLexer->token->data.numVal >= WF_MAX) {
+        /* TODO Set maximum value to WF_MAX-1 */
+        return SYNTH_VALUE_RANGE;
+    }
+    *pWave = (synth_waveform)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_PANNING := STK_NUMBER
+ */
+static synth_err synth_parsePanning(uint8_t *pPanning) {
+    synth_assert(pLexer->token.token == STK_PANNING);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    if (pLexer->token->data.numVal > 7) {
+        /* TODO Set maximum value to 7 */
+        return SYNTH_VALUE_RANGE;
+    }
+    *pPanning = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_ATTACK := STK_NUMBER
+ */
+static synth_err synth_parseAttack(uint8_t *pAttack) {
+    synth_assert(pLexer->token.token == STK_ATTACK);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    if (pLexer->token->data.numVal > 7) {
+        /* TODO Set maximum value to 7 */
+        return SYNTH_VALUE_RANGE;
+    }
+    *pAttack = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_KEYOFF := STK_NUMBER
+ */
+static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
+    synth_assert(pLexer->token.token == STK_KEYOFF);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    if (pLexer->token->data.numVal > 7) {
+        /* TODO Set maximum value to 7 */
+        return SYNTH_VALUE_RANGE;
+    }
+    *pKeyoff = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_RELEASE := STK_NUMBER
+ */
+static synth_err synth_parseRelease(uint8_t *pRelease) {
+    synth_assert(pLexer->token.token == STK_RELEASE);
+
+    if (synth_parserGetNextToken() != STK_NUMBER) {
+        /* TODO Set expected to STK_NUMBER */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    if (pLexer->token->data.numVal > 7) {
+        /* TODO Set maximum value to 7 */
+        return SYNTH_VALUE_RANGE;
+    }
+    *pRelease = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+
+    return SYNTH_OK;
+}
+
+/**
+ * STK_INSTRUMENT := STK_STRING (STK_ENVELOPE | STK_WAVE | STK_PANNING
+ *                 | STK_ATTACK | STK_KEYOFF | STK_RELEASE)* STK_END
+ */
+static synth_err synth_parseInstrument() {
+    synth_instrument *pInstrument;
+    char *pName;
+    int len;
+
+    synth_assert(pLexer->token.token == STK_INSTRUMENT);
+
+    if (synth_parserGetNextToken() != STK_STRING) {
+        /* TODO Set expected to STK_STRING */
+        return SYNTH_PARSER_ERROR;
+    }
+
+    /* If any 'push' was done, the string will be on:
+     *   pMemory+ stackOffset + stack.used */
+    pName = (char*)synth_getRegion(stack);
+    pName += pMemory->stack.used;
+    len = strlen(pName) + 1;
+
+    /** Check that there's no instrument with this same name */
+    if (synth_getStringPosition(pName) != -1) {
+        return SYNTH_DUPLICATED_STRING;
+    }
+
+    #if defined(ENABLE_MALLOC)
+        if (synth_isFull(instruments)) {
+            synth_expandInstruments(1);
+        }
+        if (synth_checkOverflow(strings, len)) {
+            synth_expandStrings(len);
+        }
+    #endif
+    synth_assert(!synth_isFull(instrument));
+    synth_assert(!synth_checkOverflow(strings, len));
+
+    /* Store the instrument name */
+    memcpy(((char*)synth_getRegion(strings)) + pMemory->strings.used
+            , pName, len);
+
+    pInstrument = (synth_instrument*)synth_getRegion(instruments);
+    pInstrument += pMemory->instruments.used;
+    pMemory->instruments.used++;
+
+    synth_setDefaultInstrument(pInstrument);
+
+    /* pLexer->token.token is still the previous STK_STRING. Get the
+     * first modifier. Note that every other is set when the parsing
+     * function exits. */
+    synth_parserGetNextToken();
+    while (pLexer->token.token != STK_END) {
+        synth_err rv;
+        switch (pLexer->token.token) {
+            case STK_ENVELOPE: {
+                rv = synth_parseEnvelope(&pInstrument->envelope);
+            } break;
+            case STK_WAVE: {
+                rv = synth_parseWave(&pInstrument->wave);
+            } break;
+            case STK_PANNING: {
+                rv = synth_parsePanning(&pInstrument->pan);
+            } break;
+            case STK_ATTACK: {
+                rv = synth_parseAttack(&pInstrument->attack);
+            } break;
+            case STK_KEYOFF: {
+                rv = synth_parseKeyoff(&pInstrument->keyoff);
+            } break;
+            case STK_RELEASE: {
+                rv = synth_parseRelease(&pInstrument->release);
+            } break;
+            default: {
+                /* TODO Set expected to STK_END */
+                return SYNTH_PARSER_ERROR;
+            } break;
+        }
+        if (rv != SYNTH_OK) {
+            return rv;
+        }
+    } /* while (pLexer->token.token != STK_END) */
+
+    synth_parserGetNextToken();
+    return SYNTH_OK;
+}
+
+synth_err synth_parseInput() {
+    do {
+        switch (pLexer->token.token) {
+            case STK_INSTRUMENT: {
+                synth_parseInstrument();
+            } break;
+            case STK_COMMENT: {
+                synth_parserGetNextToken();
+            } break;
+            default: {
+                /* TODO Set expected to STK_END */
+                return SYNTH_PARSER_ERROR;
+            }
+        }
+    } while (pLexer->token.token != STK_END_OF_INPUT);
+}
+
+/** ========================================================================= */
+
+/**
  * @file @src/synth_parser.c
  */
 #include <c_synth/synth_assert.h>
