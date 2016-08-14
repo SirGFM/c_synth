@@ -7,7 +7,7 @@
  *
  * Implements 'synth_getErrorString'.
  */
-#include <c_synth/synth_errors.h>
+#include <c_synth/synth_error.h>
 
 static const char* _synth_errorDict[SYNTH_MAX_ERR] = {
       [SYNTH_OK] = "No error detected"

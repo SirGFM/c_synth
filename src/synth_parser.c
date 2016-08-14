@@ -17,9 +17,58 @@
 #include <c_synth/synth_error.h>
 /** Required for synth_assert */
 #include <c_synth_internal/synth_error.h>
+/** Required for synth_token and tokenization functions */
+#include <c_synth_internal/synth_lexer.h>
+
+/**
+ * Check if a give value is within the range [0, _max_).
+ *
+ * On error, rv is set to SYNTH_VALUE_RANGE and execution is returned to
+ * the calling function.
+ *
+ * @param  [ in]_val_ Value to be checked
+ * @param  [ in]_max_ Length of the range (i.e., 0 <= _val_ < _max_)
+ */
+#define synth_checkMaxValue(_val_, _max_) \
+  do { \
+    if ((_val_) >= _max_) { \
+      pParser->error.data.maxValue = _max_ - 1; \
+      pParser->error.rv = SYNTH_VALUE_RANGE; \
+      return; \
+    } \
+  } while (0)
+
+/**
+ * Retrieve the next token and check if it's the expected one.
+ *
+ * On error, rv is set to SYNTH_PARSER_ERROR and execution is returned
+ * to the calling function.
+ *
+ * @param  [ in]_expected_ The expected token
+ */
+#define synth_checkNextToken(_expected_) \
+  do { \
+    if (synth_parserGetNextToken() != _expected_) { \
+      pParser->error.data.expected = _expected_; \
+      pParser->error.rv = SYNTH_PARSER_ERROR; \
+      return; \
+    } \
+  } while (0)
+
+/**
+ * Check that no error has happened to the parser
+ */
+#define synth_checkOK() \
+ do { \
+   if (pParser->error.rv != SYNTH_OK) { \
+     return; \
+   } \
+ } while (0)
 
 /**
  * Retrieve the next token that isn't a comment
+ *
+ * @return The token
  */
 static inline synth_token synth_parseGetNextToken() {
     synth_token token;
@@ -30,18 +79,22 @@ static inline synth_token synth_parseGetNextToken() {
 }
 
 /**
- * STK_ENVELOPE := STK_NUMBER STK_NUMBER?
+ * Parse an envelope.
+ *
+ * Production: STK_ENVELOPE := STK_NUMBER STK_NUMBER?
+ *
+ * If only a single amplitude is found, it will be kept constant through
+ * the note's duration. (i.e., start == end)
+ *
+ * @param  [out]pEnvelope The parsed envelope
+ * @return                Return value
  */
 static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
     uint8_t start, end;
 
     synth_assert(pLexer->token.token == STK_ENVELOPE);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
-
+    synth_checkNextToken(STK_NUMBER);
     start = (uint8_t)pLexer->token->data.numVal;
 
     /* Try to get the second value of the envelope. If it isn't a
@@ -55,10 +108,8 @@ static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
         end = start;
     }
 
-    if (start > 15 || end > 15) {
-        /* TODO Set maximum value to 15 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue(start, 16);
+    synth_checkMaxValue(end, 16);
 
     pEnvelope->start = start;
     pEnvelope->end = end;
@@ -67,20 +118,20 @@ static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
 }
 
 /**
- * STK_WAVE := STK_NUMBER
+ * Parse a wave.
+ *
+ * Production rule: STK_WAVE := STK_NUMBER
+ *
+ * @param  [out]pWave The parsed wave
+ * @return            Return value
  */
 static synth_err synth_parseWave(synth_waveform *pWave) {
     synth_assert(pLexer->token.token == STK_WAVE);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_NUMBER);
 
-    if ((synth_waveform)pLexer->token->data.numVal >= WF_MAX) {
-        /* TODO Set maximum value to WF_MAX-1 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue((synth_waveform)pLexer->token->data.numVal,
+            WF_MAX);
     *pWave = (synth_waveform)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -89,20 +140,19 @@ static synth_err synth_parseWave(synth_waveform *pWave) {
 }
 
 /**
- * STK_PANNING := STK_NUMBER
+ * Parse a panning.
+ *
+ * Production rule: STK_PANNING := STK_NUMBER
+ *
+ * @param  [out]pPanning The parsed panning
+ * @return               Return value
  */
 static synth_err synth_parsePanning(uint8_t *pPanning) {
     synth_assert(pLexer->token.token == STK_PANNING);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_NUMBER);
 
-    if (pLexer->token->data.numVal > 7) {
-        /* TODO Set maximum value to 7 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue(pLexer->token->data.numVal, 8);
     *pPanning = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -111,20 +161,19 @@ static synth_err synth_parsePanning(uint8_t *pPanning) {
 }
 
 /**
- * STK_ATTACK := STK_NUMBER
+ * Parse a attack
+ *
+ * Production rule: STK_ATTACK := STK_NUMBER
+ *
+ * @param  [out]pAttack The parsed attack
+ * @return              Return value
  */
 static synth_err synth_parseAttack(uint8_t *pAttack) {
     synth_assert(pLexer->token.token == STK_ATTACK);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_NUMBER);
 
-    if (pLexer->token->data.numVal > 7) {
-        /* TODO Set maximum value to 7 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue(pLexer->token->data.numVal, 8);
     *pAttack = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -133,20 +182,19 @@ static synth_err synth_parseAttack(uint8_t *pAttack) {
 }
 
 /**
- * STK_KEYOFF := STK_NUMBER
+ * Parse a keyoff.
+ *
+ * Production rule: STK_KEYOFF := STK_NUMBER
+ *
+ * @param  [out]pKeyoff The parsed keyoff
+ * @return              Return value
  */
 static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
     synth_assert(pLexer->token.token == STK_KEYOFF);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_NUMBER);
 
-    if (pLexer->token->data.numVal > 7) {
-        /* TODO Set maximum value to 7 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue(pLexer->token->data.numVal, 8);
     *pKeyoff = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -155,20 +203,19 @@ static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
 }
 
 /**
- * STK_RELEASE := STK_NUMBER
+ * Parse a release.
+ *
+ * Production rule: STK_RELEASE := STK_NUMBER
+ *
+ * @param  [out]pRelease The parsed release
+ * @return               Return value
  */
 static synth_err synth_parseRelease(uint8_t *pRelease) {
     synth_assert(pLexer->token.token == STK_RELEASE);
 
-    if (synth_parserGetNextToken() != STK_NUMBER) {
-        /* TODO Set expected to STK_NUMBER */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_NUMBER);
 
-    if (pLexer->token->data.numVal > 7) {
-        /* TODO Set maximum value to 7 */
-        return SYNTH_VALUE_RANGE;
-    }
+    synth_checkMaxValue(pLexer->token->data.numVal, 8);
     *pRelease = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -177,8 +224,17 @@ static synth_err synth_parseRelease(uint8_t *pRelease) {
 }
 
 /**
- * STK_INSTRUMENT := STK_STRING (STK_ENVELOPE | STK_WAVE | STK_PANNING
- *                 | STK_ATTACK | STK_KEYOFF | STK_RELEASE)* STK_END
+ * Parse an instrument.
+ *
+ * Production rule: STK_INSTRUMENT := STK_STRING ( STK_ENVELOPE
+ *                                  | STK_WAVE | STK_PANNING
+ *                                  | STK_ATTACK | STK_KEYOFF
+ *                                  | STK_RELEASE )* STK_END
+ *
+ * The parsed instrument is loaded into the synthesize, hence why
+ * there's no output parameter.
+ *
+ * @return Return value
  */
 static synth_err synth_parseInstrument() {
     synth_instrument *pInstrument;
@@ -187,10 +243,7 @@ static synth_err synth_parseInstrument() {
 
     synth_assert(pLexer->token.token == STK_INSTRUMENT);
 
-    if (synth_parserGetNextToken() != STK_STRING) {
-        /* TODO Set expected to STK_STRING */
-        return SYNTH_PARSER_ERROR;
-    }
+    synth_checkNextToken(STK_STRING);
 
     /* If any 'push' was done, the string will be on:
      *   pMemory+ stackOffset + stack.used */
@@ -250,8 +303,9 @@ static synth_err synth_parseInstrument() {
                 rv = synth_parseRelease(&pInstrument->release);
             } break;
             default: {
-                /* TODO Set expected to STK_END */
-                return SYNTH_PARSER_ERROR;
+                pParser->error.data.expected = STK_END;
+                pParser->error.rv = SYNTH_PARSER_ERROR;
+                return;
             } break;
         }
         if (rv != SYNTH_OK) {
@@ -264,6 +318,8 @@ static synth_err synth_parseInstrument() {
 }
 
 synth_err synth_parseInput() {
+    /* TODO Reset parser */
+
     do {
         switch (pLexer->token.token) {
             case STK_INSTRUMENT: {
@@ -273,8 +329,9 @@ synth_err synth_parseInput() {
                 synth_parserGetNextToken();
             } break;
             default: {
-                /* TODO Set expected to STK_END */
-                return SYNTH_PARSER_ERROR;
+                pParser->error.data.expected = STK_END;
+                pParser->error.rv = SYNTH_PARSER_ERROR;
+                return;
             }
         }
     } while (pLexer->token.token != STK_END_OF_INPUT);

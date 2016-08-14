@@ -12,13 +12,54 @@
 #include <stdint.h>
 /** Required for synth_err */
 #include <c_synth/synth_error.h>
+/** Required for synth_token */
+#include <c_synth_internal/synth_lexer.h>
 
-struct stSynth_parser {
+/**
+ * Possible values set on error
+ */
+union unSynth_parserErrorData {
+    /**
+     * The expected token. Used when rv == SYNTH_PARSER_ERROR.
+     *
+     * The retrieved one may be accessed on pLexer->token.token.
+     */
+    synth_token expected;
+    /**
+     * Maximum value allowed. Used when rv == SYNTH_VALUE_RANGE.
+     *
+     * The retrieved one may be accessed on pLexer->token.data.
+     */
+    uint16_t maxValue;
+};
+typedef union unSynth_parserErrorData synth_parserErrorData;
+
+/** Context with information about the last error */
+struct stSynth_parserError {
+    /** Token being parsed when an error happened */
+    synth_token context;
+    /** The latest error, if any */
+    synth_error rv;
+    /**
+     * Data that triggered the error.
+     *
+     * Which value should be read depends on rv.
+     */
+    synth_parserErrorData data;
+};
+typedef struct stSynth_parserError synth_parserError;
+
+/** The parser context */
+struct stSynth_parserCtx {
+    synth_parserError error;
+
     int octave;
     int duration;
     int startPosition;
 };
-typedef struct stSynth_parser synth_parser;
+typedef struct stSynth_parserCtx synth_parserCtx;
+
+extern synth_parserCtx *pParser;
 
 #endif /* __SYNTH_PARSER_H__ */
 
