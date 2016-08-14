@@ -58,7 +58,7 @@ endif
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: all shared static clean help mkdirs apps install_linux \
+.PHONY: all shared static clean __clean__ help mkdirs apps install_linux \
         install_win install_macosx
 #==============================================================================
 
@@ -221,7 +221,8 @@ mkdirs:
 #==============================================================================
 # Removes all built objects
 #==============================================================================
-clean:
+clean: __clean__ mkdirs
+__clean__:
 	@ echo -n "[ CLEAN ] ... "
 	@ rm -rf $(DIRLIST)
 	@ echo "DONE"
