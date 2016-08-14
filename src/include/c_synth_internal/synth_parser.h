@@ -31,6 +31,11 @@ union unSynth_parserErrorData {
      * The retrieved one may be accessed on pLexer->token.data.
      */
     uint16_t maxValue;
+    /**
+     * String that caused an error. Used when rv is either
+     * SYNTH_DUPLICATED_STRING or SYNTH_STRING_NOT_FOUND.
+     */
+    char *pString;
 };
 typedef union unSynth_parserErrorData synth_parserErrorData;
 

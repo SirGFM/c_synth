@@ -21,6 +21,22 @@
 #include <c_synth_internal/synth_lexer.h>
 
 /**
+ * Check if a given string is unique
+ *
+ * On error, rv is set to SYNTH_DUPLICATED_STRING and execution is
+ * returned to the calling function.
+ *
+ * @param  [ in]_name_ Value to be checked
+ */
+#define synth_checkDuplicatedString(_name_) \
+  do { \
+    if (synth_getStringPosition(_name_) != -1) { \
+      pParser->error.data.pString = _name_; \
+      pParser->error.rv = SYNTH_DUPLICATED_STRING; \
+    } \
+  } while (0)
+
+/**
  * Check if a give value is within the range [0, _max_).
  *
  * On error, rv is set to SYNTH_VALUE_RANGE and execution is returned to
@@ -87,9 +103,8 @@ static inline synth_token synth_parseGetNextToken() {
  * the note's duration. (i.e., start == end)
  *
  * @param  [out]pEnvelope The parsed envelope
- * @return                Return value
  */
-static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
+static void synth_parseEnvelope(synth_envelope *pEnvelope) {
     uint8_t start, end;
 
     synth_assert(pLexer->token.token == STK_ENVELOPE);
@@ -113,8 +128,6 @@ static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
 
     pEnvelope->start = start;
     pEnvelope->end = end;
-
-    return SYNTH_OK;
 }
 
 /**
@@ -123,9 +136,8 @@ static synth_err synth_parseEnvelope(synth_envelope *pEnvelope) {
  * Production rule: STK_WAVE := STK_NUMBER
  *
  * @param  [out]pWave The parsed wave
- * @return            Return value
  */
-static synth_err synth_parseWave(synth_waveform *pWave) {
+static void synth_parseWave(synth_waveform *pWave) {
     synth_assert(pLexer->token.token == STK_WAVE);
 
     synth_checkNextToken(STK_NUMBER);
@@ -135,8 +147,6 @@ static synth_err synth_parseWave(synth_waveform *pWave) {
     *pWave = (synth_waveform)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
-
-    return SYNTH_OK;
 }
 
 /**
@@ -145,9 +155,8 @@ static synth_err synth_parseWave(synth_waveform *pWave) {
  * Production rule: STK_PANNING := STK_NUMBER
  *
  * @param  [out]pPanning The parsed panning
- * @return               Return value
  */
-static synth_err synth_parsePanning(uint8_t *pPanning) {
+static void synth_parsePanning(uint8_t *pPanning) {
     synth_assert(pLexer->token.token == STK_PANNING);
 
     synth_checkNextToken(STK_NUMBER);
@@ -156,8 +165,6 @@ static synth_err synth_parsePanning(uint8_t *pPanning) {
     *pPanning = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
-
-    return SYNTH_OK;
 }
 
 /**
@@ -166,9 +173,8 @@ static synth_err synth_parsePanning(uint8_t *pPanning) {
  * Production rule: STK_ATTACK := STK_NUMBER
  *
  * @param  [out]pAttack The parsed attack
- * @return              Return value
  */
-static synth_err synth_parseAttack(uint8_t *pAttack) {
+static void synth_parseAttack(uint8_t *pAttack) {
     synth_assert(pLexer->token.token == STK_ATTACK);
 
     synth_checkNextToken(STK_NUMBER);
@@ -177,8 +183,6 @@ static synth_err synth_parseAttack(uint8_t *pAttack) {
     *pAttack = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
-
-    return SYNTH_OK;
 }
 
 /**
@@ -187,9 +191,8 @@ static synth_err synth_parseAttack(uint8_t *pAttack) {
  * Production rule: STK_KEYOFF := STK_NUMBER
  *
  * @param  [out]pKeyoff The parsed keyoff
- * @return              Return value
  */
-static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
+static void synth_parseKeyoff(uint8_t *pKeyoff) {
     synth_assert(pLexer->token.token == STK_KEYOFF);
 
     synth_checkNextToken(STK_NUMBER);
@@ -198,8 +201,6 @@ static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
     *pKeyoff = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
-
-    return SYNTH_OK;
 }
 
 /**
@@ -208,9 +209,8 @@ static synth_err synth_parseKeyoff(uint8_t *pKeyoff) {
  * Production rule: STK_RELEASE := STK_NUMBER
  *
  * @param  [out]pRelease The parsed release
- * @return               Return value
  */
-static synth_err synth_parseRelease(uint8_t *pRelease) {
+static void synth_parseRelease(uint8_t *pRelease) {
     synth_assert(pLexer->token.token == STK_RELEASE);
 
     synth_checkNextToken(STK_NUMBER);
@@ -219,8 +219,6 @@ static synth_err synth_parseRelease(uint8_t *pRelease) {
     *pRelease = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
-
-    return SYNTH_OK;
 }
 
 /**
@@ -233,10 +231,8 @@ static synth_err synth_parseRelease(uint8_t *pRelease) {
  *
  * The parsed instrument is loaded into the synthesize, hence why
  * there's no output parameter.
- *
- * @return Return value
  */
-static synth_err synth_parseInstrument() {
+static void synth_parseInstrument() {
     synth_instrument *pInstrument;
     char *pName;
     int len;
@@ -251,10 +247,7 @@ static synth_err synth_parseInstrument() {
     pName += pMemory->stack.used;
     len = strlen(pName) + 1;
 
-    /** Check that there's no instrument with this same name */
-    if (synth_getStringPosition(pName) != -1) {
-        return SYNTH_DUPLICATED_STRING;
-    }
+    synth_checkDuplicatedString(pName);
 
     #if defined(ENABLE_MALLOC)
         if (synth_isFull(instruments)) {
@@ -282,25 +275,24 @@ static synth_err synth_parseInstrument() {
      * function exits. */
     synth_parserGetNextToken();
     while (pLexer->token.token != STK_END) {
-        synth_err rv;
         switch (pLexer->token.token) {
             case STK_ENVELOPE: {
-                rv = synth_parseEnvelope(&pInstrument->envelope);
+                synth_parseEnvelope(&pInstrument->envelope);
             } break;
             case STK_WAVE: {
-                rv = synth_parseWave(&pInstrument->wave);
+                synth_parseWave(&pInstrument->wave);
             } break;
             case STK_PANNING: {
-                rv = synth_parsePanning(&pInstrument->pan);
+                synth_parsePanning(&pInstrument->pan);
             } break;
             case STK_ATTACK: {
-                rv = synth_parseAttack(&pInstrument->attack);
+                synth_parseAttack(&pInstrument->attack);
             } break;
             case STK_KEYOFF: {
-                rv = synth_parseKeyoff(&pInstrument->keyoff);
+                synth_parseKeyoff(&pInstrument->keyoff);
             } break;
             case STK_RELEASE: {
-                rv = synth_parseRelease(&pInstrument->release);
+                synth_parseRelease(&pInstrument->release);
             } break;
             default: {
                 pParser->error.data.expected = STK_END;
@@ -308,17 +300,15 @@ static synth_err synth_parseInstrument() {
                 return;
             } break;
         }
-        if (rv != SYNTH_OK) {
-            return rv;
-        }
+        synth_checkOK();
     } /* while (pLexer->token.token != STK_END) */
 
     synth_parserGetNextToken();
-    return SYNTH_OK;
 }
 
 synth_err synth_parseInput() {
     /* TODO Reset parser */
+    pParser->error.rv = SYNTH_OK;
 
     do {
         switch (pLexer->token.token) {
@@ -334,6 +324,7 @@ synth_err synth_parseInput() {
                 return;
             }
         }
+        synth_checkOK();
     } while (pLexer->token.token != STK_END_OF_INPUT);
 }
 
