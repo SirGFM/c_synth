@@ -33,6 +33,7 @@
 /** Required for synth_err */
 #include <c_synth/synth_error.h>
 
+#include <c_synth_internal/synth_case_any_of.h>
 #include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>
 #include <c_synth_internal/synth_memory.h>
@@ -60,7 +61,6 @@ void synth_setupLexer(void *pBase) {
     pLexer = (synth_lexerCtx*)pBase;
     memset(pLexer, 0x0, synth_lexerSize);
 }
-
 /**
  * Retrieve the next token.
  */
@@ -70,29 +70,12 @@ synth_token synth_getNextToken() {
     /* Most tokens are mapped to their actual characters */
     c = synth_getNextChar();
     switch(c) {
-        case STK_HALF_DURATION:
-        case STK_NOTE_EXTENSION:
-        case STK_OCTAVE:
-        case STK_INCREASE_OCTAVE:
-        case STK_DECREASE_OCTAVE:
-        case STK_DURATION:
-        case STK_LOAD:
-        case STK_INSTRUMENT:
-        case STK_ENVELOPE:
-        case STK_WAVE:
-        case STK_PANNING:
-        case STK_ATTACK:
-        case STK_KEYOFF:
-        case STK_RELEASE:
-        case STK_LOOP_START:
-        case STK_LOOP_END:
-        case STK_REPEAT:
-        case STK_MACRO:
-        case STK_END:
-        case STK_BPM:
-        case STK_KEY:
-        case STK_TEMPO:
-        case STK_END_OF_INPUT:
+        CASE_ANY_OF(STK_HALF_DURATION, STK_NOTE_EXTENSION, STK_OCTAVE,
+                STK_INCREASE_OCTAVE, STK_DECREASE_OCTAVE, STK_DURATION,
+                STK_LOAD, STK_INSTRUMENT, STK_ENVELOPE, STK_WAVE,
+                STK_PANNING, STK_ATTACK, STK_KEYOFF, STK_RELEASE,
+                STK_LOOP_START, STK_LOOP_END, STK_REPEAT, STK_MACRO,
+                STK_END, STK_BPM, STK_KEY, STK_TEMPO, STK_END_OF_INPUT)
             pLexer->token.token = (synth_token)c;
             return (synth_token)c;
         case STK_STRING: {
@@ -148,16 +131,7 @@ synth_token synth_getNextToken() {
             return STK_COMMENT;
         } break;
         /* STK_NUMBER */
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9': {
+        CASE_ANY_OF('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') {
             uint16_t val = 0;
 
             do {
