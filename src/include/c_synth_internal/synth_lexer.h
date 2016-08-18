@@ -5,8 +5,6 @@
  *
  * @summary   The language's lexer.
  *
- * @typedef   synth_note        Notes within an octave.
- * @typedef   synth_token       Tokens recognized by the lexer.
  * @typedef   synth_tokenData   Data that may accompany a token.
  * @typedef   synth_packedToken A token and its data (if any).
  * @typedef   synth_lexerCtx    The lexer context
@@ -40,71 +38,11 @@
 #include <stddef.h>
 /** Required for synth_err */
 #include <c_synth/synth_error.h>
+/** Required for synth_note and synth_token */
+#include <c_synth_internal/synth_types.h>
+
 
 /* == LEXER TYPES =================================================== */
-
-/** Represents all possible notes within a single octave. */
-enum enSynth_note {
-    /** Equivalent to NT_B on a lower octave */
-    NT_CB = 0,
-    NT_C,
-    NT_CS,
-    NT_D,
-    NT_DS,
-    NT_E,
-    NT_F,
-    NT_FS,
-    NT_G,
-    NT_GS,
-    NT_A,
-    NT_AS,
-    NT_B,
-    /** Equivalent to NT_C on a higher octave */
-    NT_BS,
-    NT_REST,
-    NT_MAX
-};
-typedef enum enSynth_note synth_note;
-
-/**
- * List of tokens recognized by the lexer. Almost every token is mapped
- * to its respective characters. The exception are NOTE_TK, STRING_TK,
- * NUMBER_TK and COMMENT_TK. Both STRING_TK and COMMENT_TK are mapped to
- * the first character recognized by then. NOTE_TK and STRING_TK, on the
- * other hand, are simply mapped to available characters, without any
- * intrinsic meaning.
- */
-enum enSynth_token {
-    STK_HALF_DURATION   = '.',
-    STK_NOTE_EXTENSION  = '^',
-    STK_OCTAVE          = 'o',
-    STK_INCREASE_OCTAVE = '>',
-    STK_DECREASE_OCTAVE = '<',
-    STK_DURATION        = 'l',
-    STK_LOAD            = 'j',
-    STK_INSTRUMENT      = 'i',
-    STK_ENVELOPE        = 'v',
-    STK_WAVE            = 'w',
-    STK_PANNING         = 'p',
-    STK_ATTACK          = 't',
-    STK_KEYOFF          = 'k',
-    STK_RELEASE         = 'q',
-    STK_LOOP_START      = '[',
-    STK_LOOP_END        = ']',
-    STK_REPEAT          = '$',
-    STK_MACRO           = 'm',
-    STK_END             = ';',
-    STK_BPM             = 'B',
-    STK_KEY             = 'K',
-    STK_TEMPO           = 'T',
-    STK_STRING          = '"',
-    STK_COMMENT         = '#',
-    STK_NOTE            = 'a',
-    STK_NUMBER          = 'n',
-    STK_END_OF_INPUT    = '\0',
-    STK_UNKNOWN         = '?'
-};
-typedef enum enSynth_token synth_token;
 
 /** Possible representations for a token's data */
 union unSynth_tokenData {
@@ -135,12 +73,14 @@ struct stSynth_lexerCtx {
 };
 typedef struct stSynth_lexerCtx synth_lexerCtx;
 
+
 /* == LEXER GLOBAL VARS ============================================= */
 
 /** Lexer's reference */
 extern synth_lexerCtx *pLexer;
 /** Amount of memory required by the lexer */
 extern const size_t synth_lexerSize;
+
 
 /* == LEXER FUNCTIONS =============================================== */
 
@@ -185,6 +125,7 @@ synth_token synth_getNextToken();
  *                      size will be returned.
  */
 synth_err synth_getLexerLine(unsigned int *pSize, char *pString);
+
 
 /* == LEXER BACKEND FUNCTIONS ======================================= */
 

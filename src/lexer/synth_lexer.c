@@ -32,6 +32,8 @@
 
 /** Required for synth_err */
 #include <c_synth/synth_error.h>
+/** Required for synth_note and synth_token */
+#include <c_synth_internal/synth_types.h>
 
 #include <c_synth_internal/synth_error.h>
 #include <c_synth_internal/synth_lexer.h>

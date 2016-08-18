@@ -1,9 +1,82 @@
-
+/**
+ *
+ * @typedef   synth_note        Notes within an octave.
+ * @typedef   synth_token       Tokens recognized by the lexer.
+ */
 #ifndef __SYNTH_INTERNAL_TYPES_H__
 #define __SYNTH_INTERNAL_TYPES_H__
 
 /** Required for fixed-width sizes */
 #include <stdint.h>
+
+
+/* == LEXER COMPONENTS ============================================== */
+
+/** Represents all possible notes within a single octave. */
+enum enSynth_note {
+    /** Equivalent to NT_B on a lower octave */
+    NT_CB = 0,
+    NT_C,
+    NT_CS,
+    NT_D,
+    NT_DS,
+    NT_E,
+    NT_F,
+    NT_FS,
+    NT_G,
+    NT_GS,
+    NT_A,
+    NT_AS,
+    NT_B,
+    /** Equivalent to NT_C on a higher octave */
+    NT_BS,
+    NT_REST,
+    NT_MAX
+};
+typedef enum enSynth_note synth_note;
+
+/**
+ * List of tokens recognized by the lexer. Almost every token is mapped
+ * to its respective characters. The exception are NOTE_TK, STRING_TK,
+ * NUMBER_TK and COMMENT_TK. Both STRING_TK and COMMENT_TK are mapped to
+ * the first character recognized by then. NOTE_TK and STRING_TK, on the
+ * other hand, are simply mapped to available characters, without any
+ * intrinsic meaning.
+ */
+enum enSynth_token {
+    STK_HALF_DURATION   = '.',
+    STK_NOTE_EXTENSION  = '^',
+    STK_OCTAVE          = 'o',
+    STK_INCREASE_OCTAVE = '>',
+    STK_DECREASE_OCTAVE = '<',
+    STK_DURATION        = 'l',
+    STK_LOAD            = 'j',
+    STK_INSTRUMENT      = 'i',
+    STK_ENVELOPE        = 'v',
+    STK_WAVE            = 'w',
+    STK_PANNING         = 'p',
+    STK_ATTACK          = 't',
+    STK_KEYOFF          = 'k',
+    STK_RELEASE         = 'q',
+    STK_LOOP_START      = '[',
+    STK_LOOP_END        = ']',
+    STK_REPEAT          = '$',
+    STK_MACRO           = 'm',
+    STK_END             = ';',
+    STK_BPM             = 'B',
+    STK_KEY             = 'K',
+    STK_TEMPO           = 'T',
+    STK_STRING          = '"',
+    STK_COMMENT         = '#',
+    STK_NOTE            = 'a',
+    STK_NUMBER          = 'n',
+    STK_END_OF_INPUT    = '\0',
+    STK_UNKNOWN         = '?'
+};
+typedef enum enSynth_token synth_token;
+
+
+/* == SONG COMPONENTS =============================================== */
 
 /** Waveform for synthesizing notes */
 enum enSynth_waveform {
@@ -75,7 +148,8 @@ struct stSynth_instrument {
 };
 typedef struct stSynth_instrument synth_instrument;
 
-struct st_synth_song {
+/** A collection of tracks and its speed */
+struct stSynth_song {
     /**
      * Time signature.
      * This information is relevant even after a song is successfully
@@ -89,17 +163,26 @@ struct st_synth_song {
     uint8_t bmp;
     uint8_t numTracks;
 };
-typedef struct st_synth_song synth_song;
+typedef struct stSynth_song synth_song;
 
-struct st_synth_track {
+struct stSynth_track {
     /** Starting index of the track's notes within pMemory->nodes. */
     uint32_t nodeIndex;
     /**
-     * The current instrument used to render the track.
-     * Any modifications to the instrument (e.g., a TK_WAVE token) will
-     * directly modify this attribute.
+     * Index of the track's own instrument.
+     *
+     * Whenever a node directly modifies the track's instrument, the
+     * current instrument gets copied into its default instrument and
+     * then it gets modified. Therefore, as long a "common" instrument
+     * (when that was loaded or the default one) is used, there's no
+     * copy nor store involved, it's as simple as setting a pointer.
+     * However when a "common" instrument is in use and it is to be
+     * modified, the entire instrument will get copied, but any
+     * following operation won't require copying it again.
      */
-    synth_instrument instrument;
+    uint16_t defaultInstrument;
+    /** Index of the instrument in use by the track */
+    uint16_t currentInstrument;
     /**
      * Position of the current node being playing.
      * This implies that a track will never simultaneously play more
@@ -114,16 +197,84 @@ struct st_synth_track {
      */
     uint16_t numNodes;
 };
-typedef struct st_synth_track synth_track;
+typedef struct stSynth_track synth_track;
 
+/** A note that can be played */
+struct stSynth_note_data {
+    synth_note note;
+    uint8_t duration;
+    uint8_t octave;
+};
+typedef struct stSynth_note_data synth_note_data;
+
+/** Loop data.
+ * It gets parsed from STK_LOOP_START, STK_LOOP_END and STK_REPEAT
+ */
+struct stSynth_loop_data {
+    /** 
+     * Position within the track.
+     *
+     * On STK_LOOP_START, it's the position of its respective
+     * STK_LOOP_END node, on which 'repeatCount' shall be set.
+     *
+     * On STK_LOOP_END and STK_REPEAT, it's the jump offset, from the
+     * start of the track.
+     */
+    uint16_t position;
+    /**
+     * How many times should the loop repeat.
+     *
+     * Whenever this node is interpreted, this field gets decremented.
+     * On doing so, if it becomes 0, the track continues to play
+     * (instead of looping to 'position'). However, if this field starts
+     * as 0, it will loop indefinitely.
+     */
+    uint16_t repeatCount;
+};
+typedef struct stSynth_loop_data synth_loop_data;
+
+/**
+ * Values of nodes within a track.
+ *
+ * Which field to use, and how to cast it, will depend on the node's
+ * 'type'.
+ */
+union unSynth_node_data {
+    synth_note_data note;
+    synth_envelope envelope;
+    synth_loop_data loop;
+    uint16_t value;
+};
+typedef union unSynth_node_data synth_node_data;
+
+/**
+ * Types of nodes within a track.
+ *
+ * If a parsed token doesn't take effect instantly (as setting the
+ * note's duration would), it will become a node with one of these
+ * types.
+ *
+ * This isn't even necessary, since a node's type may be inferred from
+ * its token.
+ */
+enum enSynth_node_type {
+    /** Note to be played */
+    NDT_NOTE = 0,
+    /** Changes a track's configuration (e.g., load an instrument) */
+    NDT_CONF,
+    /** Change the flow of the track (i.e., jump to some position) */
+    NDT_FLOW,
+    NDT_MAX
+};
+typedef enum enSynth_node_type synth_node_type;
+
+/** A node within a track */
 struct st_synth_node {
-    union {
-        int note;
-        int wave;
-        int stuff;
-    } self;
+    synth_token type;
+    synth_node_data data;
 };
 typedef struct st_synth_node synth_node;
+
 
 /**
  * Initialize a non-constant instrument
