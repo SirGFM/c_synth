@@ -1,7 +1,25 @@
 /**
+ * @project   c_synth
+ * @license   zlib license
+ * @file      src/include/c_synth_internal/synth_types.h
  *
- * @typedef   synth_note        Notes within an octave.
- * @typedef   synth_token       Tokens recognized by the lexer.
+ * @summary   Types internal to the synthesizer
+ *
+ * == LEXER TYPES ============
+ * @typedef   synth_note       A generic musical note/pitch
+ * @typedef   synth_token      Tokens recognized by the lexer.
+ * == NODE TYPES =============
+ * @typedef   synth_waveform   Waveform for synthesizing notes.
+ * @typedef   synth_envelope   Envelope for the note's amplitude.
+ * @typedef   synth_note_data  Musical note within a song.
+ * @typedef   synth_loop_data  Defines loops within songs.
+ * @typedef   synth_node_data  Generic data for a node.
+ * == PARSER TYPES ===========
+ * @typedef   synth_node       Node/instruction within a track.
+ * @typedef   synth_instrument Controls how notes ares synthesized.
+ * @typedef   synth_track      Track/Voice within a song.
+ * @typedef   synth_song       A collection of tracks and their speed
+ *
  */
 #ifndef __SYNTH_INTERNAL_TYPES_H__
 #define __SYNTH_INTERNAL_TYPES_H__
@@ -9,272 +27,13 @@
 /** Required for fixed-width sizes */
 #include <stdint.h>
 
-
-/* == LEXER COMPONENTS ============================================== */
-
-/** Represents all possible notes within a single octave. */
-enum enSynth_note {
-    /** Equivalent to NT_B on a lower octave */
-    NT_CB = 0,
-    NT_C,
-    NT_CS,
-    NT_D,
-    NT_DS,
-    NT_E,
-    NT_F,
-    NT_FS,
-    NT_G,
-    NT_GS,
-    NT_A,
-    NT_AS,
-    NT_B,
-    /** Equivalent to NT_C on a higher octave */
-    NT_BS,
-    NT_REST,
-    NT_MAX
-};
-typedef enum enSynth_note synth_note;
-
-/**
- * List of tokens recognized by the lexer. Almost every token is mapped
- * to its respective characters. The exception are NOTE_TK, STRING_TK,
- * NUMBER_TK and COMMENT_TK. Both STRING_TK and COMMENT_TK are mapped to
- * the first character recognized by then. NOTE_TK and STRING_TK, on the
- * other hand, are simply mapped to available characters, without any
- * intrinsic meaning.
- */
-enum enSynth_token {
-    STK_HALF_DURATION   = '.',
-    STK_NOTE_EXTENSION  = '^',
-    STK_OCTAVE          = 'o',
-    STK_INCREASE_OCTAVE = '>',
-    STK_DECREASE_OCTAVE = '<',
-    STK_DURATION        = 'l',
-    STK_LOAD            = 'j',
-    STK_INSTRUMENT      = 'i',
-    STK_ENVELOPE        = 'v',
-    STK_WAVE            = 'w',
-    STK_PANNING         = 'p',
-    STK_ATTACK          = 't',
-    STK_KEYOFF          = 'k',
-    STK_RELEASE         = 'q',
-    STK_LOOP_START      = '[',
-    STK_LOOP_END        = ']',
-    STK_REPEAT          = '$',
-    STK_MACRO           = 'm',
-    STK_END             = ';',
-    STK_BPM             = 'B',
-    STK_KEY             = 'K',
-    STK_TEMPO           = 'T',
-    STK_STRING          = '"',
-    STK_COMMENT         = '#',
-    STK_NOTE            = 'a',
-    STK_NUMBER          = 'n',
-    STK_END_OF_INPUT    = '\0',
-    STK_UNKNOWN         = '?'
-};
-typedef enum enSynth_token synth_token;
-
-
-/* == SONG COMPONENTS =============================================== */
-
-/** Waveform for synthesizing notes */
-enum enSynth_waveform {
-    WF_12_5_PW    = 0,
-    WF_25_PW      = 1,
-    WF_50_PW      = 2,
-    WF_75_PW      = 3,
-    WF_TRIANGLE   = 4,
-    WF_SAWTOOTH   = 5,
-    WF_WHITENOISE = 6,
-    WF_MAX
-};
-typedef enum enSynth_waveform synth_waveform;
-
-/**
- * Envelope for the note's amplitude.
- * The amplitude is linearly interpolated between the start and end
- * values. Also, each value is 4 bits long, so they range from [0,15].
- * It's important to note that the synthesizer may adjust the volume
- * according to the number of tracks currently playing.
- */
-struct stSynth_envelope {
-    uint8_t start : 4;
-    uint8_t end   : 4;
-};
-typedef struct stSynth_envelope synth_envelope;
-
-/**
- * Instrument that controls how notes ares synthesized.
- *
- * It defaults to:
- *   - .envelope = { .start=7, .end=12 }
- *   - .wave    = WF_50_PW
- *   - .pan     = 3
- *   - .attack  = 1
- *   - .keyoff  = 5
- *   - .release = 6
- */
-struct stSynth_instrument {
-    synth_envelope envelope;
-    synth_waveform wave;
-    /**
-     * Amplitude's separation ratio between left and right channel.
-     * It's represented by a 3 bit value, ranging from 0 to 6. 0 and 6
-     * sets the track to play only on the left or right channel,
-     * respectively, while 3 divide the song evenly between both
-     * channels.
-     */
-    uint8_t pan : 3;
-    /**
-     * Percentage of the note's duration that takes to reach full
-     * amplitude from silence.
-     * It must be on the range [0, 7]. 0 makes the note start maxed out.
-     * Also, note that this value is overriden by both keyoff and
-     * release.
-     */
-    uint8_t attack : 3;
-    /**
-     * Percentage of the note's duration that takes the note to start
-     * fading out. It must be on the range [0, 7]. Note that this value
-     * is overriden by release.
-     */
-    uint8_t keyoff : 3;
-    /**
-     * Percentage of the note's duration when it goes completely
-     * silent. It must be on the range [0, 7].
-     */
-    uint8_t release : 3;
-};
-typedef struct stSynth_instrument synth_instrument;
-
-/** A collection of tracks and its speed */
-struct stSynth_song {
-    /**
-     * Time signature.
-     * This information is relevant even after a song is successfully
-     * parsed so the BMP may be correctly modified.
-     */
-    int signature;
-    uint16_t trackIndex;
-    /**
-     * The song speed in beats per minutes.
-     */
-    uint8_t bmp;
-    uint8_t numTracks;
-};
-typedef struct stSynth_song synth_song;
-
-struct stSynth_track {
-    /** Starting index of the track's notes within pMemory->nodes. */
-    uint32_t nodeIndex;
-    /**
-     * Index of the track's own instrument.
-     *
-     * Whenever a node directly modifies the track's instrument, the
-     * current instrument gets copied into its default instrument and
-     * then it gets modified. Therefore, as long a "common" instrument
-     * (when that was loaded or the default one) is used, there's no
-     * copy nor store involved, it's as simple as setting a pointer.
-     * However when a "common" instrument is in use and it is to be
-     * modified, the entire instrument will get copied, but any
-     * following operation won't require copying it again.
-     */
-    uint16_t defaultInstrument;
-    /** Index of the instrument in use by the track */
-    uint16_t currentInstrument;
-    /**
-     * Position of the current node being playing.
-     * This implies that a track will never simultaneously play more
-     * than once.
-     */
-    uint16_t position;
-    /**
-     * Number of nodes on the track.
-     * 16 bits enables 65535 nodes per track. Considering a 4/4 song at
-     * 120 bpm that only has 1/64 notes, it would be 34 minutes long. It
-     * seems to be way more than enough for any common cases.
-     */
-    uint16_t numNodes;
-};
-typedef struct stSynth_track synth_track;
-
-/** A note that can be played */
-struct stSynth_note_data {
-    synth_note note;
-    uint8_t duration;
-    uint8_t octave;
-};
-typedef struct stSynth_note_data synth_note_data;
-
-/** Loop data.
- * It gets parsed from STK_LOOP_START, STK_LOOP_END and STK_REPEAT
- */
-struct stSynth_loop_data {
-    /** 
-     * Position within the track.
-     *
-     * On STK_LOOP_START, it's the position of its respective
-     * STK_LOOP_END node, on which 'repeatCount' shall be set.
-     *
-     * On STK_LOOP_END and STK_REPEAT, it's the jump offset, from the
-     * start of the track.
-     */
-    uint16_t position;
-    /**
-     * How many times should the loop repeat.
-     *
-     * Whenever this node is interpreted, this field gets decremented.
-     * On doing so, if it becomes 0, the track continues to play
-     * (instead of looping to 'position'). However, if this field starts
-     * as 0, it will loop indefinitely.
-     */
-    uint16_t repeatCount;
-};
-typedef struct stSynth_loop_data synth_loop_data;
-
-/**
- * Values of nodes within a track.
- *
- * Which field to use, and how to cast it, will depend on the node's
- * 'type'.
- */
-union unSynth_node_data {
-    synth_note_data note;
-    synth_envelope envelope;
-    synth_loop_data loop;
-    uint16_t value;
-};
-typedef union unSynth_node_data synth_node_data;
-
-/**
- * Types of nodes within a track.
- *
- * If a parsed token doesn't take effect instantly (as setting the
- * note's duration would), it will become a node with one of these
- * types.
- *
- * This isn't even necessary, since a node's type may be inferred from
- * its token.
- */
-enum enSynth_node_type {
-    /** Note to be played */
-    NDT_NOTE = 0,
-    /** Changes a track's configuration (e.g., load an instrument) */
-    NDT_CONF,
-    /** Change the flow of the track (i.e., jump to some position) */
-    NDT_FLOW,
-    NDT_MAX
-};
-typedef enum enSynth_node_type synth_node_type;
-
-/** A node within a track */
-struct st_synth_node {
-    synth_token type;
-    synth_node_data data;
-};
-typedef struct st_synth_node synth_node;
-
+/** Include synth_note and synth_token */
+#include <c_synth_internal/type/synth_lexer_type.h>
+/** Include synth_waveform, synth_envelope, synth_note_data,
+ * synth_loop_data and synth_node_data */
+#include <c_synth_internal/type/synth_node_type.h>
+/** Include synth_node, synth_instrument, synth_track and synth_song */
+#include <c_synth_internal/type/synth_parser_type.h>
 
 /**
  * Initialize a non-constant instrument
