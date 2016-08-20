@@ -16,6 +16,19 @@
 #ifndef __SYNTH_PARSER_TYPE_H__
 #define __SYNTH_PARSER_TYPE_H__
 
+/**
+ * A time signature.
+ *
+ * Both the count and the beat figure start at 1 and is represented by 4
+ * bits. Therefore, they are in the range [1, 16], which should be able
+ * to represent most "common" time signature.
+ */
+struct st_synth_signature {
+    uint8_t count : 4;
+    uint8_t beat : 4;
+};
+typedef struct st_synth_signature synth_signature;
+
 /** A node within a track */
 struct st_synth_node {
     synth_token type;
@@ -111,19 +124,19 @@ typedef struct stSynth_track synth_track;
 
 /** A collection of tracks and its speed */
 struct stSynth_song {
+    uint16_t trackIndex;
+    uint8_t numTracks;
+    /**
+     * The song speed in beats per minutes.
+     */
+    uint8_t bmp;
     /**
      * Time signature.
      *
      * This information is relevant even after a song is successfully
      * parsed so the BMP may be correctly modified.
      */
-    int signature;
-    uint16_t trackIndex;
-    /**
-     * The song speed in beats per minutes.
-     */
-    uint8_t bmp;
-    uint8_t numTracks;
+    synth_signature signature;
 };
 typedef struct stSynth_song synth_song;
 

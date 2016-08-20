@@ -12,12 +12,10 @@
 #include <stdint.h>
 /** Required for synth_err */
 #include <c_synth/synth_error.h>
-/** Required for synth_token */
-#include <c_synth_internal/synth_lexer.h>
+#include <c_synth_internal/synth_types.h>
 
-/**
- * Possible values set on error
- */
+
+/** Possible values set on error */
 union unSynth_parserErrorData {
     /**
      * The expected token. Used when rv == SYNTH_PARSER_ERROR.
@@ -26,11 +24,15 @@ union unSynth_parserErrorData {
      */
     synth_token expected;
     /**
-     * Maximum value allowed. Used when rv == SYNTH_VALUE_RANGE.
+     * Edge value offended. Used when rv == SYNTH_VALUE_RANGE.
      *
      * The retrieved one may be accessed on pLexer->token.data.
+     *
+     * Whether its a maximum value or a minimum one must be inferred
+     * from the context. If range is greater than pLexer->token.data,
+     * then it was a maximum value. Otherwise, a minimum.
      */
-    uint16_t maxValue;
+    uint16_t range;
     /**
      * String that caused an error. Used when rv is either
      * SYNTH_DUPLICATED_STRING or SYNTH_STRING_NOT_FOUND.
@@ -39,9 +41,10 @@ union unSynth_parserErrorData {
 };
 typedef union unSynth_parserErrorData synth_parserErrorData;
 
+
 /** Context with information about the last error */
 struct stSynth_parserError {
-    /** Token being parsed when an error happened */
+    /** Token being parsed when the error happened */
     synth_token context;
     /** The latest error, if any */
     synth_error rv;
@@ -54,13 +57,22 @@ struct stSynth_parserError {
 };
 typedef struct stSynth_parserError synth_parserError;
 
+
 /** The parser context */
 struct stSynth_parserCtx {
     synth_parserError error;
 
-    int octave;
-    int duration;
-    int startPosition;
+    /**
+     * Song's index within the memory.
+     *
+     * For the real use-case (i.e., running inside a game with constant
+     * memory), this could be a pointer to the actual structure.
+     * However, this wouldn't work when using dynamic memory (which will
+     * be used for some offline tools).
+     */
+    uint16_t song;
+    uint8_t octave;
+    uint8_t duration;
 };
 typedef struct stSynth_parserCtx synth_parserCtx;
 

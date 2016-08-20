@@ -19,6 +19,11 @@
 #include <c_synth_internal/synth_error.h>
 /** Required for synth_token and tokenization functions */
 #include <c_synth_internal/synth_lexer.h>
+/** Required for every custom type */
+#include <c_synth_internal/synth_types.h>
+
+
+/** === PARSER HELPERS ============================================== */
 
 /**
  * Check if a given string is unique
@@ -37,18 +42,36 @@
   } while (0)
 
 /**
- * Check if a give value is within the range [0, _max_).
+ * Check if a give value is within the range [0, _max_].
  *
  * On error, rv is set to SYNTH_VALUE_RANGE and execution is returned to
  * the calling function.
  *
  * @param  [ in]_val_ Value to be checked
- * @param  [ in]_max_ Length of the range (i.e., 0 <= _val_ < _max_)
+ * @param  [ in]_max_ Length of the range (i.e., 0 <= _val_ <= _max_)
  */
 #define synth_checkMaxValue(_val_, _max_) \
   do { \
-    if ((_val_) >= _max_) { \
-      pParser->error.data.maxValue = _max_ - 1; \
+    if ((_val_) > _max_) { \
+      pParser->error.data.range = _max_; \
+      pParser->error.rv = SYNTH_VALUE_RANGE; \
+      return; \
+    } \
+  } while (0)
+
+/**
+ * Check if a give value is within the range [_min_, +inf).
+ *
+ * On error, rv is set to SYNTH_VALUE_RANGE and execution is returned to
+ * the calling function.
+ *
+ * @param  [ in]_val_ Value to be checked
+ * @param  [ in]_min_ Length of the range (i.e., min <= _val_ < +inf)
+ */
+#define synth_checkMinValue(_val_, _min_) \
+  do { \
+    if ((_val_) < _min_) { \
+      pParser->error.data.range = _min_; \
       pParser->error.rv = SYNTH_VALUE_RANGE; \
       return; \
     } \
@@ -80,6 +103,9 @@
      return; \
    } \
  } while (0)
+
+
+/** === TOKEN (LEAF) PARSERS ======================================== */
 
 /**
  * Retrieve the next token that isn't a comment
@@ -123,8 +149,8 @@ static void synth_parseEnvelope(synth_envelope *pEnvelope) {
         end = start;
     }
 
-    synth_checkMaxValue(start, 16);
-    synth_checkMaxValue(end, 16);
+    synth_checkMaxValue(start, 15);
+    synth_checkMaxValue(end, 15);
 
     pEnvelope->start = start;
     pEnvelope->end = end;
@@ -143,7 +169,7 @@ static void synth_parseWave(synth_waveform *pWave) {
     synth_checkNextToken(STK_NUMBER);
 
     synth_checkMaxValue((synth_waveform)pLexer->token->data.numVal,
-            WF_MAX);
+            WF_MAX - 1);
     *pWave = (synth_waveform)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -161,7 +187,7 @@ static void synth_parsePanning(uint8_t *pPanning) {
 
     synth_checkNextToken(STK_NUMBER);
 
-    synth_checkMaxValue(pLexer->token->data.numVal, 8);
+    synth_checkMaxValue(pLexer->token->data.numVal, 7);
     *pPanning = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -179,7 +205,7 @@ static void synth_parseAttack(uint8_t *pAttack) {
 
     synth_checkNextToken(STK_NUMBER);
 
-    synth_checkMaxValue(pLexer->token->data.numVal, 8);
+    synth_checkMaxValue(pLexer->token->data.numVal, 7);
     *pAttack = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -197,7 +223,7 @@ static void synth_parseKeyoff(uint8_t *pKeyoff) {
 
     synth_checkNextToken(STK_NUMBER);
 
-    synth_checkMaxValue(pLexer->token->data.numVal, 8);
+    synth_checkMaxValue(pLexer->token->data.numVal, 7);
     *pKeyoff = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
@@ -215,11 +241,109 @@ static void synth_parseRelease(uint8_t *pRelease) {
 
     synth_checkNextToken(STK_NUMBER);
 
-    synth_checkMaxValue(pLexer->token->data.numVal, 8);
+    synth_checkMaxValue(pLexer->token->data.numVal, 7);
     *pRelease = (uint8_t)pLexer->token->data.numVal;
 
     synth_parserGetNextToken();
 }
+
+/**
+ * Parse a BPM
+ *
+ * Production rule: STK_BPM := STK_NUMBER
+ *
+ * @param  [out]pBPM The parsed BPM
+ */
+static void synth_parseBPM(uint8_t *pBPM) {
+    synth_assert(pLexer->token.token == STK_BPM);
+
+    synth_checkNextToken(STK_NUMBER);
+
+    synth_checkMaxValue(pLexer->token->data.numVal, 255);
+    synth_checkMinValue(pLexer->token->data.numVal, 1);
+    *pBPM = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+}
+
+/**
+ * Parse a time signature
+ *
+ * Production rule: STK_TEMPO := STK_NUMBER STK_NUMBER
+ *
+ * @param  [out]pSignature The parsed time signature
+ */
+static void synth_parseTempo(synth_signature *pSignature) {
+    synth_assert(pLexer->token.token == STK_TEMPO);
+
+    synth_checkNextToken(STK_NUMBER);
+    synth_checkMaxValue(pLexer->token->data.numVal, 16);
+    synth_checkMinValue(pLexer->token->data.numVal, 1);
+    pSignature->count = (uint8_t)pLexer->token->data.numVal - 1;
+
+    synth_checkNextToken(STK_NUMBER);
+    synth_checkMaxValue(pLexer->token->data.numVal, 16);
+    synth_checkMinValue(pLexer->token->data.numVal, 1);
+    pSignature->beat = (uint8_t)pLexer->token->data.numVal - 1;
+
+    synth_parserGetNextToken();
+}
+
+/**
+ * Parse an octave
+ *
+ * Production rule: STK_OCTAVE := STK_NUMBER
+ *
+ * @param  [out]pOctave The parsed octave
+ */
+static void synth_parseOctave(uint8_t *pOctave) {
+    synth_assert(pLexer->token.token == STK_OCTAVE);
+
+    synth_checkNextToken(STK_NUMBER);
+
+    synth_checkMaxValue(pLexer->token->data.numVal, 8);
+    synth_checkMinValue(pLexer->token->data.numVal, 1);
+    *pOctave = (uint8_t)pLexer->token->data.numVal;
+
+    synth_parserGetNextToken();
+}
+
+/**
+ * Parse an increase octave
+ *
+ * Production rule: STK_INCREASE_OCTAVE
+ *
+ * @param  [i/o]pOctave The previous octave and its new value
+ */
+static void synth_parseIncreaseOctave(uint8_t *pOctave) {
+    synth_assert(pLexer->token.token == STK_INCREASE_OCTAVE);
+
+    (*pOctave)++;
+    synth_checkMaxValue(*pOctave, 8);
+    synth_checkMinValue(*pOctave, 1);
+
+    synth_parserGetNextToken();
+}
+
+/**
+ * Parse an decrease octave
+ *
+ * Production rule: STK_DECREASE_OCTAVE
+ *
+ * @param  [i/o]pOctave The previous octave and its new value
+ */
+static void synth_parseDecreaseOctave(uint8_t *pOctave) {
+    synth_assert(pLexer->token.token == STK_DECREASE_OCTAVE);
+
+    (*pOctave)--;
+    synth_checkMaxValue(*pOctave, 8);
+    synth_checkMinValue(*pOctave, 1);
+
+    synth_parserGetNextToken();
+}
+
+
+/** === PRODUCTION (OBJECT) PARSERS ==================================*/
 
 /**
  * Parse an instrument.
@@ -229,7 +353,7 @@ static void synth_parseRelease(uint8_t *pRelease) {
  *                                  | STK_ATTACK | STK_KEYOFF
  *                                  | STK_RELEASE )* STK_END
  *
- * The parsed instrument is loaded into the synthesize, hence why
+ * The parsed instrument is loaded into the synthesizer, hence why
  * there's no output parameter.
  */
 static void synth_parseInstrument() {
@@ -306,8 +430,81 @@ static void synth_parseInstrument() {
     synth_parserGetNextToken();
 }
 
-synth_err synth_parseInput() {
-    /* TODO Reset parser */
+/**
+ * Parse a song.
+ *
+ * Production rule: STK_* := STK_*
+ *
+ * The parsed song is loaded into the synthesizer, hence why there's no
+ * output parameter.
+ *
+ * Although every track on a song should consistently maintain its tempo
+ * and note signature through its tracks, this won't be checked on this
+ * first version.
+ */
+static void synth_parseSong() {
+    #if defined(ENABLE_MALLOC)
+        if (synth_isFull(song)) {
+            synth_expandSongs(1);
+        }
+    #endif
+    synth_assert(!synth_isFull(song));
+
+    /* Store the song's index. See synth_parser.h for the reasoning
+     * behind storing only the index instead of the actual pointer */
+    pParser->song = pMemory->songs.used;
+    pMemory->songs.used++;
+
+    do {
+        synth_song *pSong;
+
+        /* This pointer can't be used on functions that may expand the
+         * memory (e.g., functions that parse strings) */
+        pSong = (synth_song*)synth_getRegion(song);
+        pSong += pParser->song;
+
+        switch (pLexer->token.token) {
+            /* Modification to the track that has run-time effects */
+            case: STK_BPM: {
+                synth_parseBPM(&pSong->bpm);
+            } break;
+            case: STK_TEMPO: {
+                synth_parseTempo(&pSong->signature);
+            } break;
+            /* Changes how notes are parsed */
+            case: STK_OCTAVE: {
+                synth_parseOctave(&pParser->octave);
+            } break;
+            case: STK_INCREASE_OCTAVE: {
+                synth_parseIncreaseOctave(&pParser->octave);
+            } break;
+            case: STK_DECREASE_OCTAVE: {
+                synth_parseDecreaseOctave(&pParser->octave);
+            } break;
+            case: STK_KEY: {
+            } break;
+            /* Issue a modification to the instrument */
+            case: STK_LOAD:
+            case: STK_ENVELOPE:
+            case: STK_WAVE:
+            case: STK_PANNING:
+            case: STK_ATTACK:
+            case: STK_KEYOFF:
+            case: STK_RELEASE: {
+            } break;
+            case: STK_LOOP_START:
+            case: STK_REPEAT:
+            case: STK_DURATION:
+            case: STK_NOTE:
+        }
+        synth_parserGetNextToken();
+    } while (pLexer->token.token != STK_END);
+}
+
+
+/** === PARSER ENTRY POINT ===========================================*/
+
+void synth_parseInput() {
     pParser->error.rv = SYNTH_OK;
 
     do {
@@ -318,6 +515,26 @@ synth_err synth_parseInput() {
             case STK_COMMENT: {
                 synth_parserGetNextToken();
             } break;
+            /* Any of these tokens will lead to a song */
+            case: STK_OCTAVE:
+            case: STK_INCREASE_OCTAVE:
+            case: STK_DECREASE_OCTAVE:
+            case: STK_DURATION:
+            case: STK_LOAD:
+            case: STK_ENVELOPE:
+            case: STK_WAVE:
+            case: STK_PANNING:
+            case: STK_ATTACK:
+            case: STK_KEYOFF:
+            case: STK_RELEASE:
+            case: STK_LOOP_START:
+            case: STK_REPEAT:
+            case: STK_BPM:
+            case: STK_KEY:
+            case: STK_TEMPO:
+            case: STK_NOTE: {
+                synth_parseSong();
+            } break;
             default: {
                 pParser->error.data.expected = STK_END;
                 pParser->error.rv = SYNTH_PARSER_ERROR;
@@ -327,6 +544,7 @@ synth_err synth_parseInput() {
         synth_checkOK();
     } while (pLexer->token.token != STK_END_OF_INPUT);
 }
+
 
 /** ========================================================================= */
 
