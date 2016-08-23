@@ -104,6 +104,19 @@
    } \
  } while (0)
 
+/** Reset the parser to its initial state */
+void synth_resetParser() {
+    pParser->song = 0;
+    pParser->error.rv = 0;
+    synth_softResetParser();
+}
+
+/** Reset all info on the parser related to the current track */
+void synth_softResetParser() {
+    pParser->octave = 4;
+    pParser->duration = 4;
+}
+
 
 /** === TOKEN (LEAF) PARSERS ======================================== */
 
@@ -443,6 +456,8 @@ static void synth_parseInstrument() {
  * first version.
  */
 static void synth_parseSong() {
+    synth_resetParser();
+
     #if defined(ENABLE_MALLOC)
         if (synth_isFull(song)) {
             synth_expandSongs(1);
@@ -454,6 +469,8 @@ static void synth_parseSong() {
      * behind storing only the index instead of the actual pointer */
     pParser->song = pMemory->songs.used;
     pMemory->songs.used++;
+
+    /* TODO Reset the song */
 
     do {
         synth_song *pSong;
@@ -482,6 +499,9 @@ static void synth_parseSong() {
                 synth_parseDecreaseOctave(&pParser->octave);
             } break;
             case: STK_KEY: {
+                /* TODO Implemente me! */
+                pParser->error.context = STK_KEY;
+                pParser->error.rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
             } break;
             /* Issue a modification to the instrument */
             case: STK_LOAD:
@@ -492,20 +512,27 @@ static void synth_parseSong() {
             case: STK_KEYOFF:
             case: STK_RELEASE: {
             } break;
+            /* Start adding nodes to the track */
             case: STK_LOOP_START:
             case: STK_REPEAT:
             case: STK_DURATION:
-            case: STK_NOTE:
+            case: STK_NOTE: {
+                /* TODO Parse track */
+                /* After parsing the track, reset the parser's octave
+                 * and duration */
+                synth_softResetParser();
+            } break;
         }
+        synth_checkOK();
         synth_parserGetNextToken();
-    } while (pLexer->token.token != STK_END);
+    } while (pLexer->token.token != STK_END_OF_INPUT);
 }
 
 
 /** === PARSER ENTRY POINT ===========================================*/
 
 void synth_parseInput() {
-    pParser->error.rv = SYNTH_OK;
+    synth_resetParser();
 
     do {
         switch (pLexer->token.token) {

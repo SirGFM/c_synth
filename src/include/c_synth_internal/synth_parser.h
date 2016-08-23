@@ -58,7 +58,15 @@ struct stSynth_parserError {
 typedef struct stSynth_parserError synth_parserError;
 
 
-/** The parser context */
+/**
+ * The parser context
+ *
+ * Default values:
+ *   - .error = {.context = ?, .rv = SYNTH_OK, .data = ? }
+ *   - .song = 0;
+ *   - .octave = 4;
+ *   - .duration = 4;
+ */
 struct stSynth_parserCtx {
     synth_parserError error;
 
@@ -68,7 +76,7 @@ struct stSynth_parserCtx {
      * For the real use-case (i.e., running inside a game with constant
      * memory), this could be a pointer to the actual structure.
      * However, this wouldn't work when using dynamic memory (which will
-     * be used for some offline tools).
+     * be the case for some offline tools).
      */
     uint16_t song;
     uint8_t octave;
