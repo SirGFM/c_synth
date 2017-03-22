@@ -1,3 +1,19 @@
+#===============================================================================
+# Override-able variables:
+#
+# CC -- Compiler
+# AR -- Archiver
+# OS -- Target operating system (in {Linux, Win, emscript})
+# ARCH -- Target architecture (in {i686, x86_64})
+# CFLAGS -- Base compiler flags (to which more flags are appended)
+# PREFIX -- Base directory where the lib will be installed
+# LIBPATH -- Directory where the shared library will be installed
+# HEADERPATH -- Directory where the headers will be installed
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+# Cross-compiling instructions:
+#
+#===============================================================================
 
 #===============================================================================
 # Define every object required by compilation
@@ -16,15 +32,10 @@
 #==============================================================================
 # Select which compiler to use (either gcc or emcc)
 #==============================================================================
-  ifeq ($(MAKECMDGOALS), emscript)
+  ifneq (, $(findstring $(MAKECMDGOALS), emscript))
     CC := emcc
-  else
-    ifeq ($(MAKECMDGOALS), emscript_clean)
-      CC := emcc
-    else
-        CC ?= gcc
-    endif
   endif
+  CC ?= gcc
   AR ?= ar
 #==============================================================================
 
@@ -58,9 +69,19 @@
 #===============================================================================
 # Set OS flag
 #===============================================================================
-  OS ?= $(shell uname)
-  ifeq ($(OS), MINGW32_NT-6.1)
+  UNAME := $(shell uname)
+  OS ?= $(UNAME)
+  ifneq (, $(findstring $(UNAME), Windows_NT))
     OS := Win
+    UNAME := Win
+  endif
+  ifneq (, $(findstring $(UNAME), MINGW))
+    OS := Win
+    UNAME := Win
+  endif
+  ifneq (, $(findstring $(UNAME), MSYS))
+    OS := Win
+    UNAME := Win
   endif
   ifeq ($(CC), emcc)
     OS := emscript
@@ -71,7 +92,7 @@
 # Define CFLAGS (compiler flags)
 #===============================================================================
 # Add all warnings and default include path
-  CFLAGS := -Wall -I"./include" -I"./src/include"
+  CFLAGS := $(CFLAGS) -Wall -I"./include" -I"./src/include"
 # Add architecture flag
   ARCH ?= $(shell uname -m)
   ifeq ($(OS), emscript)
@@ -94,7 +115,7 @@
     endif
   endif
 # Set flags required by OS
-  ifeq ($(OS), Win)
+  ifeq ($(UNAME), Win)
     CFLAGS := $(CFLAGS) -I"/d/windows/mingw/include"
   else
     CFLAGS := $(CFLAGS) -fPIC
@@ -106,16 +127,15 @@
 #===============================================================================
 
 #===============================================================================
-# Define LFLAGS (linker flags)
+# Define LDFLAGS (linker flags)
 #===============================================================================
-  LFLAGS := 
-  SDL_LFLAGS := -lSDL2
-  
+  SDL_LDFLAGS := -lSDL2
+
   ifeq ($(OS), Win)
-    LFLAGS := $(LFLAGS) -lmingw32
-    SDL_LFLAGS := -lSDL2main -lSDL2
+    LDFLAGS := $(LDFLAGS) -lmingw32
+    SDL_LDFLAGS := -lSDL2main -lSDL2
   else
-    LFLAGS := $(LFLAGS) -lm
+    LDFLAGS := $(LDFLAGS) -lm
   endif
 #===============================================================================
 
@@ -126,17 +146,10 @@
   OBJDIR := obj/$(OS)
   BINDIR := bin/$(OS)
   TESTDIR := tst
-  ifeq ($(OS), Win)
-     ifeq ($(ARCH), x64)
-       LIBPATH := /d/windows/mingw/lib
-     else
-       LIBPATH := /d/windows/mingw/mingw32/lib
-     endif
-     HEADERPATH := /d/windows/mingw/include
-  else
-    LIBPATH := /usr/lib
-    HEADERPATH := /usr/include
-  endif
+
+  PREFIX ?= /usr
+  LIBPATH ?= $(PREFIX)/lib
+  HEADERPATH ?= $(PREFIX)/include
 #===============================================================================
 
 #==============================================================================
@@ -174,7 +187,7 @@
 #==============================================================================
 # Get the number of cores for fun stuff
 #==============================================================================
-  ifeq ($(OS), Win)
+  ifeq ($(UNAME), Win)
    CORES := 1
   else
    CORES := $$(($(shell nproc) * 2))
@@ -324,7 +337,7 @@ $(BINDIR)/$(TARGET).a: $(OBJS)
 $(BINDIR)/$(TARGET).dll: $(OBJS)
 	rm -f $@
 	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-all-symbols \
-	    $(CFLAGS) -o $@ $(OBJS) $(LFLAGS)
+	    $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 $(BINDIR)/$(TARGET).so: $(BINDIR)/$(TARGET).$(MJV)
 	rm -f $(BINDIR)/$(TARGET).$(SO)
@@ -336,7 +349,7 @@ $(BINDIR)/$(TARGET).$(MJV): $(BINDIR)/$(TARGET).$(MNV)
 
 $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
 	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
-	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LFLAGS)
+	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LDFLAGS)
 
 $(BINDIR)/$(TARGET).dylib: $(OBJS)
 	$(CC) -dynamiclib $(CFLAGS) -o $(BINDIR)/$(TARGET).dylib $(OBJS)
@@ -347,14 +360,14 @@ $(BINDIR)/$(TARGET).dylib: $(OBJS)
 # prefixed by 'tst_' and suffixed by 'SDL2')
 #==============================================================================
 $(BINDIR)/tst_%SDL2$(BIN_EXT): $(OBJDIR)/tst_%SDL2.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg $(SDL_LFLAGS)
+	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LDFLAGS) -$(LIBNAME)_dbg $(SDL_LDFLAGS)
 #==============================================================================
 
 #==============================================================================
 # Rule for compiling a test binary (it's prefixed by 'tst_')
 #==============================================================================
 $(BINDIR)/tst_%$(BIN_EXT): $(OBJDIR)/tst_%.o
-	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LFLAGS) -$(LIBNAME)_dbg
+	$(CC) $(CFLAGS) -o $@ $< -L$(BINDIR) $(LDFLAGS) -$(LIBNAME)_dbg
 #==============================================================================
 
 #==============================================================================
