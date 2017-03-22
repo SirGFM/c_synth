@@ -48,7 +48,7 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: emscript fast fast_all release install clean emscript_clean distclean
+.PHONY: emscript fast fast_all release install install_win install_x uninstall uninstall_win uninstall_x clean emscript_clean distclean
 #==============================================================================
 
 #==============================================================================
@@ -117,7 +117,8 @@
 # Set flags required by OS
   ifeq ($(UNAME), Win)
     CFLAGS := $(CFLAGS) -I"/d/windows/mingw/include"
-  else
+  endif
+  ifneq ($(OS), Win)
     CFLAGS := $(CFLAGS) -fPIC
   endif
 # Set the current compiler
@@ -148,8 +149,8 @@
   TESTDIR := tst
 
   PREFIX ?= /usr
-  LIBPATH ?= $(PREFIX)/lib
-  HEADERPATH ?= $(PREFIX)/include
+  LIBPATH ?= $(PREFIX)/lib/c_synth
+  HEADERPATH ?= $(PREFIX)/include/c_synth
 #===============================================================================
 
 #==============================================================================
@@ -259,8 +260,13 @@ tests: MKDIRS shared $(TEST_BIN)
 #==============================================================================
 # Rule for installing the library
 #==============================================================================
-ifeq ($(OS), Win)
-  install: release
+ifeq ($(UNIQUE), Win)
+  install: install_win
+else
+  install: install_x
+endif
+
+install_win: release
 	# Create destiny directories
 	mkdir -p /c/c_synth/lib/
 	mkdir -p /c/c_synth/include/c_synth
@@ -271,32 +277,36 @@ ifeq ($(OS), Win)
 	cp -fP $(BINDIR)/$(TARGET)*.$(SO) /c/c_synth/lib
 	# Copy the headers
 	cp -rf ./include/c_synth/* /c/c_synth/include/c_synth
-else
-  install: release
+
+install_x: release
 	# Create destiny directories
-	mkdir -p $(LIBPATH)/c_synth
-	mkdir -p $(HEADERPATH)/c_synth
+	mkdir -p $(LIBPATH)
+	mkdir -p $(HEADERPATH)
 	# Copy every shared lib (normal, optmized and debug)
-	cp -f $(BINDIR)/$(TARGET)*.$(MNV) $(LIBPATH)/c_synth
+	cp -f $(BINDIR)/$(TARGET)*.$(MNV) $(LIBPATH)
 	# -P = don't follow sym-link
-	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) $(LIBPATH)/c_synth
-	cp -fP $(BINDIR)/$(TARGET)*.$(SO) $(LIBPATH)/c_synth
+	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) $(LIBPATH)
+	cp -fP $(BINDIR)/$(TARGET)*.$(SO) $(LIBPATH)
 	# Copy the static lib
-	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)/c_synth
+	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)
 	# Copy the headers
-	cp -rf ./include/c_synth/* $(HEADERPATH)/c_synth
+	cp -rf ./include/c_synth/* $(HEADERPATH)
 	# Make the lib be automatically found
-	echo "$(LIBPATH)/c_synth" > /etc/ld.so.conf.d/c_synth.conf
+	echo "$(LIBPATH)" > /etc/ld.so.conf.d/c_synth.conf
 	# Update the paths
 	ldconfig
-endif
 #==============================================================================
 
 #==============================================================================
 # Rule for uninstalling the library
 #==============================================================================
-ifeq ($(OS), Win)
-  uninstall:
+ifeq ($(UNIQUE), Win)
+  uninstall: uninstall_win
+else
+  uninstall: uninstall_x
+endif
+
+uninstall_win:
 	# Remove the libraries (account for different versions)
 	rm -f /c/c_synth/lib/$(TARGET)_dbg.*
 	rm -f /c/c_synth/lib/$(TARGET).*
@@ -306,21 +316,20 @@ ifeq ($(OS), Win)
 	rmdir /c/c_synth/lib/
 	rmdir /c/c_synth/include/
 	rmdir /c/c_synth/
-else
-  uninstall:
+
+uninstall_x:
 	# Remove the libraries (account for different versions)
-	rm -f $(LIBPATH)/c_synth/$(TARGET)_dbg.*
-	rm -f $(LIBPATH)/c_synth/$(TARGET).*
+	rm -f $(LIBPATH)/$(TARGET)_dbg.*
+	rm -f $(LIBPATH)/$(TARGET).*
 	# Remove the headers
-	rm -rf $(HEADERPATH)/c_synth/*
+	rm -rf $(HEADERPATH)/*
 	# Remove its directories
-	rmdir $(LIBPATH)/c_synth
-	rmdir $(HEADERPATH)/c_synth
+	rmdir $(LIBPATH)
+	rmdir $(HEADERPATH)
 	# Remove the lib from the default path
 	rm /etc/ld.so.conf.d/c_synth.conf
 	# Update the paths
 	ldconfig
-endif
 #==============================================================================
 
 #==============================================================================
@@ -334,23 +343,30 @@ $(BINDIR)/$(TARGET).a: $(OBJS)
 #==============================================================================
 # Rule for actually building the shared library
 #==============================================================================
+# Windows DLL
 $(BINDIR)/$(TARGET).dll: $(OBJS)
 	rm -f $@
-	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-all-symbols \
-	    $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) -shared -Wl,-soname,$(TARGET).dll -Wl,-export-all-symbols $(CFLAGS) \
+	    -o $@ $(OBJS) $(LDFLAGS)
 
+# Linux
 $(BINDIR)/$(TARGET).so: $(BINDIR)/$(TARGET).$(MJV)
 	rm -f $(BINDIR)/$(TARGET).$(SO)
 	cd $(BINDIR); ln -f -s $(TARGET).$(MJV) $(TARGET).$(SO)
 
+ifneq (, $(MJV))
 $(BINDIR)/$(TARGET).$(MJV): $(BINDIR)/$(TARGET).$(MNV)
 	rm -f $(BINDIR)/$(TARGET).$(MJV)
 	cd $(BINDIR); ln -f -s $(TARGET).$(MNV) $(TARGET).$(MJV)
+endif
 
+ifneq (, $(MNV))
 $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
 	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
 	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LDFLAGS)
+endif
 
+# Mac OS X
 $(BINDIR)/$(TARGET).dylib: $(OBJS)
 	$(CC) -dynamiclib $(CFLAGS) -o $(BINDIR)/$(TARGET).dylib $(OBJS)
 #==============================================================================
