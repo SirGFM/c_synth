@@ -49,10 +49,9 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: emscript fast fast_all release install install_shared \
-        install_shared_win install_shared_x install_static install_static_win \
-        install_static_x uninstall uninstall_win uninstall_x clean \
-        emscript_clean distclean
+.PHONY: emscript fast fast_all install install_shared install_shared_win \
+        install_shared_x install_static install_static_win install_static_x \
+        uninstall uninstall_win uninstall_x clean emscript_clean distclean
 #==============================================================================
 
 #==============================================================================
@@ -232,25 +231,6 @@ emscript_clean: clean
 #==============================================================================
 $(BINDIR)/$(TARGET).bc: MKDIRS $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(OBJS)
-#==============================================================================
-
-#==============================================================================
-# Define the release rule, to compile everything on RELEASE mode (it's done in
-# quite an ugly way.... =/)
-#==============================================================================
-release: MKDIRS
-	# Remove all old binaries
-	make clean
-	# Compile everything in release mode
-	make RELEASE=yes fast
-	# Remove all debug info from the binaries
-	strip $(BINDIR)/$(TARGET).a
-	strip $(BINDIR)/$(TARGET).$(MNV)
-	# Delete all .o to recompile as debug
-	rm -f $(OBJS)
-	# Recompile the lib with debug info
-	make DEBUG=yes fast
-	date
 #==============================================================================
 
 #==============================================================================
