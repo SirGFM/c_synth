@@ -48,7 +48,8 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: emscript fast fast_all release install install_win install_x uninstall uninstall_win uninstall_x clean emscript_clean distclean
+.PHONY: emscript fast fast_all release install install_win install_x \
+        uninstall uninstall_win uninstall_x clean emscript_clean distclean
 #==============================================================================
 
 #==============================================================================
@@ -177,7 +178,9 @@
 # Set shared library's extension
 #==============================================================================
   ifeq ($(OS), Win)
-    SO := dll
+    SO ?= dll
+    MJV ?= $(SO)
+    MNV ?= $(SO)
   else
     SO ?= so
     MJV ?= $(SO).$(MAJOR_VERSION)
@@ -354,13 +357,13 @@ $(BINDIR)/$(TARGET).so: $(BINDIR)/$(TARGET).$(MJV)
 	rm -f $(BINDIR)/$(TARGET).$(SO)
 	cd $(BINDIR); ln -f -s $(TARGET).$(MJV) $(TARGET).$(SO)
 
-ifneq (, $(MJV))
+ifneq ($(OS), $(MJV))
 $(BINDIR)/$(TARGET).$(MJV): $(BINDIR)/$(TARGET).$(MNV)
 	rm -f $(BINDIR)/$(TARGET).$(MJV)
 	cd $(BINDIR); ln -f -s $(TARGET).$(MNV) $(TARGET).$(MJV)
 endif
 
-ifneq (, $(MNV))
+ifneq ($(OS), $(MNV))
 $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
 	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
 	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LDFLAGS)
