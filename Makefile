@@ -37,6 +37,7 @@
   endif
   CC ?= gcc
   AR ?= ar
+  STRIP ?= strip
 #==============================================================================
 
 #==============================================================================
@@ -48,8 +49,10 @@
 #==============================================================================
 # Define all targets that doesn't match its generated file
 #==============================================================================
-.PHONY: emscript fast fast_all release install install_win install_x \
-        uninstall uninstall_win uninstall_x clean emscript_clean distclean
+.PHONY: emscript fast fast_all release install install_shared \
+        install_shared_win install_shared_x install_static install_static_win \
+        install_static_x uninstall uninstall_win uninstall_x clean \
+        emscript_clean distclean
 #==============================================================================
 
 #==============================================================================
@@ -189,6 +192,14 @@
 #==============================================================================
 
 #==============================================================================
+# Ensure debug build isn't stripped
+#==============================================================================
+  ifneq ($(RELEASE), yes)
+    STRIP := touch
+  endif
+#==============================================================================
+
+#==============================================================================
 # Get the number of cores for fun stuff
 #==============================================================================
   ifeq ($(UNAME), Win)
@@ -263,47 +274,63 @@ tests: MKDIRS shared $(TEST_BIN)
 #==============================================================================
 # Rule for installing the library
 #==============================================================================
-ifeq ($(UNIQUE), Win)
-  install: install_win
+ifeq ($(UNAME), Win)
+  install: install_shared_win install_static_win
+  install_shared: install_shared_win
+  install_static: install_static_win
 else
-  install: install_x
+  install: install_shared_x install_static_x
+  install_shared: install_shared_x
+  install_static: install_static_x
 endif
 
-install_win: release
+install_shared_win: shared
 	# Create destiny directories
 	mkdir -p /c/c_synth/lib/
 	mkdir -p /c/c_synth/include/c_synth
-	# Copy every shared lib (normal, optmized and debug)
-	cp -f $(BINDIR)/$(TARGET)*.$(MNV) /c/c_synth/lib
-	# -P = don't follow sym-link
-	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) /c/c_synth/lib
-	cp -fP $(BINDIR)/$(TARGET)*.$(SO) /c/c_synth/lib
 	# Copy the headers
 	cp -rf ./include/c_synth/* /c/c_synth/include/c_synth
+	# Copy the lib
+	cp -rf $(BINDIR)/$(TARGET).dll /c/c_synth/lib/
 
-install_x: release
+install_static_win: static
+	# Create destiny directories
+	mkdir -p /c/c_synth/lib/
+	mkdir -p /c/c_synth/include/c_synth
+	# Copy the headers
+	cp -rf ./include/c_synth/* /c/c_synth/include/c_synth
+	# Copy the lib
+	cp -rf $(BINDIR)/$(TARGET).a /c/c_synth/lib/
+
+install_shared_x: shared
 	# Create destiny directories
 	mkdir -p $(LIBPATH)
 	mkdir -p $(HEADERPATH)
+	# Copy the headers
+	cp -rf ./include/c_synth/* $(HEADERPATH)
 	# Copy every shared lib (normal, optmized and debug)
 	cp -f $(BINDIR)/$(TARGET)*.$(MNV) $(LIBPATH)
 	# -P = don't follow sym-link
 	cp -fP $(BINDIR)/$(TARGET)*.$(MJV) $(LIBPATH)
 	cp -fP $(BINDIR)/$(TARGET)*.$(SO) $(LIBPATH)
-	# Copy the static lib
-	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)
-	# Copy the headers
-	cp -rf ./include/c_synth/* $(HEADERPATH)
 	# Make the lib be automatically found
 	echo "$(LIBPATH)" > /etc/ld.so.conf.d/c_synth.conf
-	# Update the paths
 	ldconfig
+
+install_static_x: static
+	# Create destiny directories
+	mkdir -p $(LIBPATH)
+	mkdir -p $(HEADERPATH)
+	# Copy the headers
+	cp -rf ./include/c_synth/* $(HEADERPATH)
+	# Copy the static lib
+	cp -f $(BINDIR)/$(TARGET)*.a $(LIBPATH)
 #==============================================================================
 
 #==============================================================================
 # Rule for uninstalling the library
 #==============================================================================
-ifeq ($(UNIQUE), Win)
+ifeq ($(UNAME), Win)
   uninstall: uninstall_win
 else
   uninstall: uninstall_x
@@ -351,6 +378,7 @@ $(BINDIR)/$(TARGET).dll: $(OBJS)
 	rm -f $@
 	$(CC) -shared -Wl,-soname,$(TARGET).dll -Wl,-export-all-symbols $(CFLAGS) \
 	    -o $@ $(OBJS) $(LDFLAGS)
+	$(STRIP) $@
 
 # Linux
 $(BINDIR)/$(TARGET).so: $(BINDIR)/$(TARGET).$(MJV)
@@ -367,11 +395,13 @@ ifneq ($(SO), $(MNV))
 $(BINDIR)/$(TARGET).$(MNV): $(OBJS)
 	$(CC) -shared -Wl,-soname,$(TARGET).$(MJV) -Wl,-export-dynamic \
 	    $(CFLAGS) -o $(BINDIR)/$(TARGET).$(MNV) $(OBJS) $(LDFLAGS)
+	$(STRIP) $@
 endif
 
 # Mac OS X
 $(BINDIR)/$(TARGET).dylib: $(OBJS)
 	$(CC) -dynamiclib $(CFLAGS) -o $(BINDIR)/$(TARGET).dylib $(OBJS)
+	$(STRIP) $@
 #==============================================================================
 
 #==============================================================================
