@@ -457,7 +457,7 @@ clean:
 #==============================================================================
 # Remove all built objects and target directories
 #==============================================================================
-distclean: clean
+distclean:
 	make emscript_clean DEBUG=yes
 	make emscript_clean RELEASE=yes
 	make clean DEBUG=yes
