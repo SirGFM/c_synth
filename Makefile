@@ -38,6 +38,11 @@
   CC ?= gcc
   AR ?= ar
   STRIP ?= strip
+# Set DEBUG as the default mode
+  ifneq ($(RELEASE), yes)
+    RELEASE := no
+    DEBUG := yes
+  endif
 #==============================================================================
 
 #==============================================================================
@@ -147,8 +152,13 @@
 # Define where source files can be found and where objects and binary are output
 #===============================================================================
   VPATH := src:tst
-  OBJDIR := obj/$(OS)
-  BINDIR := bin/$(OS)
+  ifeq ($(RELEASE), yes)
+    OBJDIR := obj/release/$(OS)
+    BINDIR := bin/release/$(OS)
+  else
+    OBJDIR := obj/debug/$(OS)
+    BINDIR := bin/debug/$(OS)
+  endif
   TESTDIR := tst
 
   PREFIX ?= /usr
@@ -448,7 +458,10 @@ clean:
 # Remove all built objects and target directories
 #==============================================================================
 distclean: clean
-	make emscript_clean
+	make emscript_clean DEBUG=yes
+	make emscript_clean RELEASE=yes
+	make clean DEBUG=yes
+	make clean RELEASE=yes
 	rmdir obj/ bin/
 #==============================================================================
 

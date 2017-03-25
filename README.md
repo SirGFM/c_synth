@@ -14,7 +14,8 @@ All the following steps where also tested on Windows, using
 There are no dependencies to build the library. After cloning it, simply run:
 
 ```
-$ sudo make install
+$ sudo make install DEBUG=yes
+$ sudo make install RELEASE=yes
 ```
 
 The library will be installed on /usr/lib/c_synth and the headers on
