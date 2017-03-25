@@ -462,6 +462,5 @@ distclean: clean
 	make emscript_clean RELEASE=yes
 	make clean DEBUG=yes
 	make clean RELEASE=yes
-	rmdir obj/ bin/
 #==============================================================================
 
