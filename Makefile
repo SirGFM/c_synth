@@ -2,7 +2,8 @@
 # Override-able variables:
 #
 # CC -- Compiler
-# AR -- Archiver
+# AR -- Archiver (generate the static lib)
+# STRIP -- Strip (discard symbols)
 # OS -- Target operating system (in {Linux, Win, emscript})
 # ARCH -- Target architecture (in {i686, x86_64})
 # CFLAGS -- Base compiler flags (to which more flags are appended)
@@ -13,6 +14,14 @@
 #-------------------------------------------------------------------------------
 # Cross-compiling instructions:
 #
+#  Cross-compiling from Linux to Windows may be done by setting the following
+# variables: 'CC', 'AR', 'STRIP', 'OS', 'ARCH'. Setting 'OS' to 'Win' avoids
+# some overriding done when compiling natively on Windows through MinGW.
+#
+#  The destination for the 'install' command may be chosen either by setting the
+# 'PREFIX' var or by manually setting 'LIBPATH' and 'HEADERPATH'. The later may
+# be interesting if you want to install both i686 and x86_64 libraries (since
+# this Makefile don't follow any default recomendation).
 #===============================================================================
 
 #===============================================================================
