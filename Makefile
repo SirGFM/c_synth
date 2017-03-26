@@ -32,7 +32,7 @@
 #==============================================================================
 # Select which compiler to use (either gcc or emcc)
 #==============================================================================
-  ifneq (, $(findstring $(MAKECMDGOALS), emscript))
+  ifneq (, $(findstring emscript, $(MAKECMDGOALS)))
     CC := emcc
   endif
   CC ?= gcc
@@ -79,15 +79,15 @@
 #===============================================================================
   UNAME := $(shell uname)
   OS ?= $(UNAME)
-  ifneq (, $(findstring $(UNAME), Windows_NT))
+  ifneq (, $(findstring Windows_NT, $(UNAME)))
     OS := Win
     UNAME := Win
   endif
-  ifneq (, $(findstring $(UNAME), MINGW))
+  ifneq (, $(findstring MINGW, $(UNAME)))
     OS := Win
     UNAME := Win
   endif
-  ifneq (, $(findstring $(UNAME), MSYS))
+  ifneq (, $(findstring MSYS, $(UNAME)))
     OS := Win
     UNAME := Win
   endif
