@@ -27,12 +27,14 @@ w10o3h80c r r r w8o6h0d r w10o3h80c r w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8o6h0d w8
 w3 l16 v16 o5 // Main chord 1
 [f+ r r r f+8. f+ r4. f+ f+
 r r f+ f+ r r f+ q100 g+2 q75 r
-f+ r r r f+8. f+ r1.]
+f+ r r r f+8. f+ r2
+r1]
 $
 v32
 [f+ r r r f+8. f+ r4. f+ f+
 r r f+ f+ r r f+ q100 g+2 q75 r
-f+ r r r f+8. f+ r1.]4
+f+ r r r f+8. f+ r2
+r1]4
 [d4 d4 e4 r4
 r1]4
 v64
@@ -41,12 +43,14 @@ v64
 w3 l16 v18 o5 // Main chord 2
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
-a r r r a8. a r1.]
+a r r r a8. a r2
+r1]
 $
 v64
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
-a r r r a8. a r1.]4
+a r r r a8. a r2
+r1]4
 [g+4 g+4 a4 r4
 r1]4
 r1
@@ -55,12 +59,14 @@ r1
 w3 l16v10o7 // Main chord 3
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
-a r r r a8. a r1.]
+a r r r a8. a r2
+r1]
 $
 v8
 [a r r r a8. a r4. a a
 r r a a r r a q100 b2 q75 r
-a r r r a8. a r1.]4
+a r r r a8. a r2
+r1]4
 [g+4 g+4 a4 r4
 r1]4
 r1
@@ -100,12 +106,12 @@ w4 l8v36o3q75 // Distorted bass
 [r1]3
 f+16 d+4.. e e e+ e+
 f+ f+4 f+ f+ f+4 f+
-f+ f+4 f+ f+16 d+. e e+
+f+ f+4 f+ f+16 d+8. e e+
 f+ f+4 f+ f+ f+4 f+
 e e4 e d+ d+4 d+
 $
 [f+ f+4 f+ f+ f+4 f+
-f+ f+4 f+ f+16 d+. e e+
+f+ f+4 f+ f+16 d+8. e e+
 f+ f+4 f+ f+ f+4 f+
 e e4 e d+ d+4 d+]4
 e4 e+4 f+4 r4
@@ -160,14 +166,10 @@ a8 f+ c+ e f+ r b8 a b <c+> r4
 r2. r c+ e f+
 a8 f+ c+ e f+ r a8. f+ c+ e f+ r r
 r2. r c+ e f+
-// TODO fix following line
-  a8 b8 <c+4 e4
-  r1
-  //f+2*f2*
-  f+2.
-// TODO fix following line
-  c+ c+ >a r f+ a8
-  r1 r2...
-  //f+2*f2*f+2...
-  f+ a//;
-
+// TODO fix following lines
+//                <-   slide   ->
+// |-----------------|--------|
+    a8 b8 <c+4 e4 f+4^4 f2 f+4^2
+//                     <-          slide           ->
+// |2 ---------------------|--------------|---------|
+      c+ c+ >a r f+ a8 f+16^16^8^4 f2 f+16^8^4^2 f+ a
