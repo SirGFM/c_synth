@@ -110,6 +110,8 @@ enum enSynthWave {
     W_NOISE_25,
     W_NOISE_75,
     W_NOISE_TRIANGLE,
+    W_NOISE_BEST_BASS,
+    W_NOISE_BEST_HIGHPITCH,
     SYNTH_MAX_WAVE
 };
 
