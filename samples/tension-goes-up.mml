@@ -70,7 +70,7 @@ g+ f g+ f g+ f g+ f
 
 // ---- closed cymbal ------------------------------------------------
 
-w5 l32 k5 q20 h90 v(72, 28) $
+w5 l32 k5 q50 h90 v(90, 60) $
 
 rrrr arar arrr rrar rrrr rraa rrrr rraa
 rrrr rrar rrar rrar rrrr arrr arrr arrr
@@ -88,7 +88,7 @@ rrrr arrr arrr arrr rrrr arar arar arar
 
 // ---- drum kick bass -----------------------------------------------
 
-w12 l32 o5 k0 q0 h80 v(17, 28)
+w12 l32 o5 k0 q0 h70 v(35, 80)
 
 bbbr rbrb rrbr brrr bbbr brrr brrr brrr
 bbbr brrr brrr brrr bbbr rrrr rrrr rrrr
