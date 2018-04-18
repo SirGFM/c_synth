@@ -222,3 +222,54 @@ __err:
     return rv;
 }
 
+/**
+ * Retrieve the volume at a given percentage of a note
+ *
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the envelope state (in the range [0, 1024))
+ * @param  [ in]env  The evenlope state of the note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
+        int perc, synth_envelope env) {
+    synth_err rv;
+    int amp, ini, fin;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pAmp, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(env <= ENV_MAX, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(perc >= 0 && perc <= 1024, SYNTH_BAD_PARAM_ERR);
+
+    switch (env) {
+        case ENV_ATTACK:
+            ini = pVol->preAttack;
+            fin = pVol->hold;
+        case ENV_HOLD:
+            ini = pVol->hold;
+            fin = pVol->decay;
+        case ENV_DECAY:
+            ini = pVol->decay;
+            fin = pVol->release;
+        case ENV_RELEASE:
+            ini = pVol->release;
+            fin = pVol->postRelease;
+        default: { /* Avoids a warning */ }
+    }
+
+    /* Calculate the current amplitude */
+    amp = ini * (1024 - perc);
+    amp = amp + fin * perc;
+    amp = amp >> 10;
+    *pAmp = amp & 0xffff;
+    /* If the previous didn't work out (because of integer division), use the
+     * following */
+    /* *pAmp = (pVol->ini + (pVol->fin - pVol->ini) * (perc / 1024.0f)) &
+     *         0xff; */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+

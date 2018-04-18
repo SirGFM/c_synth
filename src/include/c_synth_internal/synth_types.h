@@ -88,6 +88,10 @@ typedef struct stSynthRendererCtx synthRendererCtx;
 #  define __SYNTHTOKEN_ENUM__
      typedef enum enSynthToken synth_token;
 #  endif /* __SYNTHTOKEN_ENUM__ */
+#  ifndef __SYNTHENVELOPE_ENUM__
+#  define __SYNTHENVELOPE_ENUM__
+     typedef enum enSynthEnvelope synth_envelope;
+#  endif /* __SYNTHTOKEN_ENUM__ */
 
 /* Define every enumeration */
 
@@ -246,6 +250,8 @@ struct stSynthParserCtx {
     int curCompassLength;
     /** Current wave */
     synth_wave wave;
+    /** Whether the new envelope mode should be used */
+    synth_bool useNewEnvelope;
 };
 
 /** Struct with data about the currently rendering song/track */
@@ -373,6 +379,8 @@ struct stSynthAudio {
     int bpm;
     /** Song's time signature */
     int timeSignature;
+    /** Whether the new envelope mode should be used */
+    synth_bool useNewEnvelope;
 };
 
 /** Define a track, which is almost simply a sequence of notes */
@@ -433,12 +441,59 @@ struct stSynthNote {
     int volume;
 };
 
-/** Define a simple note envelop */
+/**
+ * Various states that the volume envelope may be. The volumes are interpolated
+ * as following:
+ *
+ * ENV_ATTACK = preAttack ~ hold
+ * ENV_HOLD = hold ~ decay
+ * ENV_DECAY = decay ~ release
+ * ENV_RELEASE = release ~ postRelease
+ */
+enum enSynthEnvelope {
+    ENV_ATTACK = 0,
+    ENV_HOLD,
+    ENV_DECAY,
+    ENV_RELEASE,
+    ENV_MAX
+};
+
+/**
+ * Define a simple note envelop, which becomes the following graph:
+ *
+ * Amp
+ *  ^
+ *  |   /^^^^^\
+ *  |  /       \
+ *  | /  |   |  \
+ *  |/           \
+ *  |    |   |    \
+ *  |              \_______
+ *  |    |   |
+ *  |------------------------> time
+ *  t0   t1  t2    t3    t4
+ *
+ * Where:
+ *  t0 = preAttack (starting volume)
+ *  t1 = hold (volume after the attack)
+ *  t2 = decay (volume after the 'hold' period, before decaying)
+ *  t3 = release (starting volume on note release)
+ *  t4 = postRelease (final volume)
+ *
+ * Note that the evenlope doesn't have to start and end at 0. If so desired, it
+ * may ring until the end.
+ */
 struct stSynthVolume {
     /** Initial volume */
     int ini;
     /** Final volume */
     int fin;
+    /** === NEW CONTROLS ===== */
+    int preAttack;
+    int hold;
+    int decay;
+    int release;
+    int postRelease;
 };
 
 #endif /* __SYNTH_INTERNAL_TYPES_H__ */

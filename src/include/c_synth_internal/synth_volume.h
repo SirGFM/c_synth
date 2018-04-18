@@ -53,5 +53,17 @@ synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin);
  */
 synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc);
 
+/**
+ * Retrieve the volume at a given percentage of a note
+ *
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the envelope state (in the range [0, 1024))
+ * @param  [ in]env  The evenlope state of the note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
+        int perc, synth_envelope env);
+
 #endif /* __SYNTH_VOLUME_H__ */
 
