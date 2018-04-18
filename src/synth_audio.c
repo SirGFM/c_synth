@@ -79,6 +79,7 @@ synth_err synthAudio_compileSDL_RWops(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Clear the audio */
     memset(pAudio, 0x0, sizeof(synthAudio));
+    pAudio->useNewEnvelope = SYNTH_FALSE;
 
     /* Init parser */
     rv = synthLexer_initFromSDL_RWops(&(pCtx->lexCtx), pFile);
@@ -120,6 +121,7 @@ synth_err synthAudio_compileFile(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Clear the audio */
     memset(pAudio, 0x0, sizeof(synthAudio));
+    pAudio->useNewEnvelope = SYNTH_FALSE;
 
     /* Init parser */
     rv = synthLexer_initFromFile(&(pCtx->lexCtx), pFilename);
@@ -159,6 +161,7 @@ synth_err synthAudio_compileString(synthAudio *pAudio, synthCtx *pCtx,
 
     /* Clear the audio */
     memset(pAudio, 0x0, sizeof(synthAudio));
+    pAudio->useNewEnvelope = SYNTH_FALSE;
 
     /* Init parser */
     rv = synthLexer_initFromString(&(pCtx->lexCtx), pString, len);

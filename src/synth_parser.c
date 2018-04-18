@@ -1018,10 +1018,43 @@ __err:
     return rv;
 }
 
+
+/**
+ * Setup the audio track with the new evenlope mode.
+ *
+ * Parsing rule: newEnv = T_ENABLE_NEW_ENVELOPE?
+ *
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pAudio  The audio
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
+ */
+static synth_err synthParser_newEnvelope(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
+    synth_err rv;
+    synth_token token;
+
+    /* Retrieve the current token */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    if (token == T_ENABLE_NEW_ENVELOPE) {
+        pAudio->useNewEnvelope = SYNTH_TRUE;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
+    return rv;
+}
+
 /**
  * Parse the currently loaded file into an audio
  * 
- * Parsing rule: T_MML bmp tracks
+ * Parsing rule: T_MML bmp newEnv tracks
  * 
  * This function uses a lexer to break the file into tokens, as it does
  * retrieve track, notes etc from the main synthesizer context
@@ -1055,6 +1088,10 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
 
     /* Check that its actually a MML song */
     rv = synthParser_mml(pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Configure with the new envelope (optional) */
+    rv = synthParser_newEnvelope(pParser, pCtx, pAudio);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse the bpm (optional token) */
