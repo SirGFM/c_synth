@@ -164,6 +164,9 @@ enum enSynthToken {
     T_COMMA,
     T_DONE,
     T_EXTEND,
+    T_ENABLE_NEW_ENVELOPE,
+    T_SET_ENVELOPE,
+    T_SET_EXT_VOLUME,
     TK_MAX
 };
 
