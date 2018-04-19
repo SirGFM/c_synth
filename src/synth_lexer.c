@@ -478,28 +478,32 @@ __err:
  * @param  [ in]token    The gotten token, on success
  * @return               SYNTH_TRUE, SYNTH_FALSE
  */
+static synth_bool synthLexer_charIsToken(synthLexCtx *pCtx, char expected,
+        synth_token token) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+
+    /* Read the current character */
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+    /* Check if it's what was expected */
+    if (c != expected) {
+        synthLexer_ungetChar(pCtx, c);
+        rv = SYNTH_FALSE;
+    }
+    else {
+        rv = SYNTH_TRUE;
+        pCtx->lastToken = token;
+    }
+
+__err:
+    return rv;
+}
 #define SYNTHLEXER_ISTOKEN(func, expected, token) \
   static synth_bool func(synthLexCtx *pCtx) { \
-    synth_bool rv; \
-    synth_err srv; \
-    char c; \
-\
-    /* Read the current character */ \
-    srv = synthLexer_getChar(&c, pCtx); \
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE); \
-\
-    /* Check if it's what was expected */ \
-    if (c != expected) { \
-        synthLexer_ungetChar(pCtx, c); \
-        rv = SYNTH_FALSE; \
-    } \
-    else { \
-        rv = SYNTH_TRUE; \
-        pCtx->lastToken = token; \
-    } \
-\
-  __err: \
-    return rv; \
+    return synthLexer_charIsToken(pCtx, expected, token); \
   }
 
 /**
@@ -512,50 +516,55 @@ __err:
  * @param  [ in]token    The gotten token, on success
  * @return               SYNTH_TRUE, SYNTH_FALSE
  */
+static synth_bool synthLexer_constStrIsToken(synthLexCtx *pCtx, char const * target,
+        int len, synth_token token) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+    int i;
+
+    i = 0;
+
+    /* Find the first valid (not blank, comment etc) */
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    /* Return it to the stream */
+    srv = synthLexer_ungetChar(pCtx, c);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+    while (i < len) {
+        /* Get the current character, without ignoring blank and whatnot */
+        srv = synthLexer_getRawChar(&c, pCtx);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+        /* Check that it's of the expected pattern */
+        SYNTH_ASSERT_ERR(c == target[i], SYNTH_FALSE);
+
+        /* Go to the next char */
+        i++;
+    }
+
+    pCtx->lastToken = token;
+    rv = SYNTH_TRUE;
+  __err:
+    if (rv != SYNTH_TRUE && ((srv != SYNTH_EOF && srv != SYNTH_EOS) || i > 0)) {
+        /* On error, return the last char (that didn't belong to the pattern */
+        synthLexer_ungetChar(pCtx, c);
+
+        /* Then, return everything that belonged partially to the pattern */
+        while (i > 0) {
+            i--;
+            synthLexer_ungetChar(pCtx, target[i]);
+        }
+    }
+
+    return rv;
+}
+
 #define SYNTHLEXER_STR_ISTOKEN(func, expected, token) \
   static synth_bool func(synthLexCtx *pCtx) { \
-    synth_bool rv; \
-    synth_err srv; \
-    char c; \
-    char target[] = expected; \
-    int i; \
-\
-    i = 0; \
-\
-    /* Find the first valid (not blank, comment etc) */ \
-    srv = synthLexer_getChar(&c, pCtx); \
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE); \
-    /* Return it to the stream */ \
-    srv = synthLexer_ungetChar(pCtx, c); \
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE); \
-\
-    while (i < sizeof(target) - 1) { \
-        /* Get the current character, without ignoring blank and whatnot */ \
-        srv = synthLexer_getRawChar(&c, pCtx); \
-        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE); \
-\
-        /* Check that it's of the expected pattern */ \
-        SYNTH_ASSERT_ERR(c == target[i], SYNTH_FALSE); \
-\
-        /* Go to the next char */ \
-        i++; \
-    } \
-\
-    pCtx->lastToken = token; \
-    rv = SYNTH_TRUE; \
-  __err: \
-    if (rv != SYNTH_TRUE && ((srv != SYNTH_EOF && srv != SYNTH_EOS) || i > 0)) { \
-        /* On error, return the last char (that didn't belong to the pattern */ \
-        synthLexer_ungetChar(pCtx, c); \
-\
-        /* Then, return everything that belonged partially to the pattern */ \
-        while (i > 0) { \
-            i--; \
-            synthLexer_ungetChar(pCtx, target[i]); \
-        } \
-    } \
-\
-    return rv; \
+    return synthLexer_constStrIsToken(pCtx, expected, sizeof(expected) - 1, \
+            token); \
   }
 
 SYNTHLEXER_ISTOKEN(synthLexer_isSetBPM,       't', T_SET_BPM)

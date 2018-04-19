@@ -1086,6 +1086,10 @@ static synth_err synthParser_newEnvelope(synthParserCtx *pParser, synthCtx *pCtx
     if (token == T_ENABLE_NEW_ENVELOPE) {
         pAudio->useNewEnvelope = SYNTH_TRUE;
         pParser->useNewEnvelope = SYNTH_TRUE;
+
+        /* Read the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
     rv = SYNTH_OK;
