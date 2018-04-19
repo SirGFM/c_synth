@@ -320,6 +320,7 @@ static synth_bool synthParser_isSequence(synthCtx *pCtx) {
         case T_SET_WAVE:
         case T_NOTE:
         case T_SET_LOOP_START:
+        case T_SET_ENVELOPE:
             rv = SYNTH_TRUE;
         break;
         default:
@@ -620,6 +621,10 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
             if (token == T_OPEN_BRACKET) {
+                /* The old enveloped volume shouldn't be used with the new
+                 * envelop enabled */
+                SYNTH_ASSERT_ERR(pParser->useNewEnvelope == SYNTH_FALSE,
+                        SYNTH_UNEXPECTED_TOKEN);
                 /* Set the volume as not constant */
                 isConst = 0;
                 /* Read the following number */
@@ -730,6 +735,44 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT(rv == SYNTH_OK);
             SYNTH_ASSERT_ERR(tmp < SYNTH_MAX_WAVE, SYNTH_INVALID_WAVE);
             pParser->wave = tmp;
+        } break;
+        case T_SET_ENVELOPE: {
+            struct stSynthVolume newVol;
+            int i;
+
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_OPEN_BRACKET);
+
+            /* Since the envelope is simply a bunch of ints, parse it as such */
+            i = 0;
+            while (i < sizeof(newVol) / sizeof(int) - 2) {
+                int *pInt = (int*)&newVol;
+
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+                rv = synthLexer_getValuei(&pInt[i+2], &(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
+                /* There must be a ',' between each number (except the last) */
+                if (i < sizeof(newVol) / sizeof(int) - 3) {
+                    rv = synthLexer_getToken(&(pCtx->lexCtx));
+                    SYNTH_ASSERT(rv == SYNTH_OK);
+
+                    SYNTH_ASSERT_TOKEN(T_COMMA);
+                }
+                i++;
+            }
+
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
+
+            /* Initialize/Search the volume */
+            rv = synthVolume_getEnvelope(&(pParser->volume), pCtx, &newVol);
+            SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         default: {
             SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
@@ -1040,6 +1083,7 @@ static synth_err synthParser_newEnvelope(synthParserCtx *pParser, synthCtx *pCtx
 
     if (token == T_ENABLE_NEW_ENVELOPE) {
         pAudio->useNewEnvelope = SYNTH_TRUE;
+        pParser->useNewEnvelope = SYNTH_TRUE;
     }
 
     rv = SYNTH_OK;
@@ -1081,6 +1125,9 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
 
     /* Set the time signature */
     pAudio->timeSignature = pParser->timeSignature;
+
+    /* Set the default envelope */
+    pParser->useNewEnvelope = SYNTH_FALSE;
 
     /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));

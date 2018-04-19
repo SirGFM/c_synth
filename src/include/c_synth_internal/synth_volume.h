@@ -44,6 +44,16 @@ synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp);
 synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin);
 
 /**
+ * Retrieve a fully enveloped volume
+ *
+ * @param  [out]pVol      The index of the volume
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pEnvelope The enveloping amplitudes (in the range [0, 255])
+ */
+synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
+        synthVolume *pEnvelope);
+
+/**
  * Retrieve the volume at a given percentage of a note
  * 
  * @param  [out]pAmp The note's amplitude
