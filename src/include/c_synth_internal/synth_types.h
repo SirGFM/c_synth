@@ -363,6 +363,9 @@ struct stSynthCtx {
     synthPRNGCtx prngCtx;
     /** Keep track of whatever is being rendered */
     synthRendererCtx renderCtx;
+    /** Whether the new envelope mode should be used. Only temporarialy used
+     * while rendering a song. */
+    synth_bool useNewEnvelope;
 };
 
 /** Define an audio, which is simply an aggregation of tracks */

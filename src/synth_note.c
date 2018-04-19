@@ -693,8 +693,14 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         perc = ((float)(i % spc)) / spc;
 
         /* Retrieve the current amplitude */
-        rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
-                1024);
+        if (pCtx->useNewEnvelope == SYNTH_TRUE) {
+            /* TODO Implement this new envelope */
+            rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+        }
+        else {
+            rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
+                    1024);
+        }
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
         /* Defines the value that encapsulates the note */
