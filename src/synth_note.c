@@ -675,14 +675,14 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     /* Calculate how many 'samples-per-cycle' there are for the Note's note */
     spc = synthFreq / noteFreq;
 
-    /* Calculate the note asdasd in samples */
+    /* Calculate the note duration in samples */
     attack = duration * pNote->attack / 100.0f;
     keyoff = duration * pNote->keyoff / 100.0f;
     release = duration * pNote->release / 100.0f;
 
     /* Synthesize the note audio */
     i = 0;
-    while (i < release) {
+    while (i < duration) {
         char pan;
         int amp, j;
         float clampAmp, perc, waveAmp;
@@ -694,8 +694,27 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
 
         /* Retrieve the current amplitude */
         if (pCtx->useNewEnvelope == SYNTH_TRUE) {
-            /* TODO Implement this new envelope */
-            rv = SYNTH_FUNCTION_NOT_IMPLEMENTED;
+            int envPerc;
+            synth_envelope env;
+
+            if (i < attack) {
+                env = ENV_ATTACK;
+                envPerc = i / attack;
+            }
+            else if (i < keyoff) {
+                env = ENV_HOLD;
+                envPerc = (i - attack) / (keyoff - attack);
+            }
+            else if (i < release) {
+                env = ENV_DECAY;
+                envPerc = (i - keyoff) / (release - keyoff);
+            }
+            else {
+                env = ENV_RELEASE;
+                envPerc = (i - release) / (duration - release);
+            }
+
+            rv = synthVolume_getEnvelopedAmplitude(&amp, pVolume, envPerc, env);
         }
         else {
             rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
