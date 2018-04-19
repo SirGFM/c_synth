@@ -686,8 +686,31 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         char pan;
         int amp, j;
         float clampAmp, perc, waveAmp;
+        synth_envelope env;
 
         /* TODO Rewrite this loop without using floats */
+
+        /* Skip over this section if the envelope is muted */
+        if (i < attack) {
+            env = ENV_ATTACK;
+            j = attack;
+        }
+        else if (i < keyoff) {
+            env = ENV_HOLD;
+            j = keyoff;
+        }
+        else if (i < release) {
+            env = ENV_DECAY;
+            j = release;
+        }
+        else {
+            env = ENV_RELEASE;
+            j = duration;
+        }
+        if (synthVolume_isMuted(pVolume, env) == SYNTH_TRUE) {
+            i = j;
+            continue;
+        }
 
         /* Calculate the percentage of the note into the current cycle */
         perc = ((float)(i % spc)) / spc;
@@ -695,45 +718,45 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         /* Retrieve the current amplitude */
         if (pCtx->useNewEnvelope == SYNTH_TRUE) {
             int envPerc;
-            synth_envelope env;
 
             if (i < attack) {
                 env = ENV_ATTACK;
-                envPerc = i / attack;
+                envPerc = 1024 * i / attack;
             }
             else if (i < keyoff) {
                 env = ENV_HOLD;
-                envPerc = (i - attack) / (keyoff - attack);
+                envPerc = 1024 * (i - attack) / (keyoff - attack);
             }
             else if (i < release) {
                 env = ENV_DECAY;
-                envPerc = (i - keyoff) / (release - keyoff);
+                envPerc = 1024 * (i - keyoff) / (release - keyoff);
             }
             else {
                 env = ENV_RELEASE;
-                envPerc = (i - release) / (duration - release);
+                envPerc = 1024 * (i - release) / (duration - release);
             }
 
+            clampAmp = 1.0f;
             rv = synthVolume_getEnvelopedAmplitude(&amp, pVolume, envPerc, env);
         }
         else {
             rv = synthVolume_getAmplitude(&amp, pVolume, i / (float)duration *
                     1024);
+
+            /* Defines the value that encapsulates the note */
+            if (i < attack) {
+                /* Varies the value from 0.0f -> 1.0f */
+                clampAmp = i / attack;
+            }
+            else if (i > keyoff) {
+                /* Varies the value from 1.0f -> 0.0f */
+                clampAmp = 1.0f - (i - keyoff) / (release - keyoff);
+            }
+            else {
+                clampAmp = 1.0f;
+            }
         }
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
-
-        /* Defines the value that encapsulates the note */
-        if (i < attack) {
-            /* Varies the value from 0.0f -> 1.0f */
-            clampAmp = i / attack;
-        }
-        else if (i > keyoff) {
-            /* Varies the value from 1.0f -> 0.0f */
-            clampAmp = 1.0f - (i - keyoff) / (release - keyoff);
-        }
-        else {
-            clampAmp = 1.0f;
-        }
 
         /* Retrieve the note panning (in case it uses 2 channels) */
         rv = synthNote_getPan(&pan, pNote);

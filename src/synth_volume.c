@@ -110,11 +110,14 @@ synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp) {
         rv = synthVolume_init(&pVolume, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        /* Set both values to the same, since this is a constant volume */
-        for (i = 0; i < sizeof(synthVolume) / sizeof(int); i++) {
-            int *pInt = (int*)pVolume;
-            pInt[i] = amp;
-        }
+        /* Set the volume in such a way that it mimics the older behvaiour */
+        pVolume->ini = amp;
+        pVolume->fin = amp;
+        pVolume->preAttack = 0;
+        pVolume->hold = amp;
+        pVolume->decay = amp;
+        pVolume->release = 0;
+        pVolume->postRelease = 0;
 
         /* Retrieve the volume's index */
         *pVol = pCtx->volumes.used - 1;
@@ -310,15 +313,19 @@ synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
         case ENV_ATTACK:
             ini = pVol->preAttack;
             fin = pVol->hold;
+        break;
         case ENV_HOLD:
             ini = pVol->hold;
             fin = pVol->decay;
+        break;
         case ENV_DECAY:
             ini = pVol->decay;
             fin = pVol->release;
+        break;
         case ENV_RELEASE:
             ini = pVol->release;
             fin = pVol->postRelease;
+        break;
         default: { /* Avoids a warning */ }
     }
 
@@ -335,5 +342,44 @@ synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
     rv = SYNTH_OK;
 __err:
     return rv;
+}
+
+/**
+ * Check whether a volume is muted for a given envelope state.
+ *
+ * @param  [ in]pVol The volume
+ * @param  [ in]env  The evenlope state of the note
+ */
+synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env) {
+    int ini, fin;
+
+    if (!pVol) {
+        return SYNTH_FALSE;
+    }
+
+    switch (env) {
+        case ENV_ATTACK:
+            ini = pVol->preAttack;
+            fin = pVol->hold;
+        break;
+        case ENV_HOLD:
+            ini = pVol->hold;
+            fin = pVol->decay;
+        break;
+        case ENV_DECAY:
+            ini = pVol->decay;
+            fin = pVol->release;
+        break;
+        case ENV_RELEASE:
+            ini = pVol->release;
+            fin = pVol->postRelease;
+        break;
+        default: { /* Avoids a warning */ }
+    }
+
+    if (ini == fin && ini == 0) {
+        return SYNTH_TRUE;
+    }
+    return SYNTH_FALSE;
 }
 

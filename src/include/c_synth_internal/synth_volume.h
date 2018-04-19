@@ -75,5 +75,13 @@ synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc);
 synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
         int perc, synth_envelope env);
 
+/**
+ * Check whether a volume is muted for a given envelope state.
+ *
+ * @param  [ in]pVol The volume
+ * @param  [ in]env  The evenlope state of the note
+ */
+synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env);
+
 #endif /* __SYNTH_VOLUME_H__ */
 
