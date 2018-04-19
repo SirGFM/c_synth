@@ -40,7 +40,6 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "note extension",
     "enable new envelope",
     "set envelope",
-    "set extended volume",
     "unknown token"
 };
 
@@ -580,7 +579,6 @@ SYNTHLEXER_ISTOKEN(synthLexer_isExtend,       '^', T_EXTEND)
 SYNTHLEXER_STR_ISTOKEN(synthLexer_isMML,          "MML"   , T_MML)
 SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewEnvelope,  "NEWENV", T_ENABLE_NEW_ENVELOPE)
 SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope,     "ENV"   , T_SET_ENVELOPE)
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isExtVolume,    "EXTVOL", T_SET_EXT_VOLUME)
 
 /**
  * Check if the current octave should be increased or decreased, through the
@@ -930,8 +928,7 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isExtend(pCtx) == SYNTH_TRUE ||
             synthLexer_didFinish(pCtx) == SYNTH_TRUE ||
             synthLexer_isNewEnvelope(pCtx) == SYNTH_TRUE ||
-            synthLexer_isEnvelope(pCtx) == SYNTH_TRUE ||
-            synthLexer_isExtVolume(pCtx) == SYNTH_TRUE) {
+            synthLexer_isEnvelope(pCtx) == SYNTH_TRUE) {
         rv = SYNTH_OK;
     }
     else {
