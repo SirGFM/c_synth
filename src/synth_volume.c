@@ -111,8 +111,10 @@ synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp) {
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         /* Set both values to the same, since this is a constant volume */
-        pVolume->ini = amp;
-        pVolume->fin = amp;
+        for (i = 0; i < sizeof(synthVolume) / sizeof(int); i++) {
+            int *pInt = (int*)pVolume;
+            pInt[i] = amp;
+        }
 
         /* Retrieve the volume's index */
         *pVol = pCtx->volumes.used - 1;

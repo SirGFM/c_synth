@@ -562,7 +562,9 @@ __err:
  *                     T_SET_KEYOFF T_NUMBER |
  *                     T_SET_RELEASE T_NUMBER |
  *                     T_SET_PAN T_NUMBER |
- *                     T_SET_WAVE T_NUMBER
+ *                     T_SET_WAVE T_NUMBER |
+ *                     T_SET_ENVELOPE T_OPEN_BRACKETS 4(T_NUMBER T_COMMA)
+ *                             T_NUMBER T_CLOSE_BRACKETS
  * 
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
