@@ -691,15 +691,15 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
         /* TODO Rewrite this loop without using floats */
 
         /* Skip over this section if the envelope is muted */
-        if (i < attack) {
+        if (i < (int)attack) {
             env = ENV_ATTACK;
             j = attack;
         }
-        else if (i < keyoff) {
+        else if (i < (int)keyoff) {
             env = ENV_HOLD;
             j = keyoff;
         }
-        else if (i < release) {
+        else if (i < (int)release) {
             env = ENV_DECAY;
             j = release;
         }
