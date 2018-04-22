@@ -11,7 +11,7 @@ t90
 // ===================================================================
 
 // ---- bass-1 -------------------------------------------------------
-w1 o2 l2 k2 q80 h87 v27 $
+w1 o2 l2 k2 q80 h87 v24 $
 
 [
 a+ g+
@@ -21,7 +21,7 @@ f+ g+
 ; // -- bass-1 -------------------------------------------------------
 
 // ---- bass-2 -------------------------------------------------------
-w2 o3 l2 k7 q90 h95 v20 $
+w2 o3 l2 k7 q90 h95 v18 $
 
 [
 f d+
@@ -52,26 +52,25 @@ g+ f g+ f g+ f g+ f
 
 // ---- closed cymbal ------------------------------------------------
 
-w5 l32 k0 q1 h90 ENV(90, 90, 90, 30, 30) $
+w5 l16 k0 q1 h90 ENV(90, 90, 90, 30, 30) $
 
-rrrr arar arrr rrar rrrr rraa rrrr rraa
-rrrr rrar rrar rrar rrrr arrr arrr arrr
+    r8  aa  ar  ra  l32 r8 rraa r8 rraa
+l16 r8  ra  ra  ra      r8  ar  ar  ar
 
-rrrr aaar rrrr aaar rrrr rrrr arrr arrr
-rrrr rrar rrar rrar rrrr rrrr rrar arrr
+l32 r8 aaar r8 aaar l16 r8  r8  ar  ar
+    r8  ra  ra  ra      r8  r8  ra  ar
 
-rrrr aarr rrrr aarr rrrr arar rrrr arar
-rrrr arrr arrr arrr rrrr arrr arrr arrr
+l32 r8 aarr r8 aarr l16 r8  aa  r8  aa
+    r8  ar  ar  ar      r8  ar  ar  ar
 
-rrrr aarr rrrr aarr rrrr arar rrrr arar
-rrrr arrr arrr arrr rrrr arar arar arar
+l32 r8 aarr r8 aarr l16 r8  aa  r8  aa
+    r8  ar  ar  ar      r8  aa  aa  aa
 
 ; // -- closed cymbal ------------------------------------------------
 
 // ---- drum kick bass -----------------------------------------------
 
-//w12 l32 o6 k0 q30 h70 ENV(65, 60, 33, 25, 25) $
-w12 l32 o6 k0 q30 h70 ENV(50, 47, 20, 12, 12) $
+w12 l32 o6 k0 q30 h70 ENV(60, 55, 25, 18, 18) $
 
 bbbr rbrb rrbr brrr bbbr brrr brrr brrr
 bbbr brrr brrr brrr bbbr rrrr rrrr rrrr
