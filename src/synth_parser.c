@@ -403,14 +403,24 @@ static synth_err synthParser_getDuration(int *pDuration,
     synth_err rv;
     synth_token token;
 
-    /* Retrieve the basic duration */
-    SYNTH_ASSERT_TOKEN(T_NUMBER);
-    rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
+    if (token != T_NUMBER && token != T_DURATION) {
+        SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
+    }
 
-    /* Get the next token */
-    rv = synthLexer_getToken(&(pCtx->lexCtx));
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Retrieve the basic duration */
+    if (token == T_NUMBER) {
+        rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Get the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+    else {
+        duration = pParser->duration;
+    }
 
     /* If there are any '.', add half the duration every time */
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
@@ -493,7 +503,7 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Retrieve the note's duration, if not the default one */
-    if (token == T_NUMBER) {
+    if (token == T_NUMBER || token == T_DURATION) {
         rv = synthParser_getDuration(&duration, pParser, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
