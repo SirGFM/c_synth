@@ -40,6 +40,8 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "note extension",
     "set envelope",
     "new mml",
+    "declare macro",
+    "macro",
     "unknown token"
 };
 
@@ -584,10 +586,11 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetLoopEnd,   ']', T_SET_LOOP_END)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetWave,      'w', T_SET_WAVE)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,     ',', T_COMMA)
 SYNTHLEXER_ISTOKEN(synthLexer_isExtend,       '^', T_EXTEND)
+SYNTHLEXER_ISTOKEN(synthLexer_isDeclMacro,    '#', T_DECL_MACRO)
 
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isMML,          "MML"   , T_MML)
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewMML,       "mml"   , T_NEW_MML)
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope,     "env"   , T_SET_ENVELOPE)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isMML,      "MML", T_MML)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewMML,   "mml", T_NEW_MML)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope, "env", T_SET_ENVELOPE)
 
 /**
  * Check if the current octave should be increased or decreased, through the
@@ -901,6 +904,36 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
 }
 
 /**
+ * Check if there's a macro identifier on the stream and read it.
+ *
+ * @param  [ in]pCtx The contex
+ * @return           SYNTH_TRUE, SYNTH_FALSE
+ */
+static synth_bool synthLexer_isMacroId(synthLexCtx *pCtx) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+
+    c = '\0'; /* Avoids valgrind warning */
+
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    SYNTH_ASSERT_ERR(c >= 'A' && c <= 'Z', SYNTH_FALSE);
+
+    pCtx->lastToken = T_MACRO_ID;
+    pCtx->ivalue = (int)c;
+
+    rv = SYNTH_TRUE;
+__err:
+    if (rv != SYNTH_TRUE && srv != SYNTH_EOF && srv != SYNTH_EOS) {
+        /* Return the last invalid char read (if any) */
+        synthLexer_ungetChar(pCtx, c);
+    }
+
+    return rv;
+}
+
+/**
  * Get the next token on the context and its value (if any)
  * 
  * @param  [ in]pCtx The context
@@ -937,6 +970,8 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isNumber(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetComma(pCtx) == SYNTH_TRUE ||
             synthLexer_isExtend(pCtx) == SYNTH_TRUE ||
+            synthLexer_isDeclMacro(pCtx) == SYNTH_TRUE ||
+            synthLexer_isMacroId(pCtx) == SYNTH_TRUE ||
             synthLexer_didFinish(pCtx) == SYNTH_TRUE) {
         rv = SYNTH_OK;
     }

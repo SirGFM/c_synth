@@ -166,6 +166,8 @@ enum enSynthToken {
     T_EXTEND,
     T_SET_ENVELOPE,
     T_NEW_MML,
+    T_DECL_MACRO,
+    T_MACRO_ID,
     TK_MAX
 };
 
