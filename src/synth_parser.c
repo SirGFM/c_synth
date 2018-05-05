@@ -320,6 +320,7 @@ static synth_bool synthParser_isSequence(synthCtx *pCtx) {
         case T_SET_WAVE:
         case T_NOTE:
         case T_SET_LOOP_START:
+        case T_SET_ENVELOPE:
             rv = SYNTH_TRUE;
         break;
         default:
@@ -402,14 +403,24 @@ static synth_err synthParser_getDuration(int *pDuration,
     synth_err rv;
     synth_token token;
 
-    /* Retrieve the basic duration */
-    SYNTH_ASSERT_TOKEN(T_NUMBER);
-    rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
+    if (token != T_NUMBER && token != T_DURATION) {
+        SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
+    }
 
-    /* Get the next token */
-    rv = synthLexer_getToken(&(pCtx->lexCtx));
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Retrieve the basic duration */
+    if (token == T_NUMBER) {
+        rv = synthLexer_getValuei(&duration, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        /* Get the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+    else {
+        duration = pParser->duration;
+    }
 
     /* If there are any '.', add half the duration every time */
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
@@ -492,7 +503,7 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Retrieve the note's duration, if not the default one */
-    if (token == T_NUMBER) {
+    if (token == T_NUMBER || token == T_DURATION) {
         rv = synthParser_getDuration(&duration, pParser, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
@@ -561,7 +572,9 @@ __err:
  *                     T_SET_KEYOFF T_NUMBER |
  *                     T_SET_RELEASE T_NUMBER |
  *                     T_SET_PAN T_NUMBER |
- *                     T_SET_WAVE T_NUMBER
+ *                     T_SET_WAVE T_NUMBER |
+ *                     T_SET_ENVELOPE T_OPEN_BRACKETS 4(T_NUMBER T_COMMA)
+ *                             T_NUMBER T_CLOSE_BRACKETS
  * 
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
@@ -620,6 +633,10 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
             if (token == T_OPEN_BRACKET) {
+                /* The old enveloped volume shouldn't be used with the new
+                 * envelop enabled */
+                SYNTH_ASSERT_ERR(pParser->useNewEnvelope == SYNTH_FALSE,
+                        SYNTH_UNEXPECTED_TOKEN);
                 /* Set the volume as not constant */
                 isConst = 0;
                 /* Read the following number */
@@ -730,6 +747,44 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT(rv == SYNTH_OK);
             SYNTH_ASSERT_ERR(tmp < SYNTH_MAX_WAVE, SYNTH_INVALID_WAVE);
             pParser->wave = tmp;
+        } break;
+        case T_SET_ENVELOPE: {
+            struct stSynthVolume newVol;
+            int i;
+
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_OPEN_BRACKET);
+
+            /* Since the envelope is simply a bunch of ints, parse it as such */
+            i = 0;
+            while (i < sizeof(newVol) / sizeof(int) - 2) {
+                int *pInt = (int*)&newVol;
+
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+                SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+                rv = synthLexer_getValuei(&pInt[i+2], &(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
+                /* There must be a ',' between each number (except the last) */
+                if (i < sizeof(newVol) / sizeof(int) - 3) {
+                    rv = synthLexer_getToken(&(pCtx->lexCtx));
+                    SYNTH_ASSERT(rv == SYNTH_OK);
+
+                    SYNTH_ASSERT_TOKEN(T_COMMA);
+                }
+                i++;
+            }
+
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
+
+            /* Initialize/Search the volume */
+            rv = synthVolume_getEnvelope(&(pParser->volume), pCtx, &newVol);
+            SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         default: {
             SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
@@ -1018,10 +1073,48 @@ __err:
     return rv;
 }
 
+
+/**
+ * Setup the audio track with the new evenlope mode.
+ *
+ * Parsing rule: newEnv = T_ENABLE_NEW_ENVELOPE?
+ *
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx    The synthesizer context
+ * @param  [ in]pAudio  The audio
+ * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
+ */
+static synth_err synthParser_newEnvelope(synthParserCtx *pParser, synthCtx *pCtx,
+        synthAudio *pAudio) {
+    synth_err rv;
+    synth_token token;
+
+    /* Retrieve the current token */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    if (token == T_ENABLE_NEW_ENVELOPE) {
+        pAudio->useNewEnvelope = SYNTH_TRUE;
+        pParser->useNewEnvelope = SYNTH_TRUE;
+
+        /* Read the next token */
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    rv = SYNTH_OK;
+__err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
+    return rv;
+}
+
 /**
  * Parse the currently loaded file into an audio
  * 
- * Parsing rule: T_MML bmp tracks
+ * Parsing rule: T_MML bmp newEnv tracks
  * 
  * This function uses a lexer to break the file into tokens, as it does
  * retrieve track, notes etc from the main synthesizer context
@@ -1049,12 +1142,19 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     /* Set the time signature */
     pAudio->timeSignature = pParser->timeSignature;
 
+    /* Set the default envelope */
+    pParser->useNewEnvelope = SYNTH_FALSE;
+
     /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Check that its actually a MML song */
     rv = synthParser_mml(pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Configure with the new envelope (optional) */
+    rv = synthParser_newEnvelope(pParser, pCtx, pAudio);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Parse the bpm (optional token) */

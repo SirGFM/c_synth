@@ -44,6 +44,16 @@ synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp);
 synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin);
 
 /**
+ * Retrieve a fully enveloped volume
+ *
+ * @param  [out]pVol      The index of the volume
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pEnvelope The enveloping amplitudes (in the range [0, 255])
+ */
+synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
+        synthVolume *pEnvelope);
+
+/**
  * Retrieve the volume at a given percentage of a note
  * 
  * @param  [out]pAmp The note's amplitude
@@ -52,6 +62,26 @@ synth_err synthVolume_getLinear(int *pVol, synthCtx *pCtx, int ini, int fin);
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
 synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc);
+
+/**
+ * Retrieve the volume at a given percentage of a note
+ *
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the envelope state (in the range [0, 1024))
+ * @param  [ in]env  The evenlope state of the note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
+        int perc, synth_envelope env);
+
+/**
+ * Check whether a volume is muted for a given envelope state.
+ *
+ * @param  [ in]pVol The volume
+ * @param  [ in]env  The evenlope state of the note
+ */
+synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env);
 
 #endif /* __SYNTH_VOLUME_H__ */
 

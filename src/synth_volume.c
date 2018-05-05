@@ -110,9 +110,14 @@ synth_err synthVolume_getConst(int *pVol, synthCtx *pCtx, int amp) {
         rv = synthVolume_init(&pVolume, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        /* Set both values to the same, since this is a constant volume */
+        /* Set the volume in such a way that it mimics the older behvaiour */
         pVolume->ini = amp;
         pVolume->fin = amp;
+        pVolume->preAttack = 0;
+        pVolume->hold = amp;
+        pVolume->decay = amp;
+        pVolume->release = 0;
+        pVolume->postRelease = 0;
 
         /* Retrieve the volume's index */
         *pVol = pCtx->volumes.used - 1;
@@ -196,6 +201,68 @@ __err:
 }
 
 /**
+ * Retrieve a fully enveloped volume
+ *
+ * @param  [out]pVol      The index of the volume
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]pEnvelope The enveloping amplitudes (in the range [0, 255])
+ */
+synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
+        synthVolume *pEnvelope) {
+    int i;
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pEnvelope, SYNTH_BAD_PARAM_ERR);
+
+    /* Clamp the amplitude to the valid range and convert it to 16 bits */
+    for (i = 0; i < sizeof(synthVolume) / sizeof(int); i++) {
+        int *pInt = (int*)pEnvelope;
+
+        if (pInt[i] < 0) {
+            pInt[i] = 0;
+        }
+        else if (pInt[i] > 128) {
+            pInt[i] = 128;
+        }
+
+        pInt[i] <<= 8;
+    }
+
+    /* Clean the return, so we now if anything was found */
+    *pVol = 0;
+
+    /* Search for the requested volume through the existing ones */
+    for (i = 0; i < pCtx->volumes.used; i++) {
+        if (memcmp(pEnvelope, pCtx->volumes.buf.pVolumes + i,
+                sizeof(synthVolume) == 0)) {
+            /* If a volume matched, simply return it */
+            *pVol = i;
+            break;
+        }
+    }
+
+    /* If the volume wasn't found, create a new one */
+    if (*pVol == 0) {
+        synthVolume *pVolume;
+
+        rv = synthVolume_init(&pVolume, pCtx);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        memcpy(pVolume, pEnvelope, sizeof(synthVolume));
+
+        /* Retrieve the volume's index */
+        *pVol = pCtx->volumes.used - 1;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Retrieve the volume at a given percentage of a note
  * 
  * @param  [out]pAmp The note's amplitude
@@ -220,5 +287,99 @@ synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc) {
     rv = SYNTH_OK;
 __err:
     return rv;
+}
+
+/**
+ * Retrieve the volume at a given percentage of a note
+ *
+ * @param  [out]pAmp The note's amplitude
+ * @param  [ in]pVol The volume
+ * @param  [ in]perc Percentage into the envelope state (in the range [0, 1024))
+ * @param  [ in]env  The evenlope state of the note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
+        int perc, synth_envelope env) {
+    synth_err rv;
+    int amp, ini, fin;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pAmp, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVol, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(env <= ENV_MAX, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(perc >= 0 && perc <= 1024, SYNTH_BAD_PARAM_ERR);
+
+    switch (env) {
+        case ENV_ATTACK:
+            ini = pVol->preAttack;
+            fin = pVol->hold;
+        break;
+        case ENV_HOLD:
+            ini = pVol->hold;
+            fin = pVol->decay;
+        break;
+        case ENV_DECAY:
+            ini = pVol->decay;
+            fin = pVol->release;
+        break;
+        case ENV_RELEASE:
+            ini = pVol->release;
+            fin = pVol->postRelease;
+        break;
+        default: { /* Avoids a warning */ }
+    }
+
+    /* Calculate the current amplitude */
+    amp = ini * (1024 - perc);
+    amp = amp + fin * perc;
+    amp = amp >> 10;
+    *pAmp = amp & 0xffff;
+    /* If the previous didn't work out (because of integer division), use the
+     * following */
+    /* *pAmp = (pVol->ini + (pVol->fin - pVol->ini) * (perc / 1024.0f)) &
+     *         0xff; */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Check whether a volume is muted for a given envelope state.
+ *
+ * @param  [ in]pVol The volume
+ * @param  [ in]env  The evenlope state of the note
+ */
+synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env) {
+    int ini, fin;
+
+    if (!pVol) {
+        return SYNTH_FALSE;
+    }
+
+    switch (env) {
+        case ENV_ATTACK:
+            ini = pVol->preAttack;
+            fin = pVol->hold;
+        break;
+        case ENV_HOLD:
+            ini = pVol->hold;
+            fin = pVol->decay;
+        break;
+        case ENV_DECAY:
+            ini = pVol->decay;
+            fin = pVol->release;
+        break;
+        case ENV_RELEASE:
+            ini = pVol->release;
+            fin = pVol->postRelease;
+        break;
+        default: { /* Avoids a warning */ }
+    }
+
+    if (ini == fin && ini == 0) {
+        return SYNTH_TRUE;
+    }
+    return SYNTH_FALSE;
 }
 

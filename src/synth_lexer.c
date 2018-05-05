@@ -38,6 +38,8 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "comma",
     "done",
     "note extension",
+    "enable new envelope",
+    "set envelope",
     "unknown token"
 };
 
@@ -476,28 +478,93 @@ __err:
  * @param  [ in]token    The gotten token, on success
  * @return               SYNTH_TRUE, SYNTH_FALSE
  */
+static synth_bool synthLexer_charIsToken(synthLexCtx *pCtx, char expected,
+        synth_token token) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+
+    /* Read the current character */
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+    /* Check if it's what was expected */
+    if (c != expected) {
+        synthLexer_ungetChar(pCtx, c);
+        rv = SYNTH_FALSE;
+    }
+    else {
+        rv = SYNTH_TRUE;
+        pCtx->lastToken = token;
+    }
+
+__err:
+    return rv;
+}
 #define SYNTHLEXER_ISTOKEN(func, expected, token) \
   static synth_bool func(synthLexCtx *pCtx) { \
-    synth_bool rv; \
-    synth_err srv; \
-    char c; \
-\
-    /* Read the current character */ \
-    srv = synthLexer_getChar(&c, pCtx); \
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE); \
-\
-    /* Check if it's what was expected */ \
-    if (c != expected) { \
-        synthLexer_ungetChar(pCtx, c); \
-        rv = SYNTH_FALSE; \
-    } \
-    else { \
-        rv = SYNTH_TRUE; \
-        pCtx->lastToken = token; \
-    } \
-\
-__err: \
-    return rv; \
+    return synthLexer_charIsToken(pCtx, expected, token); \
+  }
+
+/**
+ * Check if the current stream is a string token and set its value
+ *
+ * The stream isn't checked to be at its start
+ *
+ * @param  [ in]func     The name of the functions
+ * @param  [ in]expected The expected character
+ * @param  [ in]token    The gotten token, on success
+ * @return               SYNTH_TRUE, SYNTH_FALSE
+ */
+static synth_bool synthLexer_constStrIsToken(synthLexCtx *pCtx, char const * target,
+        int len, synth_token token) {
+    synth_bool rv;
+    synth_err srv;
+    char c;
+    int i;
+
+    i = 0;
+
+    /* Find the first valid (not blank, comment etc) */
+    srv = synthLexer_getChar(&c, pCtx);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+    /* Return it to the stream */
+    srv = synthLexer_ungetChar(pCtx, c);
+    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+    while (i < len) {
+        /* Get the current character, without ignoring blank and whatnot */
+        srv = synthLexer_getRawChar(&c, pCtx);
+        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
+
+        /* Check that it's of the expected pattern */
+        SYNTH_ASSERT_ERR(c == target[i], SYNTH_FALSE);
+
+        /* Go to the next char */
+        i++;
+    }
+
+    pCtx->lastToken = token;
+    rv = SYNTH_TRUE;
+  __err:
+    if (rv != SYNTH_TRUE && ((srv != SYNTH_EOF && srv != SYNTH_EOS) || i > 0)) {
+        /* On error, return the last char (that didn't belong to the pattern */
+        synthLexer_ungetChar(pCtx, c);
+
+        /* Then, return everything that belonged partially to the pattern */
+        while (i > 0) {
+            i--;
+            synthLexer_ungetChar(pCtx, target[i]);
+        }
+    }
+
+    return rv;
+}
+
+#define SYNTHLEXER_STR_ISTOKEN(func, expected, token) \
+  static synth_bool func(synthLexCtx *pCtx) { \
+    return synthLexer_constStrIsToken(pCtx, expected, sizeof(expected) - 1, \
+            token); \
   }
 
 SYNTHLEXER_ISTOKEN(synthLexer_isSetBPM,       't', T_SET_BPM)
@@ -518,58 +585,9 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetWave,      'w', T_SET_WAVE)
 SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,     ',', T_COMMA)
 SYNTHLEXER_ISTOKEN(synthLexer_isExtend,       '^', T_EXTEND)
 
-/**
- * Check if the current stream is a valid MML (i.e., if it starts with "MML")
- * 
- * The stream isn't checked to be at its start
- * 
- * @param  [ in]pCtx The contex
- * @return           SYNTH_TRUE, SYNTH_FALSE
- */
-static synth_bool synthLexer_isMML(synthLexCtx *pCtx) {
-    synth_bool rv;
-    synth_err srv;
-    char c;
-    char target[] = "MML";
-    int i;
-
-    i = 0;
-
-    /* Find the first valid (not blank, comment etc) */
-    srv = synthLexer_getChar(&c, pCtx);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
-    /* Return it to the stream */
-    srv = synthLexer_ungetChar(pCtx, c);
-    SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
-
-    while (i < sizeof(target) - 1) {
-        /* Get the current character, without ignoring blank and whatnot */
-        srv = synthLexer_getRawChar(&c, pCtx);
-        SYNTH_ASSERT_ERR(srv == SYNTH_OK, SYNTH_FALSE);
-
-        /* Check that it's of the expected pattern */
-        SYNTH_ASSERT_ERR(c == target[i], SYNTH_FALSE);
-
-        /* Go to the next char */
-        i++;
-    }
-
-    pCtx->lastToken = T_MML;
-    rv = SYNTH_TRUE;
-__err:
-    if (rv != SYNTH_TRUE && ((srv != SYNTH_EOF && srv != SYNTH_EOS) || i > 0)) {
-        /* On error, return the last char (that didn't belong to the pattern */
-        synthLexer_ungetChar(pCtx, c);
-
-        /* Then, return everything that belonged partially to the pattern */
-        while (i > 0) {
-            i--;
-            synthLexer_ungetChar(pCtx, target[i]);
-        }
-    }
-
-    return rv;
-}
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isMML,          "MML"   , T_MML)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewEnvelope,  "NEWENV", T_ENABLE_NEW_ENVELOPE)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope,     "ENV"   , T_SET_ENVELOPE)
 
 /**
  * Check if the current octave should be increased or decreased, through the
@@ -917,7 +935,9 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isNumber(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetComma(pCtx) == SYNTH_TRUE ||
             synthLexer_isExtend(pCtx) == SYNTH_TRUE ||
-            synthLexer_didFinish(pCtx) == SYNTH_TRUE) {
+            synthLexer_didFinish(pCtx) == SYNTH_TRUE ||
+            synthLexer_isNewEnvelope(pCtx) == SYNTH_TRUE ||
+            synthLexer_isEnvelope(pCtx) == SYNTH_TRUE) {
         rv = SYNTH_OK;
     }
     else {
