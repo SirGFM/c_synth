@@ -1,8 +1,6 @@
-MML//=======================================//
+mml2//======================================//
 //       JJAT's "Tension goes up" song      //
 //==========================================//
-
-NEWENV
 
 t90
 
@@ -32,7 +30,7 @@ c+ d+
 
 // ---- melody-1 -----------------------------------------------------
 
-w0 o5 l16 k18 q20 h35 ENV(64, 26, 32, 14, 14) $
+w0 o5 l16 k18 q20 h35 env(64, 26, 32, 14, 14) $
 
 <c> f <c> f <c> f <c> f <c+> f <c+> f <c+> f <c+> f
 <c> f <c> f <c> f <c> f a+ f a+ f a+ f a+ <c>
@@ -52,7 +50,7 @@ g+ f g+ f g+ f g+ f
 
 // ---- closed cymbal ------------------------------------------------
 
-w5 l16 k0 q1 h90 ENV(90, 90, 90, 30, 30) $
+w5 l16 k0 q1 h90 env(90, 90, 90, 30, 30) $
 
     r8  aa  ar  ra  l32 r8 rraa r8 rraa
 l16 r8  ra  ra  ra      r8  ar  ar  ar
@@ -70,7 +68,7 @@ l32 r8 aarr r8 aarr l16 r8  aa  r8  aa
 
 // ---- drum kick bass -----------------------------------------------
 
-w12 l32 o6 k0 q30 h70 ENV(60, 55, 25, 18, 18) $
+w12 l32 o6 k0 q30 h70 env(60, 55, 25, 18, 18) $
 
 bbbr rbrb rrbr brrr bbbr brrr brrr brrr
 bbbr brrr brrr brrr bbbr rrrr rrrr rrrr
