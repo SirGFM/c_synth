@@ -224,16 +224,9 @@ struct stSynthLexCtx {
     synthSource source;
 };
 
-/** Define the context for the parser */
-struct stSynthParserCtx {
-    /** Expected token (only valid on error) */
-    synth_token expected;
-    /** Gotten token (only valid on error) */
-    synth_token gotten;
-    /** Whether an error occured or note */
-    synth_bool errorFlag;
-    /** Which error code was raised */
-    synth_err errorCode;
+/** Controler for outputting stuff with the parser. Mostly used to copy the
+ * current state in a macro */
+struct stSynthParserCtl {
     /** Current octave */
     int octave;
     /** Default duration (when not specified) */
@@ -248,14 +241,28 @@ struct stSynthParserCtx {
     int release;
     /** Current pan */
     int pan;
+    /** Current wave */
+    synth_wave wave;
+};
+
+/** Define the context for the parser */
+struct stSynthParserCtx {
+    /** Expected token (only valid on error) */
+    synth_token expected;
+    /** Gotten token (only valid on error) */
+    synth_token gotten;
+    /** Whether an error occured or note */
+    synth_bool errorFlag;
+    /** Which error code was raised */
+    synth_err errorCode;
     /** Compass' time signature in binary fixed point notation */
     int timeSignature;
     /** Length of the current compass in binary fixed point notation */
     int curCompassLength;
-    /** Current wave */
-    synth_wave wave;
     /** Whether the new envelope mode should be used */
     synth_bool useNewEnvelope;
+    /** Controls how notes are parsed */
+    struct stSynthParserCtl ctl;
 };
 
 /** Struct with data about the currently rendering song/track */

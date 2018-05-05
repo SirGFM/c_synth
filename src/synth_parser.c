@@ -66,18 +66,18 @@ static char __synthParser_errorMsg[TOKEN_MAX_STR * 2 +
 static synth_err synthParser_setDefault(synthParserCtx *pParser, synthCtx *pCtx) {
     synth_err rv;
 
-    pParser->octave = 4;
-    pParser->duration = 4;
-    pParser->attack = 0;
-    pParser->keyoff = 75;
-    pParser->release = 0;
-    pParser->pan = 50;
-    pParser->wave = W_SQUARE;
+    pParser->ctl.octave = 4;
+    pParser->ctl.duration = 4;
+    pParser->ctl.attack = 0;
+    pParser->ctl.keyoff = 75;
+    pParser->ctl.release = 0;
+    pParser->ctl.pan = 50;
+    pParser->ctl.wave = W_SQUARE;
     /* Set the time signature to a whole note ('brevissima'); This should work
      * for any simple time signature (1/4, 2/4, 4/4 etc) */
     pParser->timeSignature = 1 << 6;
     pParser->curCompassLength = 0;
-    rv = synthVolume_getConst(&(pParser->volume), pCtx, 64);
+    rv = synthVolume_getConst(&(pParser->ctl.volume), pCtx, 64);
     SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
     rv = SYNTH_OK;
@@ -380,19 +380,19 @@ static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
     /* Initialize the note */
-    rv = synthNote_setPan(pNote, pParser->pan);
+    rv = synthNote_setPan(pNote, pParser->ctl.pan);
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setOctave(pNote, octave);
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setNote(pNote, note);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setWave(pNote, pParser->wave);
+    rv = synthNote_setWave(pNote, pParser->ctl.wave);
     SYNTH_ASSERT(rv == SYNTH_OK);
     rv = synthNote_setDuration(pNote, pCtx, duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (doExtend == 1) {
         /* First part of extended note: do attack only */
-        rv = synthNote_setKeyoff(pNote, pParser->attack, 100, 100);
+        rv = synthNote_setKeyoff(pNote, pParser->ctl.attack, 100, 100);
     }
     else if (doExtend == 2) {
         /* Seconds part of extended note: play it fully */
@@ -400,15 +400,16 @@ static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
     }
     else if (doExtend == 3) {
         /* Last part of extended note: set keyoff and release */
-        rv = synthNote_setKeyoff(pNote, 0, pParser->keyoff, pParser->release);
+        rv = synthNote_setKeyoff(pNote, 0, pParser->ctl.keyoff,
+                pParser->ctl.release);
     }
     else if (doExtend == 0) {
         /* Not extended note: play it normally */
-        rv = synthNote_setKeyoff(pNote, pParser->attack, pParser->keyoff,
-                pParser->release);
+        rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
+                pParser->ctl.keyoff, pParser->ctl.release);
     }
     SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setVolume(pNote, pParser->volume);
+    rv = synthNote_setVolume(pNote, pParser->ctl.volume);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Update the position within the compass */
@@ -456,7 +457,7 @@ static synth_err synthParser_getDuration(int *pDuration,
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
     else {
-        duration = pParser->duration;
+        duration = pParser->ctl.duration;
     }
 
     /* If there are any '.', add half the duration every time */
@@ -512,8 +513,8 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     SYNTH_ASSERT_TOKEN(T_NOTE);
 
     /* Set initial duration to whatever the current default is */
-    duration = pParser->duration;
-    octave = pParser->octave;
+    duration = pParser->ctl.duration;
+    octave = pParser->ctl.octave;
     doExtend = 0;
 
     /* Store the note to be played */
@@ -633,7 +634,8 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the default duration for notes */
-            rv = synthLexer_getValuei(&(pParser->duration), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.duration),
+                    &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_OCTAVE: {
@@ -643,7 +645,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the octave for notes */
-            rv = synthLexer_getValuei(&(pParser->octave), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.octave), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_REL_OCTAVE: {
@@ -653,7 +655,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             /* Increase or decrease the octave */
             rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
-            pParser->octave += tmp;
+            pParser->ctl.octave += tmp;
         } break;
         case T_SET_VOLUME: {
             int isConst, vol1;
@@ -712,13 +714,13 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
                 SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
 
                 /* Initialize/Search the volume */
-                rv = synthVolume_getLinear(&(pParser->volume), pCtx, vol1,
+                rv = synthVolume_getLinear(&(pParser->ctl.volume), pCtx, vol1,
                         vol2);
                 SYNTH_ASSERT(rv == SYNTH_OK);
             }
             else {
                 /* Simply initialize/search the constant volume */
-                rv = synthVolume_getConst(&(pParser->volume), pCtx, vol1);
+                rv = synthVolume_getConst(&(pParser->ctl.volume), pCtx, vol1);
                 SYNTH_ASSERT(rv == SYNTH_OK);
             }
             SYNTH_ASSERT(rv == SYNTH_OK);
@@ -740,7 +742,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the keyoff value */
-            rv = synthLexer_getValuei(&(pParser->attack), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.attack), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_KEYOFF: {
@@ -750,7 +752,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the keyoff value */
-            rv = synthLexer_getValuei(&(pParser->keyoff), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.keyoff), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_RELEASE: {
@@ -760,7 +762,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the keyoff value */
-            rv = synthLexer_getValuei(&(pParser->release), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.release), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_PAN: {
@@ -770,7 +772,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the pan */
-            rv = synthLexer_getValuei(&(pParser->pan), &(pCtx->lexCtx));
+            rv = synthLexer_getValuei(&(pParser->ctl.pan), &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         case T_SET_WAVE: {
@@ -783,7 +785,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
             SYNTH_ASSERT(rv == SYNTH_OK);
             SYNTH_ASSERT_ERR(tmp < SYNTH_MAX_WAVE, SYNTH_INVALID_WAVE);
-            pParser->wave = tmp;
+            pParser->ctl.wave = tmp;
         } break;
         case T_SET_ENVELOPE: {
             struct stSynthVolume newVol;
@@ -820,7 +822,7 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_CLOSE_BRACKET);
 
             /* Initialize/Search the volume */
-            rv = synthVolume_getEnvelope(&(pParser->volume), pCtx, &newVol);
+            rv = synthVolume_getEnvelope(&(pParser->ctl.volume), pCtx, &newVol);
             SYNTH_ASSERT(rv == SYNTH_OK);
         } break;
         default: {
@@ -962,13 +964,14 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
                 *pNumNotes += numNotes;
             } break;
-            case T_SET_LOOP_START:
+            case T_SET_LOOP_START: {
                 /* Recursively parse a sub-sequence */
                 rv = synthParser_loop(pNumNotes, pParser, pCtx);
-            break;
-            default:
+            } break;
+            default: {
                 /* Modify the current context in some way */
                 rv = synthParser_mod(pParser, pCtx);
+            }
         }
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
