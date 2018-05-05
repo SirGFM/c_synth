@@ -1,0 +1,107 @@
+MML//=======================================//
+//       JJAT's "Tension goes up" song      //
+//==========================================//
+
+t90
+
+// == RENDERING NOTE =================================================
+//  The bass line repeats 4 times
+// ===================================================================
+
+// ---- bass-1 -------------------------------------------------------
+w1 o2 l2 k2 q80 h87 v15 $
+
+[
+a+ g+
+f+ g+
+]4
+
+; // -- bass-1 -------------------------------------------------------
+
+// ---- bass-2 -------------------------------------------------------
+w2 o3 l2 k7 q90 h95 v13 $
+
+[
+f d+
+c+ d+
+]4
+
+; // -- bass-2 -------------------------------------------------------
+
+// ---- melody-1 -----------------------------------------------------
+
+w0 o5 l16 k0 q90 h90 v15 $
+
+<c> f <c> f <c> f <c> f <c+> f <c+> f <c+> f <c+> f
+<c> f <c> f <c> f <c> f a+ f a+ f a+ f a+ <c>
+
+<c+> f <c> f <c+> f <c> f <d+> f <d+> f <d+> f <d+> f
+<f> f <d+> f <c+> f <d+> f <c> f <c> f <c> f <c> f
+
+a+ f <c> f <c+> f <d+> f g+ f g+ f g+ f g+ f
+a+ f a+ f a+ f a+ f <c> f <c> f <c> f <c> f
+
+a+ f <c> f <c+> f <d+> f
+g+ f g+ f g+ f g+ f
+<f> f <d+> f <c+> f <d+> f
+<c> f <c> f <c> f <c> f
+
+; // -- melody-1 -----------------------------------------------------
+
+// ---- melody-2 -----------------------------------------------------
+
+w1 o5 l16 k10 q95 h95 v(12, 0) $
+
+<c> f <c> f <c> f <c> f <c+> f <c+> f <c+> f <c+> f
+<c> f <c> f <c> f <c> f a+ f a+ f a+ f a+ <c>
+
+<c+> f <c> f <c+> f <c> f <d+> f <d+> f <d+> f <d+> f
+<f> f <d+> f <c+> f <d+> f <c> f <c> f <c> f <c> f
+
+a+ f <c> f <c+> f <d+> f g+ f g+ f g+ f g+ f
+a+ f a+ f a+ f a+ f <c> f <c> f <c> f <c> f
+
+a+ f <c> f <c+> f <d+> f
+g+ f g+ f g+ f g+ f
+<f> f <d+> f <c+> f <d+> f
+<c> f <c> f <c> f <c> f
+
+; // -- melody-2 -----------------------------------------------------
+
+// ---- closed cymbal ------------------------------------------------
+
+w5 l32 k5 q50 h90 v(90, 60) $
+
+rrrr arar arrr rrar rrrr rraa rrrr rraa
+rrrr rrar rrar rrar rrrr arrr arrr arrr
+
+rrrr aaar rrrr aaar rrrr rrrr arrr arrr
+rrrr rrar rrar rrar rrrr rrrr rrar arrr
+
+rrrr aarr rrrr aarr rrrr arar rrrr arar
+rrrr arrr arrr arrr rrrr arrr arrr arrr
+
+rrrr aarr rrrr aarr rrrr arar rrrr arar
+rrrr arrr arrr arrr rrrr arar arar arar
+
+; // -- closed cymbal ------------------------------------------------
+
+// ---- drum kick bass -----------------------------------------------
+
+w12 l32 o5 k0 q0 h70 v(35, 80)
+
+bbbr rbrb rrbr brrr bbbr brrr brrr brrr
+bbbr brrr brrr brrr bbbr rrrr rrrr rrrr
+
+bbbr rrrr bbbr rrrr bbbb bbbb rrrr rrrr
+bbbr brrr brrr brrr bbbb bbbb rrrr rrrr
+
+bbrr rrrr bbrr rrrr bbbr rrrr bbbr rrrr
+bbbr rrrr rrrr rrrr bbbr rrrr rrrr rrrr
+
+bbrr rrrr bbrr rrrr bbbr rrrr bbbr rrrr
+bbbr rrrr rrrr rrrr bbbb rbrb rbrr rrrr
+
+; // -- drum kick bass -----------------------------------------------
+
+w0 v0 a1

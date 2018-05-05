@@ -383,6 +383,242 @@ SYNTHNOTE_GETTER(synthNote_getRepeat, int, len, 1)
  */
 SYNTHNOTE_GETTER(synthNote_getJumpPosition, int, jumpPosition, 1)
 
+static synth_err synthNote_renderBestNoise(char *pBuf, synthNote *pNote,
+        synthCtx *pCtx, synthBufMode mode, int synthFreq, int duration) {
+    float attack, keyoff, release;
+    int k, noteFreq, numBytes, spc;
+    synthVolume *pVolume;
+    synth_err rv;
+
+    /* Retrieve the note's volume */
+    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->volume]);
+
+    /* Calculate the number of bytes per samples */
+    numBytes = 1;
+    if (mode & SYNTH_16BITS) {
+        numBytes = 2;
+    }
+    if (mode & SYNTH_2CHAN) {
+        numBytes *= 2;
+    }
+
+    /* Clear the note */
+    memset(pBuf, 0x0, duration * numBytes);
+    /* If it's a rest, simply return (since it was already cleared */
+    if (pNote->note == N_REST) {
+        rv = SYNTH_OK;
+        goto __err;
+    }
+
+    /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
+    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
+    /* Calculate how many 'samples-per-cycle' there are for the Note's note */
+    spc = synthFreq / noteFreq;
+
+    /* Calculate the note asdasd in samples */
+    attack = duration * pNote->attack / 100.0f;
+    keyoff = duration * pNote->keyoff / 100.0f;
+    release = duration * pNote->release / 100.0f;
+
+    /* Synthesize the note audio */
+    k = 0;
+    while (k < (int)release) {
+        unsigned int rng;
+        int i, spc2;
+        enum enSynthWave wave;
+
+        rv = synthPRNG_getUint(&rng, &(pCtx->prngCtx));
+        SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+        /* Change the cycle by using bits 8-2 */
+        if (pNote->wave == W_NOISE_BEST_BASS) {
+            spc2 = spc * (1 + ((rng >> 5) & 0x7)) / (1 + ((rng >> 2) & 0x3));
+        }
+        else if (pNote->wave == W_NOISE_BEST_HIGHPITCH) {
+            spc2 = spc * (1 + ((rng >> 6) & 0x3)) / (1 + ((rng >> 2) & 0x17));
+        }
+        if (k + spc2 > release) {
+            spc2 = release - k;
+        }
+
+        /* Check whether this cycle should be on or off (based on the 16th bit) */
+        if (rng & 0x8000) {
+            k += spc2;
+            continue;
+        }
+        /* Also, select the wave from the 2 least significant bits */
+        wave = (enum enSynthWave)(rng & 0x0003);
+
+        i = 0;
+        while (i < spc2) {
+            char pan;
+            int amp, j;
+            float clampAmp, perc, waveAmp;
+
+            /* Retrieve the current amplitude */
+            rv = synthVolume_getAmplitude(&amp, pVolume, (k + i) / (float)duration *
+                    1024);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* TODO Rewrite this loop without using floats */
+
+            /* Calculate the percentage of the note into the current cycle */
+            perc = ((float)i) / spc2;
+
+            /* Defines the value that encapsulates the note */
+            if ((i + k) < attack) {
+                /* Varies the value from 0.0f -> 1.0f */
+                clampAmp = (i + k) / attack;
+            }
+            else if ((i + k) > keyoff) {
+                /* Varies the value from 1.0f -> 0.0f */
+                clampAmp = 1.0f - ((i + k) - keyoff) / (release - keyoff);
+            }
+            else {
+                clampAmp = 1.0f;
+            }
+
+            /* Retrieve the note panning (in case it uses 2 channels) */
+            rv = synthNote_getPan(&pan, pNote);
+            SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
+
+            /* Calculate the sample's actual index */
+            j = (k + i) * numBytes;
+
+            /* Retrieve the sample's amplitude, according to the note's wave form.
+             * This amplitude is calculated in the range [-1.0f, 1.0f], so it can
+             * correctly be downsampled for 8 and 16 bits amplitudes (as well as
+             * signed and unsigned) */
+            switch (wave) {
+                case W_SQUARE: {
+                    /* 50% duty cycle */
+                    if (perc < 0.5f) {
+                        waveAmp = 1.0f;
+                    }
+                    else {
+                        if (mode & SYNTH_SIGNED) {
+                            waveAmp = -1.0f;
+                        }
+                        else {
+                            waveAmp = 0.0f;
+                        }
+                    }
+                } break;
+                case W_PULSE_12_5: {
+                    /* 12.5% duty cycle */
+                    if (perc < 0.125f) {
+                        waveAmp = 1.0f;
+                    }
+                    else {
+                        if (mode & SYNTH_SIGNED) {
+                            waveAmp = -1.0f;
+                        }
+                        else {
+                            waveAmp = 0.0f;
+                        }
+                    }
+                } break;
+                case W_PULSE_25: {
+                    /* 25% duty cycle */
+                    if (perc < 0.25f) {
+                        waveAmp = 1.0f;
+                    }
+                    else {
+                        if (mode & SYNTH_SIGNED) {
+                            waveAmp = -1.0f;
+                        }
+                        else {
+                            waveAmp = 0.0f;
+                        }
+                    }
+                } break;
+                case W_PULSE_75: {
+                    /* 75% duty cycle */
+                    if (perc < 0.75f) {
+                        waveAmp = 1.0f;
+                    }
+                    else {
+                        if (mode & SYNTH_SIGNED) {
+                            waveAmp = -1.0f;
+                        }
+                        else {
+                            waveAmp = 0.0f;
+                        }
+                    }
+                } break;
+                default: { waveAmp = 0.0f; }
+            }
+
+            /* "Fix" the note amplitude */
+            waveAmp *= clampAmp;
+
+            /* Convert the amplitude to the desired format and store it at the
+             * buffer */
+            switch (mode) {
+                case SYNTH_1CHAN_U8BITS:
+                case SYNTH_1CHAN_8BITS: {
+                    /* Simply store the calculated value; The amplitude is
+                     * lessened to only 8 bits */
+                    pBuf[j] = (amp >> 8) * waveAmp;
+                } break;
+                case SYNTH_1CHAN_U16BITS:
+                case SYNTH_1CHAN_16BITS: {
+                    int amp16;
+
+                    /* Simply store the calculated value */
+                    amp16 = amp  * waveAmp;
+
+                    /* Simply store the calculated value; Storing the lower bits on
+                     * byte 0 and the higher ones on bit 1 */
+                    pBuf[j] = amp16 & 0xff;
+                    pBuf[j + 1] = (amp16 >> 8) & 0xff;
+                } break;
+                case SYNTH_2CHAN_U8BITS:
+                case SYNTH_2CHAN_8BITS: {
+                    char lAmp8, rAmp8;
+
+                    /* Calculate the amplitude on both channels, 0 means left only
+                     * and 100 means right only */
+                    lAmp8 = (amp >> 8) * waveAmp * ((100 - pan) / 100.0f);
+                    rAmp8 = (amp >> 8) * waveAmp * (pan / 100.0f);
+
+                    pBuf[j] = lAmp8 & 0xff;
+                    pBuf[j + 1] = rAmp8 & 0xff;
+                } break;
+                case SYNTH_2CHAN_U16BITS:
+                case SYNTH_2CHAN_16BITS: {
+                    int lAmp16, rAmp16;
+
+                    /* Calculate the amplitude on both channels, 0 means left only
+                     * and 100 means right only */
+                    lAmp16 = amp  * waveAmp * ((100 - pan) / 100.0f);
+                    rAmp16 = amp  * waveAmp * (pan / 100.0f);
+
+                    /* Store the left channel on bytes 0 (low) and 1 (high) and the
+                     * right one on 2 (low) and 3 (high) */
+                    pBuf[j] = lAmp16 & 0xff;
+                    pBuf[j + 1] = (lAmp16 >> 8) & 0xff;
+                    pBuf[j + 2] = rAmp16 & 0xff;
+                    pBuf[j + 3] = (rAmp16 >> 8) & 0xff;
+                } break;
+                default : { /* Avoids warnings */ }
+            }
+
+            /* Increase, since we are looping through the samples (and not through
+             * the bytes) */
+            i++;
+        }
+
+        k += spc2;
+    }
+    /* The silence (after the key was released) was already cleared, so simply
+     * return */
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 /**
  * Render a note into a buffer
  * 
@@ -407,6 +643,12 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    if (pNote->wave == W_NOISE_BEST_BASS ||
+            pNote->wave == W_NOISE_BEST_HIGHPITCH) {
+        return synthNote_renderBestNoise(pBuf, pNote, pCtx, mode, synthFreq,
+                duration);
+    }
 
     /* Retrieve the note's volume */
     pVolume = &(pCtx->volumes.buf.pVolumes[pNote->volume]);
