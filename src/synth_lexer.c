@@ -38,8 +38,8 @@ static char *__synthLexer_tokenString[TK_MAX + 1] = {
     "comma",
     "done",
     "note extension",
-    "enable new envelope",
     "set envelope",
+    "new mml",
     "unknown token"
 };
 
@@ -586,8 +586,8 @@ SYNTHLEXER_ISTOKEN(synthLexer_isSetComma,     ',', T_COMMA)
 SYNTHLEXER_ISTOKEN(synthLexer_isExtend,       '^', T_EXTEND)
 
 SYNTHLEXER_STR_ISTOKEN(synthLexer_isMML,          "MML"   , T_MML)
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewEnvelope,  "NEWENV", T_ENABLE_NEW_ENVELOPE)
-SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope,     "ENV"   , T_SET_ENVELOPE)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isNewMML,       "mml"   , T_NEW_MML)
+SYNTHLEXER_STR_ISTOKEN(synthLexer_isEnvelope,     "env"   , T_SET_ENVELOPE)
 
 /**
  * Check if the current octave should be increased or decreased, through the
@@ -914,6 +914,8 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
 
     /* Check if a valid token, and which, was found */
     if (synthLexer_isMML(pCtx) == SYNTH_TRUE ||
+            synthLexer_isNewMML(pCtx) == SYNTH_TRUE ||
+            synthLexer_isEnvelope(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetBPM(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetDuration(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetOctave(pCtx) == SYNTH_TRUE ||
@@ -935,9 +937,7 @@ synth_err synthLexer_getToken(synthLexCtx *pCtx) {
             synthLexer_isNumber(pCtx) == SYNTH_TRUE ||
             synthLexer_isSetComma(pCtx) == SYNTH_TRUE ||
             synthLexer_isExtend(pCtx) == SYNTH_TRUE ||
-            synthLexer_didFinish(pCtx) == SYNTH_TRUE ||
-            synthLexer_isNewEnvelope(pCtx) == SYNTH_TRUE ||
-            synthLexer_isEnvelope(pCtx) == SYNTH_TRUE) {
+            synthLexer_didFinish(pCtx) == SYNTH_TRUE) {
         rv = SYNTH_OK;
     }
     else {

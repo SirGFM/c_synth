@@ -199,6 +199,9 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             case SYNTH_BAD_LOOP_POINT: {
                 pError = "Loop point didn't sync with compass start";
             } break;
+            case SYNTH_BAD_VERSION: {
+                pError = "Invalid MML version";
+            } break;
             default: {
                 pError = "Unkown error";
             }
@@ -219,9 +222,11 @@ __err:
 /**
  * Retrieve the first token on the song
  * 
- * Parsing rule: T_MML
+ * Parsing rule: T_MML | T_NEW_MML T_NUMBER
  * 
- * This token doesn't produce any output, but it must be found before anything else
+ * This token doesn't produce any output, but it must be found before anything
+ * else. T_NEW_MML may be used to specify a newer MML version (e.g., one with
+ * macro and envelope support).
  * 
  * @param  [ in]pParser The parser context
  * @param  [ in]pCtx    The synthesizer context
@@ -229,9 +234,41 @@ __err:
  */
 static synth_err synthParser_mml(synthParserCtx *pParser, synthCtx *pCtx) {
     synth_err rv;
+    synth_token token;
 
-    /* Check that it's a MML token */
-    SYNTH_ASSERT_TOKEN(T_MML);
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    switch (token) {
+        case T_MML: {
+            pParser->useNewEnvelope = SYNTH_FALSE;
+        } break;
+        case T_NEW_MML: {
+            int val;
+
+            rv = synthLexer_getToken(&(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+            SYNTH_ASSERT_TOKEN(T_NUMBER);
+
+            rv = synthLexer_getValuei(&val, &(pCtx->lexCtx));
+            SYNTH_ASSERT(rv == SYNTH_OK);
+
+            switch (val) {
+                case 0:
+                case 1: {
+                    pParser->useNewEnvelope = SYNTH_FALSE;
+                } break;
+                case 2: {
+                    pParser->useNewEnvelope = SYNTH_TRUE;
+                } break;
+                default: {
+                    SYNTH_ASSERT_ERR(0, SYNTH_BAD_VERSION);
+                }
+            }
+        } break;
+        default: {
+            SYNTH_ASSERT_ERR(0, SYNTH_UNEXPECTED_TOKEN);
+        }
+    }
 
     /* Read the next token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
@@ -1073,48 +1110,10 @@ __err:
     return rv;
 }
 
-
-/**
- * Setup the audio track with the new evenlope mode.
- *
- * Parsing rule: newEnv = T_ENABLE_NEW_ENVELOPE?
- *
- * @param  [ in]pParser The parser context
- * @param  [ in]pCtx    The synthesizer context
- * @param  [ in]pAudio  The audio
- * @return              SYNTH_OK, SYNTH_UNEXPECTED_TOKEN
- */
-static synth_err synthParser_newEnvelope(synthParserCtx *pParser, synthCtx *pCtx,
-        synthAudio *pAudio) {
-    synth_err rv;
-    synth_token token;
-
-    /* Retrieve the current token */
-    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
-    SYNTH_ASSERT(rv == SYNTH_OK);
-
-    if (token == T_ENABLE_NEW_ENVELOPE) {
-        pAudio->useNewEnvelope = SYNTH_TRUE;
-        pParser->useNewEnvelope = SYNTH_TRUE;
-
-        /* Read the next token */
-        rv = synthLexer_getToken(&(pCtx->lexCtx));
-        SYNTH_ASSERT(rv == SYNTH_OK);
-    }
-
-    rv = SYNTH_OK;
-__err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
-    return rv;
-}
-
 /**
  * Parse the currently loaded file into an audio
  * 
- * Parsing rule: T_MML bmp newEnv tracks
+ * Parsing rule: mml bmp newEnv tracks
  * 
  * This function uses a lexer to break the file into tokens, as it does
  * retrieve track, notes etc from the main synthesizer context
@@ -1142,9 +1141,6 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     /* Set the time signature */
     pAudio->timeSignature = pParser->timeSignature;
 
-    /* Set the default envelope */
-    pParser->useNewEnvelope = SYNTH_FALSE;
-
     /* Read the first token */
     rv = synthLexer_getToken(&(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -1153,9 +1149,8 @@ synth_err synthParser_getAudio(synthParserCtx *pParser, synthCtx *pCtx,
     rv = synthParser_mml(pParser, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
-    /* Configure with the new envelope (optional) */
-    rv = synthParser_newEnvelope(pParser, pCtx, pAudio);
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Set the audio's envelope based on the current version */
+    pAudio->useNewEnvelope = pParser->useNewEnvelope;
 
     /* Parse the bpm (optional token) */
     rv = synthParser_bpm(pParser, pCtx, pAudio);

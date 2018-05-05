@@ -35,6 +35,7 @@ typedef enum {
     SYNTH_BAD_LOOP_START,
     SYNTH_BAD_LOOP_END,
     SYNTH_BAD_LOOP_POINT,
+    SYNTH_BAD_VERSION,
     SYNTH_MAX_ERR
 } synth_err;
 
