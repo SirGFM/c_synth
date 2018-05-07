@@ -369,7 +369,7 @@ __err:
 }
 
 /**
- * Initializes a non-extended note control.
+ * Initializes a non-extended note control from the current parser.
  */
 static synth_err synthParser_getNoteCtl(synthParserCtx *pParser,
         synthNote *pNote, int octave, synth_note note, int duration) {
@@ -400,37 +400,24 @@ __err:
 }
 
 /**
- * Do actually output the note and check if the note duration matches the compass
+ * Output a note into the current compass (from a note controller). Afterwards,
+ * check whether the note duration matches the compass.
  */
-static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
-        int doExtend, int octave, synth_note note, int duration) {
+static synth_err synthParser_outputCtldNote(synthParserCtx *pParser,
+        synthCtx *pCtx, synthNote *pNote) {
+    synthNote *pOutNote;
     synth_err rv;
-    synthNote *pNote;
+    int duration;
 
     /* Retrieve a new note */
-    rv = synthNote_init(&pNote, pCtx);
+    rv = synthNote_init(&pOutNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
-    /* Initialize the note */
-    rv = synthParser_getNoteCtl(pParser, pNote, octave, note, duration);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    if (doExtend == 1) {
-        /* First part of extended note: do attack only */
-        rv = synthNote_setKeyoff(pNote, pParser->ctl.attack, 100, 100);
-    }
-    else if (doExtend == 2) {
-        /* Seconds part of extended note: play it fully */
-        rv = synthNote_setKeyoff(pNote, 0, 100, 100);
-    }
-    else if (doExtend == 3) {
-        /* Last part of extended note: set keyoff and release */
-        rv = synthNote_setKeyoff(pNote, 0, pParser->ctl.keyoff,
-                pParser->ctl.release);
-    }
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    memset(pOutNote, 0x0, sizeof(synthNote));
+    memcpy(pOutNote, pNote, sizeof(struct stSynthNoteCtl));
 
     /* Update the position within the compass */
-    rv = synthNote_getDuration(&duration, pNote);
+    rv = synthNote_getDuration(&duration, pOutNote);
     pParser->curCompassLength += duration;
     SYNTH_ASSERT_ERR(pParser->curCompassLength <= pParser->timeSignature,
             SYNTH_COMPASS_OVERFLOW);
@@ -440,6 +427,39 @@ static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
     }
 
     rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Do actually output the note and check if the note duration matches the compass
+ */
+static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
+        int doExtend, int octave, synth_note note, int duration) {
+    synth_err rv;
+    synthNote pNote;
+
+    /* Initialize the note */
+    rv = synthParser_getNoteCtl(pParser, &pNote, octave, note, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (doExtend == 1) {
+        /* First part of extended note: do attack only */
+        rv = synthNote_setKeyoff(&pNote, pParser->ctl.attack, 100, 100);
+    }
+    else if (doExtend == 2) {
+        /* Seconds part of extended note: play it fully */
+        rv = synthNote_setKeyoff(&pNote, 0, 100, 100);
+    }
+    else if (doExtend == 3) {
+        /* Last part of extended note: set keyoff and release */
+        rv = synthNote_setKeyoff(&pNote, 0, pParser->ctl.keyoff,
+                pParser->ctl.release);
+    }
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = synthParser_outputCtldNote(pParser, pCtx, &pNote);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
 __err:
     return rv;
 }
