@@ -369,6 +369,37 @@ __err:
 }
 
 /**
+ * Initializes a non-extended note control.
+ */
+static synth_err synthParser_getNoteCtl(synthParserCtx *pParser,
+        synthNote *pNote, int octave, synth_note note, int duration) {
+    synth_err rv;
+
+    rv = synthNote_setDefault(pNote);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = synthNote_setPan(pNote, pParser->ctl.pan);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setOctave(pNote, octave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setNote(pNote, note);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setWave(pNote, pParser->ctl.wave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setDuration(pNote, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
+            pParser->ctl.keyoff, pParser->ctl.release);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setVolume(pNote, pParser->ctl.volume);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Do actually output the note and check if the note duration matches the compass
  */
 static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
@@ -379,16 +410,9 @@ static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
     /* Retrieve a new note */
     rv = synthNote_init(&pNote, pCtx);
     SYNTH_ASSERT(rv == SYNTH_OK);
+
     /* Initialize the note */
-    rv = synthNote_setPan(pNote, pParser->ctl.pan);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setOctave(pNote, octave);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setNote(pNote, note);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setWave(pNote, pParser->ctl.wave);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setDuration(pNote, pCtx, duration);
+    rv = synthParser_getNoteCtl(pParser, pNote, octave, note, duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (doExtend == 1) {
         /* First part of extended note: do attack only */
@@ -403,13 +427,6 @@ static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
         rv = synthNote_setKeyoff(pNote, 0, pParser->ctl.keyoff,
                 pParser->ctl.release);
     }
-    else if (doExtend == 0) {
-        /* Not extended note: play it normally */
-        rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
-                pParser->ctl.keyoff, pParser->ctl.release);
-    }
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setVolume(pNote, pParser->ctl.volume);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Update the position within the compass */

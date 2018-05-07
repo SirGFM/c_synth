@@ -68,19 +68,7 @@ synth_err synthNote_init(synthNote **ppNote, synthCtx *pCtx) {
     (*ppNote) = &(pCtx->notes.buf.pNotes[pCtx->notes.used]);
     pCtx->notes.used++;
 
-    /* Initialize the note's default parameters */
-    synthNote_setPan(*ppNote, 50);
-    synthNote_setOctave(*ppNote, 4);
-    synthNote_setWave(*ppNote, W_SQUARE);
-    synthNote_setNote(*ppNote, N_A);
-    synthNote_setDuration(*ppNote, pCtx, 4);
-    synthNote_setKeyoff(*ppNote, 0, 75, 0);
-    synthNote_setVolume(*ppNote, 0);
-
-    (*ppNote)->numIterations = 0;
-    (*ppNote)->jumpPosition = 0;
-
-    rv = SYNTH_OK;
+    rv = synthNote_setDefault(*ppNote);
 __err:
     return rv;
 }
@@ -107,9 +95,38 @@ synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     /* Set the note's parameters */
-    (*ppNote)->note = N_LOOP;
+    (*ppNote)->ctl.note = N_LOOP;
     (*ppNote)->len = repeat;
     (*ppNote)->jumpPosition = position;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Set the default values for a musical note.
+ *
+ * @param [ in]pNote The note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setDefault(synthNote *pNote) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+
+    /* Initialize the note's default parameters */
+    synthNote_setPan(pNote, 50);
+    synthNote_setOctave(pNote, 4);
+    synthNote_setWave(pNote, W_SQUARE);
+    synthNote_setNote(pNote, N_A);
+    synthNote_setDuration(pNote, 4);
+    synthNote_setKeyoff(pNote, 0, 75, 0);
+    synthNote_setVolume(pNote, 0);
+
+    pNote->numIterations = 0;
+    pNote->jumpPosition = 0;
 
     rv = SYNTH_OK;
 __err:
@@ -159,7 +176,7 @@ __err: \
  *                   means completelly to the right
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_CLAMPEDSETTER(synthNote_setPan, char, pan, 0, 100);
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setPan, char, ctl.pan, 0, 100);
 
 /**
  * Set the note octave
@@ -171,7 +188,7 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setPan, char, pan, 0, 100);
  * @param [ in]octave The octave
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_CLAMPEDSETTER(synthNote_setOctave, char, octave, 1, 8);
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setOctave, char, ctl.octave, 1, 8);
 
 /**
  * Set the note wave
@@ -182,7 +199,7 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setOctave, char, octave, 1, 8);
  * @param [ in]wave  The wave
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE,
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, ctl.wave, W_SQUARE,
         SYNTH_MAX_WAVE - 1);
 
 /**
@@ -192,7 +209,7 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setWave, synth_wave, wave, W_SQUARE,
  * @param [ in]note  The musical note
  * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
+SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, ctl.note, N_CB, N_LOOP);
 
 /**
  * Set the note duration
@@ -200,27 +217,24 @@ SYNTHNOTE_CLAMPEDSETTER(synthNote_setNote, synth_note, note, N_CB, N_LOOP);
  * NOTE: The duration is stored in samples
  * 
  * @param [ in]pNote    The note
- * @param [ in]pCtx     The synthesizer context
  * @param [ in]duration Bitfield for the duration. Each bit represents a
  *                      fraction of the duration;
  * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx,
-        int duration) {
+synth_err synthNote_setDuration(synthNote *pNote, int duration) {
     int bit;
     synth_err rv;
 
     /* Sanitize the arguments */
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
-    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(duration > 0, SYNTH_BAD_PARAM_ERR);
 
     /* Invert the bits of the duration */
-    pNote->duration = 0;
+    pNote->ctl.duration = 0;
     bit = 6;
     while (duration != 0) {
         if (duration & 1) {
-            pNote->duration |= 1 << bit;
+            pNote->ctl.duration |= 1 << bit;
         }
 
         duration >>= 1;
@@ -274,9 +288,9 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
 #undef CLAMP
 
     /* Store the keyoff in percentage */
-    pNote->attack = attack;
-    pNote->keyoff = keyoff;
-    pNote->release = release;
+    pNote->ctl.attack = attack;
+    pNote->ctl.keyoff = keyoff;
+    pNote->ctl.release = release;
 
     rv = SYNTH_OK;
 __err:
@@ -297,7 +311,7 @@ synth_err synthNote_setVolume(synthNote *pNote, int volume) {
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
 
     /* Store the volume */
-    pNote->volume = volume;
+    pNote->ctl.volume = volume;
 
     rv = SYNTH_OK;
 __err:
@@ -311,7 +325,7 @@ __err:
  * @return            SYNTH_TRUE, SYNTH_FALSE
  */
 synth_bool synthNote_isLoop(synthNote *pNote) {
-    if (!pNote || pNote->note != N_LOOP) {
+    if (!pNote || pNote->ctl.note != N_LOOP) {
         return SYNTH_FALSE;
     }
     else {
@@ -336,8 +350,8 @@ synth_bool synthNote_isLoop(synthNote *pNote) {
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR); \
     SYNTH_ASSERT_ERR(pVal, SYNTH_BAD_PARAM_ERR); \
     /* Check that it's either a note or loop (as required by the attribute */ \
-    SYNTH_ASSERT_ERR((!loopOnly && pNote->note != N_LOOP) || \
-            (loopOnly && pNote->note == N_LOOP), SYNTH_BAD_PARAM_ERR); \
+    SYNTH_ASSERT_ERR((!loopOnly && pNote->ctl.note != N_LOOP) || \
+            (loopOnly && pNote->ctl.note == N_LOOP), SYNTH_BAD_PARAM_ERR); \
   \
     *pVal = pNote->attr; \
   \
@@ -353,7 +367,7 @@ __err: \
  * @param  [ in]pNote The note
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_GETTER(synthNote_getDuration, int, duration, 0)
+SYNTHNOTE_GETTER(synthNote_getDuration, int, ctl.duration, 0)
 
 /**
  * Retrieve the panning of the note, where 0 means completely on the left
@@ -363,7 +377,7 @@ SYNTHNOTE_GETTER(synthNote_getDuration, int, duration, 0)
  * @param  [ in]pNote The note
  * @return            SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-SYNTHNOTE_GETTER(synthNote_getPan, char, pan, 0)
+SYNTHNOTE_GETTER(synthNote_getPan, char, ctl.pan, 0)
 
 /**
  * Retrieve the number of times this loop should repeat
@@ -391,7 +405,7 @@ static synth_err synthNote_renderBestNoise(char *pBuf, synthNote *pNote,
     synth_err rv;
 
     /* Retrieve the note's volume */
-    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->volume]);
+    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->ctl.volume]);
 
     /* Calculate the number of bytes per samples */
     numBytes = 1;
@@ -405,20 +419,20 @@ static synth_err synthNote_renderBestNoise(char *pBuf, synthNote *pNote,
     /* Clear the note */
     memset(pBuf, 0x0, duration * numBytes);
     /* If it's a rest, simply return (since it was already cleared */
-    if (pNote->note == N_REST) {
+    if (pNote->ctl.note == N_REST) {
         rv = SYNTH_OK;
         goto __err;
     }
 
     /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
-    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
+    noteFreq = __synthNote_frequency[pNote->ctl.note] >> (9 - pNote->ctl.octave);
     /* Calculate how many 'samples-per-cycle' there are for the Note's note */
     spc = synthFreq / noteFreq;
 
     /* Calculate the note asdasd in samples */
-    attack = duration * pNote->attack / 100.0f;
-    keyoff = duration * pNote->keyoff / 100.0f;
-    release = duration * pNote->release / 100.0f;
+    attack = duration * pNote->ctl.attack / 100.0f;
+    keyoff = duration * pNote->ctl.keyoff / 100.0f;
+    release = duration * pNote->ctl.release / 100.0f;
 
     /* Synthesize the note audio */
     k = 0;
@@ -454,10 +468,10 @@ static synth_err synthNote_renderBestNoise(char *pBuf, synthNote *pNote,
         SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
         /* Change the cycle by using bits 8-2 */
-        if (pNote->wave == W_NOISE_BEST_BASS) {
+        if (pNote->ctl.wave == W_NOISE_BEST_BASS) {
             spc2 = spc * (1 + ((rng >> 5) & 0x7)) / (1 + ((rng >> 2) & 0x3));
         }
-        else if (pNote->wave == W_NOISE_BEST_HIGHPITCH) {
+        else if (pNote->ctl.wave == W_NOISE_BEST_HIGHPITCH) {
             spc2 = spc * (1 + ((rng >> 6) & 0x3)) / (1 + ((rng >> 2) & 0x17));
         }
         if (k + spc2 > duration) {
@@ -692,14 +706,14 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pBuf, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
 
-    if (pNote->wave == W_NOISE_BEST_BASS ||
-            pNote->wave == W_NOISE_BEST_HIGHPITCH) {
+    if (pNote->ctl.wave == W_NOISE_BEST_BASS ||
+            pNote->ctl.wave == W_NOISE_BEST_HIGHPITCH) {
         return synthNote_renderBestNoise(pBuf, pNote, pCtx, mode, synthFreq,
                 duration);
     }
 
     /* Retrieve the note's volume */
-    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->volume]);
+    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->ctl.volume]);
 
     /* Calculate the number of bytes per samples */
     numBytes = 1;
@@ -713,20 +727,20 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
     /* Clear the note */
     memset(pBuf, 0x0, duration * numBytes);
     /* If it's a rest, simply return (since it was already cleared */
-    if (pNote->note == N_REST) {
+    if (pNote->ctl.note == N_REST) {
         rv = SYNTH_OK;
         goto __err;
     }
 
     /* Calculate the note frequency (or "cycle"). E.g., A4 = 440Hz */
-    noteFreq = __synthNote_frequency[pNote->note] >> (9 - pNote->octave);
+    noteFreq = __synthNote_frequency[pNote->ctl.note] >> (9 - pNote->ctl.octave);
     /* Calculate how many 'samples-per-cycle' there are for the Note's note */
     spc = synthFreq / noteFreq;
 
     /* Calculate the note duration in samples */
-    attack = duration * pNote->attack / 100.0f;
-    keyoff = duration * pNote->keyoff / 100.0f;
-    release = duration * pNote->release / 100.0f;
+    attack = duration * pNote->ctl.attack / 100.0f;
+    keyoff = duration * pNote->ctl.keyoff / 100.0f;
+    release = duration * pNote->ctl.release / 100.0f;
 
     /* Synthesize the note audio */
     i = 0;
@@ -817,7 +831,7 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
          * This amplitude is calculated in the range [-1.0f, 1.0f], so it can
          * correctly be downsampled for 8 and 16 bits amplitudes (as well as
          * signed and unsigned) */
-        switch (pNote->wave) {
+        switch (pNote->ctl.wave) {
             case W_NOISE_SQUARE:
             case W_SQUARE: {
                 /* 50% duty cycle */
@@ -916,20 +930,20 @@ synth_err synthNote_render(char *pBuf, synthNote *pNote, synthCtx *pCtx,
             default: { waveAmp = 0.0f; }
         }
 
-        if (pNote->wave >= W_NOISE && pNote->wave <= W_NOISE_TRIANGLE) {
+        if (pNote->ctl.wave >= W_NOISE && pNote->ctl.wave <= W_NOISE_TRIANGLE) {
             double noise;
 
             rv = synthPRNG_getGaussianNoise(&noise, &(pCtx->prngCtx));
             SYNTH_ASSERT_ERR(rv == SYNTH_OK, rv);
 
-            if (pNote->wave == W_NOISE) {
+            if (pNote->ctl.wave == W_NOISE) {
                 /* For simple noises, simply export random values */
                 waveAmp = (float)(noise * 2.0);
             }
-            else if (pNote->wave == W_NOISE_TRIANGLE) {
+            else if (pNote->ctl.wave == W_NOISE_TRIANGLE) {
                 waveAmp = (float)(waveAmp * 0.75 + noise * waveAmp * 4.0 * 0.25);
             }
-            else if (pNote->wave == W_NOISE_25) {
+            else if (pNote->ctl.wave == W_NOISE_25) {
                 if (waveAmp > 0.0f) {
                     waveAmp = (float)(noise * 6.0);
                 }

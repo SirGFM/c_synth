@@ -34,6 +34,14 @@ synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
         int position);
 
 /**
+ * Set the default values for a musical note.
+ *
+ * @param [ in]pNote The note
+ * @return           SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setDefault(synthNote *pNote);
+
+/**
  * Set the note panning
  * 
  * Defines which channel, if any, should be louder; If the value is outside the
@@ -84,12 +92,11 @@ synth_err synthNote_setNote(synthNote *pNote, synth_note note);
  * NOTE: The duration is stored in samples
  * 
  * @param [ in]pNote    The note
- * @param [ in]pCtx     The synthesizer context
  * @param [ in]duration Bitfield for the duration. Each bit represents a
  *                      fraction of the duration;
  * @return              SYNTH_OK, SYNTH_BAD_PARAM_ERR
  */
-synth_err synthNote_setDuration(synthNote *pNote, synthCtx *pCtx, int duration);
+synth_err synthNote_setDuration(synthNote *pNote, int duration);
 
 /**
  * Set the characteristics of the note's duration

@@ -9,6 +9,8 @@
 
 /* Required because of a FILE* */
 #include <stdio.h>
+/* Required for length-specific types */
+#include <stdint.h>
 
 #if defined(USE_SDL2)
 #  include <SDL2/SDL_rwops.h>
@@ -417,7 +419,7 @@ struct stSynthTrack {
     int num;
 };
 
-struct stSynthNote {
+struct stSynthNoteCtl {
     /**
      * Value between 0 and 100, where 0 means only left channel and 100 means
      * only right channel
@@ -426,33 +428,37 @@ struct stSynthNote {
     /** Octave at which the note should play, from 1 to 8 */
     char octave;
     /**
-     * Duration of the note in samples (depends on the sample rate).
-     * If type is N_loop, represent how many times should repeat.
-     */
-    int len;
-    /**
      * Note's duration in binary fixed point notation; It uses 6 bits for the
      * fractional part
      */
-    int duration;
-    /** Cached duration of the note in samples */
-    int samplesDuration;
-    /** Only used if type is N_loop; Represents note to which should jump. */
-    int jumpPosition;
-    /** Time, in samples, until the note reaches its maximum amplitude */
+    int16_t duration;
+    /** Time, in percentage, until the note reaches its maximum amplitude */
     int attack;
-    /** After how many samples should the note be muted */
+    /** After how which percentage of the note it should start halting */
     int keyoff;
-    /** Time, in samples, until the note halts completely */
+    /** Time, in percentage, until the note halts completely */
     int release;
-    /** Only used if type is N_loop; how many times has already looped */
-    int numIterations;
     /** Wave type to be synthesized */
     synth_wave wave;
     /** Musical note to be played */
     synth_note note;
     /** Index to either a value between 0x0 and 0xff or a envelop */
     int volume;
+};
+
+struct stSynthNote {
+    struct stSynthNoteCtl ctl;
+    /**
+     * Duration of the note in samples (depends on the sample rate).
+     * If type is N_loop, represent how many times should repeat.
+     */
+    int len;
+    /** Cached duration of the note in samples */
+    int samplesDuration;
+    /** Only used if type is N_loop; Represents note to which should jump. */
+    int jumpPosition;
+    /** Only used if type is N_loop; how many times has already looped */
+    int numIterations;
 };
 
 /**
