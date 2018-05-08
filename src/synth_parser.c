@@ -207,6 +207,9 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             case SYNTH_BAD_MACRO: {
                 pError = "Invalid macro declaration: multiple notes or none";
             } break;
+            case SYNTH_UNDEF_MACRO: {
+                pError = "Undefined macro";
+            } break;
             default: {
                 pError = "Unkown error";
             }
@@ -1104,6 +1107,50 @@ __err:
 }
 
 /**
+ * Parse a macro, outputting it and recovering the parser state.
+ *
+ * Parsing rule: macro = T_MACRO_ID
+ *
+ * @param  [out]pNumNotes The number of parsed notes (since extends counts as
+ *                        new notes). For now, it will always be 1. However,
+ *                        it's here if extended notes is ever added to macros.
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ */
+static synth_err synthParser_macro(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synthParserCtx *tmpParser;
+    synthNote *pNote;
+    synth_err rv;
+    int macro;
+
+    /* Callee function already assures this, but... */
+    SYNTH_ASSERT_TOKEN(T_MACRO_ID);
+
+    /* Convert the macro to an index, and check that it's valid */
+    rv = synthLexer_getValuei(&macro, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    SYNTH_ASSERT_ERR(pParser->macros[macro].defined, SYNTH_UNDEF_MACRO);
+
+    /* Simply output the macro and retrieve its parsing context */
+    pNote = (synthNote*)&(pParser->macros[macro].note);
+    rv = synthParser_outputCtldNote(pParser, pCtx, pNote);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    *pNumNotes = 1;
+
+    tmpParser = (synthParserCtx*)&(pParser->macros[macro].parser);
+    memcpy(pParser, tmpParser, sizeof(struct stSynthParserCtl));
+
+    /* Read whatever the next token is */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Parse a sequence into the context
  * 
  * Parsing rule: sequence = ( mod | note | loop | declareMacro | macro )+
@@ -1146,6 +1193,14 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
             } break;
             case T_DECL_MACRO: {
                 rv = synthParser_declareMacro(pParser, pCtx);
+            } break;
+            case T_MACRO_ID: {
+                int numNotes;
+
+                rv = synthParser_macro(&numNotes, pParser, pCtx);
+                SYNTH_ASSERT(rv == SYNTH_OK);
+
+                *pNumNotes += numNotes;
             } break;
             default: {
                 /* Modify the current context in some way */
