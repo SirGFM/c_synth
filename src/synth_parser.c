@@ -358,6 +358,8 @@ static synth_bool synthParser_isSequence(synthCtx *pCtx) {
         case T_NOTE:
         case T_SET_LOOP_START:
         case T_SET_ENVELOPE:
+        case T_DECL_MACRO:
+        case T_MACRO_ID:
             rv = SYNTH_TRUE;
         break;
         default:
@@ -1105,6 +1107,7 @@ static synth_err synthParser_macro(int *pNumNotes, synthParserCtx *pParser,
     /* Convert the macro to an index, and check that it's valid */
     rv = synthLexer_getValuei(&macro, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
+    macro -= 'A';
     SYNTH_ASSERT_ERR(pParser->macros[macro].defined, SYNTH_UNDEF_MACRO);
 
     /* Simply output the macro and retrieve its parsing context */
@@ -1158,7 +1161,6 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
                 /* Simply parse the current note */
                 rv = synthParser_note(&numNotes, pParser, pCtx);
-                SYNTH_ASSERT(rv == SYNTH_OK);
 
                 *pNumNotes += numNotes;
             } break;
@@ -1173,7 +1175,6 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
                 int numNotes;
 
                 rv = synthParser_macro(&numNotes, pParser, pCtx);
-                SYNTH_ASSERT(rv == SYNTH_OK);
 
                 *pNumNotes += numNotes;
             } break;
