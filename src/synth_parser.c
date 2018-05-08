@@ -369,39 +369,12 @@ __err:
 }
 
 /**
- * Initializes a non-extended note control from the current parser.
- */
-static synth_err synthParser_getNoteCtl(synthParserCtx *pParser,
-        synthNote *pNote, int octave, synth_note note, int duration) {
-    synth_err rv;
-
-    rv = synthNote_setDefault(pNote);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-
-    rv = synthNote_setPan(pNote, pParser->ctl.pan);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setOctave(pNote, octave);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setNote(pNote, note);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setWave(pNote, pParser->ctl.wave);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setDuration(pNote, duration);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
-            pParser->ctl.keyoff, pParser->ctl.release);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    rv = synthNote_setVolume(pNote, pParser->ctl.volume);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-
-    rv = SYNTH_OK;
-__err:
-    return rv;
-}
-
-/**
  * Output a note into the current compass (from a note controller). Afterwards,
  * check whether the note duration matches the compass.
+ *
+ * @param  [ in]pParser The parser context
+ * @param  [ in]pCtx The synthesizer context
+ * @param  [out]pNote The note being read
  */
 static synth_err synthParser_outputCtldNote(synthParserCtx *pParser,
         synthCtx *pCtx, synthNote *pNote) {
@@ -432,32 +405,74 @@ __err:
 }
 
 /**
+ * Initializes a non-extended note control from the current parser.
+ *
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [out]pNote     The note getting initialized
+ * @param  [ in]octave    The note's octave
+ * @param  [ in]note      The note to be played (e.g., C, A)
+ * @param  [ in]duration  The note's duration (in fixed point)
+ */
+static synth_err synthParser_getNoteCtl(synthParserCtx *pParser,
+        synthNote *pNote, int octave, synth_note note, int duration) {
+    synth_err rv;
+
+    rv = synthNote_setDefault(pNote);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = synthNote_setPan(pNote, pParser->ctl.pan);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setOctave(pNote, octave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setNote(pNote, note);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setWave(pNote, pParser->ctl.wave);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setDuration(pNote, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
+            pParser->ctl.keyoff, pParser->ctl.release);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_setVolume(pNote, pParser->ctl.volume);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Do actually output the note and check if the note duration matches the compass
+ *
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @param  [ in]doExtend  Whether the should is extended, and in which part
+ * @param  [ in]octave    The note's octave
+ * @param  [ in]note      The note to be played (e.g., C, A)
+ * @param  [ in]duration  The note's duration (in fixed point)
  */
 static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
         int doExtend, int octave, synth_note note, int duration) {
     synth_err rv;
-    synthNote pNote;
+    synthNote stNote;
 
     /* Initialize the note */
-    rv = synthParser_getNoteCtl(pParser, &pNote, octave, note, duration);
+    rv = synthParser_getNoteCtl(pParser, &stNote, octave, note, duration);
     SYNTH_ASSERT(rv == SYNTH_OK);
-    if (doExtend == 1) {
-        /* First part of extended note: do attack only */
-        rv = synthNote_setKeyoff(&pNote, pParser->ctl.attack, 100, 100);
-    }
-    else if (doExtend == 2) {
+    /* NOTE: First part of extended notes is always done in synthParser_note */
+    if (doExtend == 2) {
         /* Seconds part of extended note: play it fully */
-        rv = synthNote_setKeyoff(&pNote, 0, 100, 100);
+        rv = synthNote_setKeyoff(&stNote, 0, 100, 100);
     }
     else if (doExtend == 3) {
         /* Last part of extended note: set keyoff and release */
-        rv = synthNote_setKeyoff(&pNote, 0, pParser->ctl.keyoff,
+        rv = synthNote_setKeyoff(&stNote, 0, pParser->ctl.keyoff,
                 pParser->ctl.release);
     }
     SYNTH_ASSERT(rv == SYNTH_OK);
 
-    rv = synthParser_outputCtldNote(pParser, pCtx, &pNote);
+    rv = synthParser_outputCtldNote(pParser, pCtx, &stNote);
     SYNTH_ASSERT(rv == SYNTH_OK);
 
 __err:
@@ -528,23 +543,20 @@ __err:
 }
 
 /**
- * Parse a note into the context
- * 
- * Parsing rule: note = T_NOTE T_NUMBER? T_DURATION?
- *                              (T_EXTEND T_NUMBER T_DURATION?)*
- * 
- * @param  [out]pNumNotes The number of parsed notes (since extends counts as
- *                        new notes)
+ * Parse a note into a note controller.
+ *
+ * Parsing rule: noteCtl = T_NOTE T_NUMBER? T_DURATION?
+ *
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
- * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ * @param  [out]pNote     The parsed note
  */
-static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
-        synthCtx *pCtx) {
+static synth_err synthParser_noteCtl(synthParserCtx *pParser, synthCtx *pCtx,
+        synthNote *pNote) {
     synth_err rv;
     synth_note note;
     synth_token token;
-    int doExtend, duration, octave, tmp;
+    int duration, octave, tmp;
 
     /* Callee function already assures this, but... */
     SYNTH_ASSERT_TOKEN(T_NOTE);
@@ -552,7 +564,6 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     /* Set initial duration to whatever the current default is */
     duration = pParser->ctl.duration;
     octave = pParser->ctl.octave;
-    doExtend = 0;
 
     /* Store the note to be played */
     rv = synthLexer_getValuei(&tmp, &(pCtx->lexCtx));
@@ -583,18 +594,55 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
         SYNTH_ASSERT(rv == SYNTH_OK);
     }
 
+    rv = synthParser_getNoteCtl(pParser, pNote, octave, note, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    pParser->errorCode = rv;
+    if (rv != SYNTH_OK) {
+        pParser->errorFlag = SYNTH_TRUE;
+    }
+
+    return rv;
+}
+
+/**
+ * Parse a note into the context
+ *
+ * Parsing rule: note = noteCtl (T_EXTEND T_NUMBER T_DURATION?)*
+ *
+ * @param  [out]pNumNotes The number of parsed notes (since extends counts as
+ *                        new notes)
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
+ */
+static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synthNote note;
+    synth_token token;
+    synth_err rv;
+    int doExtend = 0;
+
+    rv = synthParser_noteCtl(pParser, pCtx, &note);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
     /* Check if the note will be extended */
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
     if (token == T_EXTEND) {
         doExtend = 1;
+        /* First part of extended note: do attack only */
+        rv = synthNote_setKeyoff(&note, pParser->ctl.attack, 100, 100);
     }
 
-    rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
-            duration);
+    rv = synthParser_outputCtldNote(pParser, pCtx, &note);
     SYNTH_ASSERT(rv == SYNTH_OK);
     *pNumNotes = 1;
     while (doExtend != 0 && doExtend != 3) {
+        int duration;
+
         /* The only way to get into this section is through a T_EXTEND */
         SYNTH_ASSERT_TOKEN(T_EXTEND);
         /* Get next token */
@@ -616,8 +664,8 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
         }
 
         /* Output the current note */
-        rv = synthParser_outputNote(pParser, pCtx, doExtend, octave, note,
-                duration);
+        rv = synthParser_outputNote(pParser, pCtx, doExtend,
+                note.ctl.octave, note.ctl.note, duration);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
         (*pNumNotes)++;
@@ -896,7 +944,7 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
  * @param  [ in]pCtx      The synthesizer context
  * @return                SYNTH_OK, SYNTH_UNEXPECTED_TOKEN, SYNTH_MEM_ERR
  */
-synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
+static synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
         synthCtx *pCtx) {
     int count, loopPosition;
     synth_err rv;
