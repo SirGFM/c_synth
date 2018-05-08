@@ -284,10 +284,6 @@ static synth_err synthParser_mml(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -328,10 +324,6 @@ static synth_err synthParser_bpm(synthParserCtx *pParser, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -607,11 +599,6 @@ static synth_err synthParser_noteCtl(synthParserCtx *pParser, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
-
     return rv;
 }
 
@@ -681,10 +668,6 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -929,10 +912,6 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -1013,10 +992,6 @@ static synth_err synthParser_loop(int *pNumNotes, synthParserCtx *pParser,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -1212,10 +1187,6 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -1286,10 +1257,6 @@ static synth_err synthParser_track(int *pTrackHnd, synthParserCtx *pParser,
     *pTrackHnd = curTrack;
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
@@ -1340,10 +1307,6 @@ static synth_err synthParser_tracks(synthParserCtx *pParser, synthCtx *pCtx,
 
     rv = SYNTH_OK;
 __err:
-    pParser->errorCode = rv;
-    if (rv != SYNTH_OK) {
-        pParser->errorFlag = SYNTH_TRUE;
-    }
     return rv;
 }
 
