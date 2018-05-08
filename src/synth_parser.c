@@ -108,6 +108,8 @@ synth_err synthParser_init(synthParserCtx *pParser, synthCtx *pCtx) {
     SYNTH_ASSERT_ERR(pParser, SYNTH_BAD_PARAM_ERR);
     SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
 
+    memset(pParser->macros, 0x0, sizeof(pParser->macros));
+
     /* Remove any error flag */
     pParser->errorFlag = SYNTH_FALSE;
     rv = synthParser_setDefault(pParser, pCtx);
@@ -201,6 +203,9 @@ synth_err synthParser_getErrorString(char **ppError, synthParserCtx *pParser,
             } break;
             case SYNTH_BAD_VERSION: {
                 pError = "Invalid MML version";
+            } break;
+            case SYNTH_BAD_MACRO: {
+                pError = "Invalid macro declaration: multiple notes or none";
             } break;
             default: {
                 pError = "Unkown error";
@@ -1013,9 +1018,95 @@ __err:
 }
 
 /**
+ * Parse a macro declaration, which may be used from this moment onward.
+ *
+ * Parsing rule: declareMacro = T_DECL_MACRO T_MACRO_ID mod* noteCtl mod*
+ *                                      T_END_OF_TRACK
+ *
+ * @param  [ in]pParser   The parser context
+ * @param  [ in]pCtx      The synthesizer context
+ */
+static synth_err synthParser_declareMacro(synthParserCtx *pParser,
+        synthCtx *pCtx) {
+    synth_err rv;
+    int flags, macro;
+
+#define DONE     0x01
+#define GOT_NOTE 0x02
+
+    /* We're sure to have this token, but... */
+    SYNTH_ASSERT_TOKEN(T_DECL_MACRO);
+
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    SYNTH_ASSERT_TOKEN(T_MACRO_ID);
+
+    /* Retrieve the macro and convert it to an index */
+    rv = synthLexer_getValuei(&macro, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    macro -= 'A';
+
+    /* Start parsing everything into the macro */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    flags = 0;
+    do {
+        synth_token token;
+
+        rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        switch (token) {
+            case T_NOTE: {
+                synthNote *pNote;
+
+                SYNTH_ASSERT_ERR(!(flags & GOT_NOTE), SYNTH_BAD_MACRO);
+
+                pNote = (synthNote*)&(pParser->macros[macro].note);
+                rv = synthParser_noteCtl(pParser, pCtx, pNote);
+
+                flags |= GOT_NOTE;
+            } break;
+            case T_END_OF_TRACK: {
+                rv = SYNTH_OK;
+                flags |= DONE;
+
+                /* Get next token */
+                rv = synthLexer_getToken(&(pCtx->lexCtx));
+                SYNTH_ASSERT(rv == SYNTH_OK);
+            } break;
+            default: {
+                rv = synthParser_mod(pParser, pCtx);
+            }
+        }
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+    } while (!(flags & DONE));
+
+    SYNTH_ASSERT_ERR(flags & GOT_NOTE, SYNTH_BAD_MACRO);
+
+    /* Store the current context into the macro, so it may be later recovered */
+    do {
+        synthParserCtx *tmpParser;
+
+        tmpParser = (synthParserCtx*)&(pParser->macros[macro].parser);
+        memcpy(tmpParser, pParser, sizeof(struct stSynthParserCtl));
+    } while (0);
+
+    pParser->macros[macro].defined = 1;
+
+#undef DONE
+#undef GOT_NOTE
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Parse a sequence into the context
  * 
- * Parsing rule: sequence = ( mod | note | loop )+
+ * Parsing rule: sequence = ( mod | note | loop | declareMacro | macro )+
  * 
  * @param  [out]pNumNotes The total number of notes in this track, must have
  *                        been initialized before hand!
@@ -1052,6 +1143,9 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
             case T_SET_LOOP_START: {
                 /* Recursively parse a sub-sequence */
                 rv = synthParser_loop(pNumNotes, pParser, pCtx);
+            } break;
+            case T_DECL_MACRO: {
+                rv = synthParser_declareMacro(pParser, pCtx);
             } break;
             default: {
                 /* Modify the current context in some way */

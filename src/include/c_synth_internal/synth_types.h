@@ -247,8 +247,47 @@ struct stSynthParserCtl {
     synth_wave wave;
 };
 
+struct stSynthNoteCtl {
+    /**
+     * Value between 0 and 100, where 0 means only left channel and 100 means
+     * only right channel
+     */
+    char pan;
+    /** Octave at which the note should play, from 1 to 8 */
+    char octave;
+    /**
+     * Note's duration in binary fixed point notation; It uses 6 bits for the
+     * fractional part
+     */
+    int16_t duration;
+    /** Time, in percentage, until the note reaches its maximum amplitude */
+    int attack;
+    /** After how which percentage of the note it should start halting */
+    int keyoff;
+    /** Time, in percentage, until the note halts completely */
+    int release;
+    /** Wave type to be synthesized */
+    synth_wave wave;
+    /** Musical note to be played */
+    synth_note note;
+    /** Index to either a value between 0x0 and 0xff or a envelop */
+    int volume;
+};
+
+/** Macros that re-set the parser and output a single note */
+struct stSynthMacro {
+    /* The new parsing context */
+    struct stSynthParserCtl parser;
+    /* The note to be output */
+    struct stSynthNoteCtl note;
+    /* Whether the macro has already been defined */
+    int defined;
+};
+
 /** Define the context for the parser */
 struct stSynthParserCtx {
+    /** Controls how notes are parsed */
+    struct stSynthParserCtl ctl;
     /** Expected token (only valid on error) */
     synth_token expected;
     /** Gotten token (only valid on error) */
@@ -263,8 +302,8 @@ struct stSynthParserCtx {
     int curCompassLength;
     /** Whether the new envelope mode should be used */
     synth_bool useNewEnvelope;
-    /** Controls how notes are parsed */
-    struct stSynthParserCtl ctl;
+    /* Macros used to ease writting songs */
+    struct stSynthMacro macros['Z' - 'A' + 1];
 };
 
 /** Struct with data about the currently rendering song/track */
@@ -417,33 +456,6 @@ struct stSynthTrack {
     int notesIndex;
     /** Number of notes in this track */
     int num;
-};
-
-struct stSynthNoteCtl {
-    /**
-     * Value between 0 and 100, where 0 means only left channel and 100 means
-     * only right channel
-     */
-    char pan;
-    /** Octave at which the note should play, from 1 to 8 */
-    char octave;
-    /**
-     * Note's duration in binary fixed point notation; It uses 6 bits for the
-     * fractional part
-     */
-    int16_t duration;
-    /** Time, in percentage, until the note reaches its maximum amplitude */
-    int attack;
-    /** After how which percentage of the note it should start halting */
-    int keyoff;
-    /** Time, in percentage, until the note halts completely */
-    int release;
-    /** Wave type to be synthesized */
-    synth_wave wave;
-    /** Musical note to be played */
-    synth_note note;
-    /** Index to either a value between 0x0 and 0xff or a envelop */
-    int volume;
 };
 
 struct stSynthNote {
