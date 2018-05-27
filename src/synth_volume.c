@@ -326,7 +326,7 @@ synth_err synthVolume_getEnvelopedAmplitude(int *pAmp, synthVolume *pVol,
             ini = pVol->release;
             fin = pVol->postRelease;
         break;
-        default: { /* Avoids a warning */ }
+        default: { return SYNTH_INTERNAL_ERR; /* Avoids warnings */ }
     }
 
     /* Calculate the current amplitude */
@@ -374,7 +374,7 @@ synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env) {
             ini = pVol->release;
             fin = pVol->postRelease;
         break;
-        default: { /* Avoids a warning */ }
+        default: { return SYNTH_INTERNAL_ERR; /* Avoids warnings */ }
     }
 
     if (ini == fin && ini == 0) {

@@ -474,6 +474,9 @@ static synth_err synthNote_renderBestNoise(char *pBuf, synthNote *pNote,
         else if (pNote->ctl.wave == W_NOISE_BEST_HIGHPITCH) {
             spc2 = spc * (1 + ((rng >> 6) & 0x3)) / (1 + ((rng >> 2) & 0x17));
         }
+        else {
+            spc2 = 0;
+        }
         if (k + spc2 > duration) {
             spc2 = duration - k;
         }

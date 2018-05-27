@@ -1154,6 +1154,8 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
 
     /* Fun stuff. Lookup next token and do whatever it requires */
     while (synthParser_isSequence(pCtx) == SYNTH_TRUE) {
+        /* NOTE: Initializing numNotes avoids warnings */
+        int numNotes;
         synth_token token;
 
         rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
@@ -1162,7 +1164,7 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
         /* Anything not a note or loop will be parsed as mod */
         switch (token) {
             case T_NOTE: {
-                int numNotes;
+                numNotes = 0;
 
                 /* Simply parse the current note */
                 rv = synthParser_note(&numNotes, pParser, pCtx);
@@ -1177,8 +1179,7 @@ static synth_err synthParser_sequence(int *pNumNotes, synthParserCtx *pParser,
                 rv = synthParser_declareMacro(pParser, pCtx);
             } break;
             case T_MACRO_ID: {
-                int numNotes;
-
+                numNotes = 0;
                 rv = synthParser_macro(&numNotes, pParser, pCtx);
 
                 *pNumNotes += numNotes;
