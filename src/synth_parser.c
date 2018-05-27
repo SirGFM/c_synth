@@ -873,20 +873,25 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT(rv == SYNTH_OK);
             SYNTH_ASSERT_TOKEN(T_OPEN_BRACKET);
 
+            /* The older 'ini' and 'fin' attributes aren't used by set_envelope
+             * (and initializing it avoids a valgrind warning) */
+            newVol.ini = 0;
+            newVol.fin = 0;
+
             /* Since the envelope is simply a bunch of ints, parse it as such */
-            i = 0;
-            while (i < sizeof(newVol) / sizeof(int) - 2) {
+            i = 2;
+            while (i < sizeof(newVol) / sizeof(int)) {
                 int *pInt = (int*)&newVol;
 
                 rv = synthLexer_getToken(&(pCtx->lexCtx));
                 SYNTH_ASSERT(rv == SYNTH_OK);
                 SYNTH_ASSERT_TOKEN(T_NUMBER);
 
-                rv = synthLexer_getValuei(&pInt[i+2], &(pCtx->lexCtx));
+                rv = synthLexer_getValuei(&pInt[i], &(pCtx->lexCtx));
                 SYNTH_ASSERT(rv == SYNTH_OK);
 
                 /* There must be a ',' between each number (except the last) */
-                if (i < sizeof(newVol) / sizeof(int) - 3) {
+                if (i < sizeof(newVol) / sizeof(int) - 1) {
                     rv = synthLexer_getToken(&(pCtx->lexCtx));
                     SYNTH_ASSERT(rv == SYNTH_OK);
 
