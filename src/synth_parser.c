@@ -676,7 +676,7 @@ __err:
 /**
  * Parse a 'context modification' into the context
  * 
- * Parsing rule: mod = T_SET_DURATION T_NUMBER |
+ * Parsing rule: mod = T_SET_DURATION T_NUMBER T_DURATION? |
  *                     T_SET_OCTAVE T_NUMBER |
  *                     T_SET_REL_OCTAVE T_NUMBER |
  *                     T_SET_VOLUME T_NUMBER |
@@ -699,7 +699,13 @@ __err:
 static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
     synth_err rv;
     synth_token token;
-    int tmp;
+    int tmp, read_token;
+
+    /* When parsing a duration, the number token is consumed
+     * to check if the next token is a duration.
+     * Only in that specific scenario,
+     * skip the token fetching at the end of this function. */
+    read_token = 1;
 
     /* Check which configuration should be set */
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
@@ -712,9 +718,12 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
             SYNTH_ASSERT_TOKEN(T_NUMBER);
 
             /* Set the default duration for notes */
-            rv = synthLexer_getValuei(&(pParser->ctl.duration),
-                    &(pCtx->lexCtx));
+            rv = synthParser_getDuration(&(pParser->ctl.duration), pParser, pCtx);
             SYNTH_ASSERT(rv == SYNTH_OK);
+
+            /* Skip reading the token at the end of the function,
+             * as getDuration already reads the next token. */
+            read_token = 0;
         } break;
         case T_SET_OCTAVE: {
             /* Read the following number */
@@ -914,8 +923,10 @@ static synth_err synthParser_mod(synthParserCtx *pParser, synthCtx *pCtx) {
     }
 
     /* Read the next token */
-    rv = synthLexer_getToken(&(pCtx->lexCtx));
-    SYNTH_ASSERT(rv == SYNTH_OK);
+    if (read_token) {
+        rv = synthLexer_getToken(&(pCtx->lexCtx));
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
 
     rv = SYNTH_OK;
 __err:
