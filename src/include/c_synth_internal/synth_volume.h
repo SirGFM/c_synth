@@ -55,6 +55,9 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
 
 /**
  * Retrieve the volume at a given percentage of a note
+ *
+ * Although the volume is initially set as an 8-bit value, it's retrieved
+ * as a 16-bit value!
  * 
  * @param  [out]pAmp The note's amplitude
  * @param  [ in]pVol The volume
@@ -64,7 +67,10 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
 synth_err synthVolume_getAmplitude(int *pAmp, synthVolume *pVol, int perc);
 
 /**
- * Retrieve the volume at a given percentage of a note
+ * Retrieve the volume at a given percentage of a note.
+ *
+ * Although the volume is initially set as an 8-bit value, it's retrieved
+ * as a 16-bit value!
  *
  * @param  [out]pAmp The note's amplitude
  * @param  [ in]pVol The volume
