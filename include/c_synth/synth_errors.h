@@ -38,6 +38,7 @@ typedef enum {
     SYNTH_BAD_VERSION,
     SYNTH_BAD_MACRO,
     SYNTH_UNDEF_MACRO,
+    SYNTH_NOTES_EMPTY,
     SYNTH_MAX_ERR
 } synth_err;
 

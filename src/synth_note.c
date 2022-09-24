@@ -105,6 +105,28 @@ __err:
 }
 
 /**
+ * Retrieve the last allocated (and, hopefully, configured) note.
+ *
+ * @param  [out]ppNote The last note
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NOTES_EMPTY
+ */
+synth_err synthNote_getLastNote(synthNote **ppNote, synthCtx *pCtx) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(ppNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pCtx->notes.len > 0, SYNTH_NOTES_EMPTY);
+
+    (*ppNote) = &(pCtx->notes.buf.pNotes[pCtx->notes.used-1]);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Set the default values for a musical note.
  *
  * @param [ in]pNote The note

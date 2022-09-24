@@ -34,6 +34,15 @@ synth_err synthNote_initLoop(synthNote **ppNote, synthCtx *pCtx, int repeat,
         int position);
 
 /**
+ * Retrieve the last allocated (and, hopefully, configured) note.
+ *
+ * @param  [out]ppNote The last note
+ * @param  [ in]pCtx   The synthesizer context
+ * @return             SYNTH_OK, SYNTH_BAD_PARAM_ERR, SYNTH_NOTES_EMPTY
+ */
+synth_err synthNote_getLastNote(synthNote **ppNote, synthCtx *pCtx);
+
+/**
  * Set the default values for a musical note.
  *
  * @param [ in]pNote The note
