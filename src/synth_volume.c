@@ -209,6 +209,7 @@ __err:
  */
 synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
         synthVolume *pEnvelope) {
+    synthVolume envelope;
     int i;
     synth_err rv;
 
@@ -218,8 +219,9 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
     SYNTH_ASSERT_ERR(pEnvelope, SYNTH_BAD_PARAM_ERR);
 
     /* Clamp the amplitude to the valid range and convert it to 16 bits */
+    memcpy(&envelope, pEnvelope, sizeof(envelope));
     for (i = 0; i < sizeof(synthVolume) / sizeof(int); i++) {
-        int *pInt = (int*)pEnvelope;
+        int *pInt = (int*)(&envelope);
 
         if (pInt[i] < 0) {
             pInt[i] = 0;
@@ -236,7 +238,7 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
 
     /* Search for the requested volume through the existing ones */
     for (i = 0; i < pCtx->volumes.used; i++) {
-        if (memcmp(pEnvelope, pCtx->volumes.buf.pVolumes + i,
+        if (memcmp(&envelope, pCtx->volumes.buf.pVolumes + i,
                 sizeof(synthVolume) == 0)) {
             /* If a volume matched, simply return it */
             *pVol = i;
@@ -251,7 +253,7 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
         rv = synthVolume_init(&pVolume, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        memcpy(pVolume, pEnvelope, sizeof(synthVolume));
+        memcpy(pVolume, &envelope, sizeof(synthVolume));
 
         /* Retrieve the volume's index */
         *pVol = pCtx->volumes.used - 1;
