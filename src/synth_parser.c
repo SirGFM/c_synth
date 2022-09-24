@@ -449,29 +449,17 @@ __err:
  *
  * @param  [ in]pParser   The parser context
  * @param  [ in]pCtx      The synthesizer context
- * @param  [ in]doExtend  Whether the should is extended, and in which part
  * @param  [ in]octave    The note's octave
  * @param  [ in]note      The note to be played (e.g., C, A)
  * @param  [ in]duration  The note's duration (in fixed point)
  */
 static synth_err synthParser_outputNote(synthParserCtx *pParser, synthCtx *pCtx,
-        int doExtend, int octave, synth_note note, int duration) {
+        int octave, synth_note note, int duration) {
     synth_err rv;
     synthNote stNote;
 
     /* Initialize the note */
     rv = synthParser_getNoteCtl(pParser, &stNote, octave, note, duration);
-    SYNTH_ASSERT(rv == SYNTH_OK);
-    /* NOTE: First part of extended notes is always done in synthParser_note */
-    if (doExtend == 2) {
-        /* Seconds part of extended note: play it fully */
-        rv = synthNote_setKeyoff(&stNote, 0, 100, 100);
-    }
-    else if (doExtend == 3) {
-        /* Last part of extended note: set keyoff and release */
-        rv = synthNote_setKeyoff(&stNote, 0, pParser->ctl.keyoff,
-                pParser->ctl.release);
-    }
     SYNTH_ASSERT(rv == SYNTH_OK);
 
     rv = synthParser_outputCtldNote(pParser, pCtx, &stNote);
@@ -604,6 +592,57 @@ __err:
     return rv;
 }
 
+static synth_err synthParser_extendedNote(int *pNumNotes, synthParserCtx *pParser,
+        synthCtx *pCtx, synthNote *pBaseNote, int *pFullDuration) {
+    synthNote *pNote;
+    synth_token token;
+    synth_err rv;
+    int startDuration, duration;
+
+    /* The only way to get into this section is through a T_EXTEND */
+    SYNTH_ASSERT_TOKEN(T_EXTEND);
+    /* Get next token */
+    rv = synthLexer_getToken(&(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* T_EXTEND must be followed by the extended duration */
+    rv = synthParser_getDuration(&duration, pParser, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Check if the next token is another T_EXTEND */
+    rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    /* Output the current note */
+    rv = synthParser_outputNote(pParser, pCtx, pBaseNote->ctl.octave,
+            pBaseNote->ctl.note, duration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = synthNote_getLastNote(&pNote, pCtx);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    startDuration = *pFullDuration;
+    *pFullDuration += pNote->ctl.duration;
+    (*pNumNotes)++;
+    if (token == T_EXTEND) {
+        rv = synthParser_extendedNote(pNumNotes, pParser, pCtx, pBaseNote,
+                pFullDuration);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+    }
+
+    /* Adjust the envelope for each note. */
+    rv = synthNote_setKeyoff(pNote, pParser->ctl.attack, pParser->ctl.keyoff,
+            pParser->ctl.release);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = synthNote_setExtendedKeyoff(pCtx, pNote, *pFullDuration, startDuration);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
 /**
  * Parse a note into the context
  *
@@ -620,7 +659,6 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     synthNote note;
     synth_token token;
     synth_err rv;
-    int doExtend = 0;
 
     rv = synthParser_noteCtl(pParser, pCtx, &note);
     SYNTH_ASSERT(rv == SYNTH_OK);
@@ -628,44 +666,28 @@ static synth_err synthParser_note(int *pNumNotes, synthParserCtx *pParser,
     /* Check if the note will be extended */
     rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
     SYNTH_ASSERT(rv == SYNTH_OK);
-    if (token == T_EXTEND) {
-        doExtend = 1;
-        /* First part of extended note: do attack only */
-        rv = synthNote_setKeyoff(&note, pParser->ctl.attack, 100, 100);
-    }
 
     rv = synthParser_outputCtldNote(pParser, pCtx, &note);
     SYNTH_ASSERT(rv == SYNTH_OK);
     *pNumNotes = 1;
-    while (doExtend != 0 && doExtend != 3) {
-        int duration;
 
-        /* The only way to get into this section is through a T_EXTEND */
-        SYNTH_ASSERT_TOKEN(T_EXTEND);
-        /* Get next token */
-        rv = synthLexer_getToken(&(pCtx->lexCtx));
+    if (token == T_EXTEND) {
+        synthNote *pNote;
+        int fullDuration = note.ctl.duration;
+
+        rv = synthNote_getLastNote(&pNote, pCtx);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        /* T_EXTEND must be followed by the extended duration */
-        rv = synthParser_getDuration(&duration, pParser, pCtx);
+        rv = synthParser_extendedNote(pNumNotes, pParser, pCtx, &note,
+                &fullDuration);
         SYNTH_ASSERT(rv == SYNTH_OK);
 
-        /* Check if the next token is another T_EXTEND */
-        rv = synthLexer_lookupToken(&token, &(pCtx->lexCtx));
+        /* Adjust the first note's envelope. */
+        rv = synthNote_setKeyoff(pNote, pParser->ctl.attack,
+                pParser->ctl.keyoff, pParser->ctl.release);
         SYNTH_ASSERT(rv == SYNTH_OK);
-        if (token == T_EXTEND) {
-            doExtend = 2;
-        }
-        else {
-            doExtend = 3;
-        }
-
-        /* Output the current note */
-        rv = synthParser_outputNote(pParser, pCtx, doExtend,
-                note.ctl.octave, note.ctl.note, duration);
+        rv = synthNote_setExtendedKeyoff(pCtx, pNote, fullDuration, 0);
         SYNTH_ASSERT(rv == SYNTH_OK);
-
-        (*pNumNotes)++;
     }
 
     rv = SYNTH_OK;

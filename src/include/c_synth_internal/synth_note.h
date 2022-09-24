@@ -129,6 +129,24 @@ synth_err synthNote_setKeyoff(synthNote *pNote, int attack, int keyoff,
         int release);
 
 /**
+ * Set the characteristics of the note's duration, for extended notes.
+ *
+ * NOTE: This parameter must be set after the duration and the base keyoff.
+ *
+ * Every note in an extended note must have the same base attack, keyoff, and
+ * release. Then, a custom envelope/volume is defined based on how much of the
+ * entire duration has elapsed until the start of this extension.
+ *
+ * @param  [ in]pCtx          The synthesizer context
+ * @param  [ in]pNote         The note
+ * @param  [ in]fullDuration  The duration of the entire note
+ * @param  [ in]startDuration The duration until this note extension starts
+ * @return                    SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setExtendedKeyoff(synthCtx *pCtx, synthNote *pNote,
+        int fullDuration, int startDuration);
+
+/**
  * Set the volume envelop
  * 
  * @param  [ in]pNote  The note

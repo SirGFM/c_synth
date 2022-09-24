@@ -320,6 +320,245 @@ __err:
 }
 
 /**
+ * Retrieve the envelope region for a position within the note.
+ *
+ * @param  [out]pEnvelope The volume/envelope's region.
+ * @param  [ in]pNote     The note.
+ * @param  [ in]pos       The position within the note (in [0, 100]).
+ * @return                SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+static synth_err synthNote_getEnvelopeRegion(synth_envelope *pEnvelope,
+        synthNote *pNote, int pos) {
+    synth_err rv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pEnvelope, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pos >= 0 && pos <= 100, SYNTH_BAD_PARAM_ERR);
+
+    if (pos < pNote->ctl.attack) {
+        *pEnvelope = ENV_ATTACK;
+    }
+    else if (pos < pNote->ctl.keyoff) {
+        *pEnvelope = ENV_HOLD;
+    }
+    else if (pos < pNote->ctl.release) {
+        *pEnvelope = ENV_DECAY;
+    }
+    else {
+        *pEnvelope = ENV_RELEASE;
+    }
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Retrieve the note's volume at the given position.
+ *
+ * @param  [out]pAmp    The amplitude at the given position.
+ * @param  [ in]pNote   The note.
+ * @param  [ in]pVolume The note's volume.
+ * @param  [ in]region  The volume/envelope's region.
+ * @param  [ in]pos     The position within the entire volume (in [0, 100]).
+ */
+static synth_err synthNote_getVolume(int *pAmp, synthNote *pNote,
+        synthVolume *pVolume, synth_envelope region, int pos) {
+    synth_err rv;
+    int regionFrom, regionTo, volumePos;
+
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pVolume, SYNTH_BAD_PARAM_ERR);
+    SYNTH_ASSERT_ERR(pAmp, SYNTH_BAD_PARAM_ERR);
+
+    /* Retrieve the section of the note for the given volume region. */
+    switch (region) {
+    case ENV_ATTACK:
+        regionFrom = 0;
+        regionTo = pNote->ctl.attack;
+        break;
+    case ENV_HOLD:
+        regionFrom = pNote->ctl.attack;
+        regionTo = pNote->ctl.keyoff;
+        break;
+    case ENV_DECAY:
+        regionFrom = pNote->ctl.keyoff;
+        regionTo = pNote->ctl.release;
+        break;
+    case ENV_RELEASE:
+        regionFrom = pNote->ctl.release;
+        regionTo = 100;
+        break;
+    default:
+        SYNTH_ASSERT_ERR(0, SYNTH_BAD_PARAM_ERR);
+    }
+
+    if (regionTo == regionFrom && regionFrom == pos) {
+        /* If only a single section were set, this could happen... */
+        volumePos = 1024;
+    }
+    else {
+        SYNTH_ASSERT_ERR(regionTo > regionFrom, SYNTH_BAD_PARAM_ERR);
+
+        /* Convert the section of the note to a percentage into a volume region. */
+        volumePos = 1024 * (pos - regionFrom) / (regionTo - regionFrom);
+    }
+
+    /* Retrieve the volume for the calculated volume region. */
+    rv = synthVolume_getEnvelopedAmplitude(pAmp, pVolume, volumePos, region);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    /* Convert the value back to an 8-bit value. */
+    (*pAmp) >>= 8;
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
+ * Set the characteristics of the note's duration, for extended notes.
+ *
+ * NOTE: This parameter must be set after the duration and the base keyoff.
+ * NOTE-2: This only works on version 2 onwards.
+ *
+ * Every note in an extended note must have the same base attack, keyoff, and
+ * release. Then, a custom envelope/volume is defined based on how much of the
+ * entire duration has elapsed until the start of this extension.
+ *
+ * @param  [ in]pCtx          The synthesizer context
+ * @param  [ in]pNote         The note
+ * @param  [ in]fullDuration  The duration of the entire note
+ * @param  [ in]startDuration The duration until this note extension starts
+ * @return                    SYNTH_OK, SYNTH_BAD_PARAM_ERR
+ */
+synth_err synthNote_setExtendedKeyoff(synthCtx *pCtx, synthNote *pNote,
+        int fullDuration, int startDuration) {
+    synthVolume *pVolume;
+    synthVolume newEnvelope;
+    synth_err rv;
+    int p1, p2, p3, start, end, *pos;
+    synth_envelope startEnv, endEnv;
+
+    /* Sanitize the arguments */
+    SYNTH_ASSERT_ERR(pNote, SYNTH_BAD_PARAM_ERR);
+    /* Ensure version is >= 2, and simply ignore this function otherwise. */
+    SYNTH_ASSERT_ERR(pCtx->useNewEnvelope == SYNTH_TRUE, SYNTH_OK);
+
+    pVolume = &(pCtx->volumes.buf.pVolumes[pNote->ctl.volume]);
+
+    /* Normalize this extension's duration to a sub-region in [0, 100]. */
+    start = (startDuration * 100) / fullDuration;
+    end = (startDuration + pNote->ctl.duration) * 100;
+    end /= fullDuration;
+
+    rv = synthNote_getEnvelopeRegion(&startEnv, pNote, start);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+    rv = synthNote_getEnvelopeRegion(&endEnv, pNote, end);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+#define MERGE_CASES(A, B) ((A & 0xffff) << 16) | (B & 0xffff)
+
+    /* Retrieve the position of each region as an array of ints. */
+    pos = &(pNote->ctl.attack);
+
+    /* Map the volume of this sub-region to the end of a new envelope.
+     * If the entire sub-region falls into a single enveloped region,
+     * then only the last section of the new envelope is used.
+     * If it falls into two following enveloped regions,
+     * then the last two sections are used, and so on.
+     */
+    memset(&newEnvelope, 0x0, sizeof(newEnvelope));
+
+    switch (MERGE_CASES(startEnv, endEnv)) {
+    case MERGE_CASES(ENV_ATTACK, ENV_ATTACK):
+    case MERGE_CASES(ENV_HOLD, ENV_HOLD):
+    case MERGE_CASES(ENV_DECAY, ENV_DECAY):
+    case MERGE_CASES(ENV_RELEASE, ENV_RELEASE):
+        rv = synthNote_getVolume(&newEnvelope.release, pNote, pVolume,
+                startEnv, start);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.postRelease, pNote, pVolume,
+                startEnv, end);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        rv = synthNote_setKeyoff(pNote, 0, 0, 0);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        break;
+    case MERGE_CASES(ENV_ATTACK, ENV_HOLD):
+    case MERGE_CASES(ENV_HOLD, ENV_DECAY):
+    case MERGE_CASES(ENV_DECAY, ENV_RELEASE):
+        rv = synthNote_getVolume(&newEnvelope.decay, pNote, pVolume,
+                startEnv, start);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.release, pNote, pVolume,
+                startEnv, pos[startEnv]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.postRelease, pNote, pVolume,
+                endEnv, end);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        p3 = 100 * (end - pos[startEnv]) / (end - start);
+        rv = synthNote_setKeyoff(pNote, 0, 0, p3);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        break;
+    case MERGE_CASES(ENV_ATTACK, ENV_DECAY):
+    case MERGE_CASES(ENV_HOLD, ENV_RELEASE):
+        rv = synthNote_getVolume(&newEnvelope.hold, pNote, pVolume,
+                startEnv, start);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.decay, pNote, pVolume,
+                startEnv, pos[startEnv]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.release, pNote, pVolume,
+                startEnv+1, pos[startEnv+1]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.postRelease, pNote, pVolume,
+                endEnv, end);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        p2 = 100 * (end - pos[startEnv]) / (end - start);
+        p3 = 100 * (end - pos[startEnv+1]) / (end - start);
+        rv = synthNote_setKeyoff(pNote, 0, p2, p3);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        break;
+    case MERGE_CASES(ENV_ATTACK, ENV_RELEASE):
+        rv = synthNote_getVolume(&newEnvelope.preAttack, pNote, pVolume,
+                startEnv, start);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.hold, pNote, pVolume,
+                startEnv, pos[startEnv]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.decay, pNote, pVolume,
+                startEnv+1, pos[startEnv+1]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.release, pNote, pVolume,
+                startEnv+2, pos[startEnv+2]);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        rv = synthNote_getVolume(&newEnvelope.postRelease, pNote, pVolume,
+                endEnv, end);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+
+        p1 = 100 * (end - pos[startEnv]) / (end - start);
+        p2 = 100 * (end - pos[startEnv+1]) / (end - start);
+        p3 = 100 * (end - pos[startEnv+2]) / (end - start);
+        rv = synthNote_setKeyoff(pNote, p1, p2, p3);
+        SYNTH_ASSERT(rv == SYNTH_OK);
+        break;
+    }
+
+#undef MERGE_CASES
+
+    /* Update the note's volume. */
+    rv = synthVolume_getEnvelope(&pNote->ctl.volume, pCtx, &newEnvelope);
+    SYNTH_ASSERT(rv == SYNTH_OK);
+
+    rv = SYNTH_OK;
+__err:
+    return rv;
+}
+
+/**
  * Set the volume envelop
  * 
  * @param  [ in]pNote  The note
