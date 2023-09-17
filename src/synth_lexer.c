@@ -899,7 +899,7 @@ static synth_bool synthLexer_didFinish(synthLexCtx *pCtx) {
         }
     }
     else {
-        return SYNTH_INTERNAL_ERR;
+        return SYNTH_FALSE;
     }
 }
 
