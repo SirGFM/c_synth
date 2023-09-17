@@ -376,7 +376,7 @@ synth_bool synthVolume_isMuted(synthVolume *pVol, synth_envelope env) {
             ini = pVol->release;
             fin = pVol->postRelease;
         break;
-        default: { return SYNTH_INTERNAL_ERR; /* Avoids warnings */ }
+        default: { return SYNTH_FALSE; /* Avoids warnings */ }
     }
 
     if (ini == fin && ini == 0) {
