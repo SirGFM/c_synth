@@ -239,7 +239,7 @@ synth_err synthVolume_getEnvelope(int *pVol, synthCtx *pCtx,
     /* Search for the requested volume through the existing ones */
     for (i = 0; i < pCtx->volumes.used; i++) {
         if (memcmp(&envelope, pCtx->volumes.buf.pVolumes + i,
-                sizeof(synthVolume) == 0)) {
+                sizeof(synthVolume)) == 0) {
             /* If a volume matched, simply return it */
             *pVol = i;
             break;
